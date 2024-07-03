@@ -1,144 +1,158 @@
-import React, { useState, useEffect } from 'react'
+import Table from "../../components/common/Table";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import Image from "next/future/image";
-import NewCallWidget from './call-widget/callWidget';
-import AiAssistant from './ai-assistant';
-import SentimentGraph from './sentiment/SentimentGraph';
-import Transcript from './transcript';
-import InteractionHistory from './interaction-history';
-import ContactInformation from './contact';
-import Cases from './cases';
-// import contactData from '../../assets/resource/dummyContactInfo.json';
-import { useSelector } from 'react-redux';
-import AutoAudit from './auto-audit';
-import { CALL_WRAP_UP_STATE, HEADERS } from '../../utility/constants';
-import { setIsCallWrapped } from '../../store/callSlice';
-import CallSummaryDashboard from '../../pages/agentOldDesign/conversation-details/CallSummaryDashboard';
-import AIWiki from './ai-wiki';
-import AIWikiSymbol from '../../assets/img/wiki_symbol.svg'
-import AutoAuditPopup from './auto-audit/auto-audit-popup';
-import { fetchData } from 'next-auth/client/_utils';
-import { useRouter } from 'next/router';
-import { useDispatch } from 'react-redux';
-import styles from "../../assets/css/agent.module.scss";
-import { selectClient, setCustomerName } from "../../store/userSlice"
-import { setIsCallRinging, setSimulationUseCase } from '../../store/callSlice';
-import CustomerInfoPageOne from './customer-info-360/customer-info-page';
-import CustomerInfo360Page from './customer-info-360/customer-info-360-page';
-import { getStaticResource } from '../../utility/automationBotHandler'
-import { useAppContext } from "../common/appContext"
+import { useOktaAuth } from "@okta/okta-react";
+import clientList from "../../assets/resource/client-list.json";
+import { useDispatch, useSelector } from "react-redux";
+import { selectClient, setHeader } from "../../store/userSlice"
+// import { signOut } from "../../store/userSlice";
+// import { parseResponse } from "../../utility";
+import Router, { useRouter } from "next/router";
+// import { resetCallState } from "../../store/callSlice";
+import { CALL_AVAILABLE_STATE, BYPASS_OKTA_LOGIN, DEMO_TABLE_HEADERS } from "../../utility/constants";
+import { FaPlay } from "react-icons/fa";
+import { useAppContext } from "../../components/common/appContext"
 
-const SAABaseLayout = () => {
-  const { intlTranslator } = useAppContext()
-  const locale = useSelector((state: any) => state.user.locales)
-  const appCallData = useSelector((state: any) => state.call);
-  const showAllCases = appCallData.showAllCases;
-  const callDisconnectTime = appCallData.callDisconnectTime;
-  const iscallWrappedUp = appCallData.isCallWrapped;
-  // const  callDisconnectTime = true;
-  // const iscallWrappedUp = CALL_WRAP_UP_STATE.NOT_SUBMITTED;
-  const isOnCall = appCallData.isCallConnected || appCallData.isCallOnHold;
-  // appCallData.callDisconnectTime && appCallData.isCallWrappedUP === CALL_WRAP_UP_STATE.NOT_SUBMITTED
-  const [hide, setHide] = useState(false);
-  const [showWiki, setShowWiki] = useState(false)
-  const [showAutoAuditPopUp, setShowAutoAuditPopup] = useState(false);
-  const [selectedQuestion, setSelectedQuestion] = useState({});
-  const [render, setRender] = useState([])
-  const [history, setHistory] = useState([])
-  const [contact, setContact] = useState([])
-  const [customer, setCustomer] = useState([])
-  const [summary, setSummary] = useState([])
-  const [transcript, setTranscript] = useState([])
-  const setSelectedClient = useSelector((state: any) => state.user)
-  const [activePage, setActivePage] = useState(true);
-  const router = useRouter();
-  const dispatch = useDispatch()
-  const clientJson = setSelectedClient.selectedClient
-  let finalData
-  useEffect(() => {
-    const fetchQueryData = async () => {
-      let customerName;
-      let agentName;
-      let TranscriptInfo = "transcript.json";
-      if (!router.isReady) return;
-      try {
-        const customerInfo = router.query
-        const data = `${customerInfo.clientName}_${customerInfo.version}`
-        finalData = data.toLowerCase()
-        dispatch(selectClient(finalData))
-        getStaticResource("customerInfo.json", finalData).then((data) => {
-          dispatch(setCustomerName(intlTranslator(data?.customerName)))
-          customerName = (intlTranslator(data?.customerName))
-          agentName = (intlTranslator(data?.agentName))
-          setCustomer([customerName, agentName])
-          setContact(data?.personalInformation)
-        })
-        getStaticResource("summary.json", finalData).then((data) => setSummary(data))
-        getStaticResource("cases.json", finalData).then((data) => setRender(data))
-        getStaticResource("history.json", finalData).then((data) => setHistory(data))
-        finalData === HEADERS.DEMO ? locale === "en" ? TranscriptInfo = "transcript_en.json" : TranscriptInfo = "transcript_hi.json" : TranscriptInfo = "transcript.json";
-        getStaticResource(TranscriptInfo, finalData).then((data) => setTranscript(data))
-        dispatch(setIsCallRinging(true))
-      } catch (error) { console.log(error) }
-    }
-    fetchQueryData()
-  }, [router.isReady, clientJson])
-
-
-  return (
-    <>
-      <div className='platform-container'>
-        <div className='distant-start-section'>
-          <div className='sentiment-section component-box-shadow'><SentimentGraph /></div>
-          <div className='transcript-section component-box-shadow'><Transcript customerData={customer} /></div>
-          <AutoAudit setShowAutoAuditPopup={setShowAutoAuditPopup} selectedQuestion={selectedQuestion} setSelectedQuestion={setSelectedQuestion} />
-        </div>
-        {activePage ?
-          <CustomerInfoPageOne
-            casesData={render}
-            historyData={history}
-            contactData={contact}
-            hide={hide}
-            setHide={setHide}
-            activePage setActivePage={setActivePage} />
-          :
-          <CustomerInfo360Page
-            casesData={render}
-            historyData={history}
-            contactData={contact}
-            hide={hide}
-            setHide={setHide}
-            activePage setActivePage={setActivePage} />
-        }
-        <div className='distant-end-section'>
-          <>{isOnCall &&
-            <>
-              <div className="call-widget-section component-box-shadow"><NewCallWidget /></div>
-              <AiAssistant formData={transcript} summaryData={summary} tabs="AI Assistant" />
-            </>}
-            {(callDisconnectTime && iscallWrappedUp === CALL_WRAP_UP_STATE.NOT_SUBMITTED) && <AiAssistant formData={transcript} summaryData={summary} tabs="Call Summary" />}
-
-          </>
-        </div>
-        <div className='aiwiki-symbol' onClick={() => { setShowWiki(true) }}>
-          <Image src={AIWikiSymbol} width={60} height={60} alt='AI WIki' />
-        </div>
-        <AIWiki show={showWiki} setShow={setShowWiki} />
-        {showAutoAuditPopUp && <AutoAuditPopup setShowAutoAuditPopup={setShowAutoAuditPopup} selectedQuestion={selectedQuestion} setSelectedQuestion={setSelectedQuestion} />}
-
-      </div>
-      <div>
-        <footer className={styles.footer}>
-          <p>Powered by</p>
-          <Image
-            src={require("../../assets/img/agent/exl_small.png").default}
-            alt="exl-small"
-            height={14}
-            width={30}
-          />
-        </footer>
-      </div>
-    </>
-  )
+interface MyCallScreenProps {
+    isDashboard?: boolean;
 }
+const MyCallScreen: React.FC<MyCallScreenProps> = ({ isDashboard }) => {
+    const { intlTranslator } = useAppContext()
+    const dispatch = useDispatch();
+    const selectedHeader = useSelector((state: any) => state?.user);
+    const selectedClient = (values) => {
+        dispatch(setHeader([values.header, values.subHeader]))
+        const finalClientData = (values.agent + "_" + values.version).toLowerCase(); // key for specific client data
+        dispatch(selectClient(finalClientData))
+    }
+    const urls = process.env.NEXT_PUBLIC_NEXTAUTH_URL;
+    const smartAgent = useCallback((name: string, version: string) => {
+        const smartAgentParams = new URLSearchParams({
+            clientName: name,
+            version: version
+        }).toString();
+        const tab = window.open(`${urls}?${smartAgentParams}`,'_blank')
+        tab.onload = () => {
+            window.location.reload()
+            dispatch(selectClient(""))
+        }
 
-export default SAABaseLayout;
+    }, []);
+    const columns = useMemo(
+        () => [
+            {
+                Header: intlTranslator(DEMO_TABLE_HEADERS.CALL_ID),
+                accessor: "callId",
+                Cell: ({ cell: { value } }) => (
+                    <div className="cell_align">
+                        <p className="cell_style">{btoa(value)}</p>
+                    </div>
+                ),
+            },
+            {
+                Header: intlTranslator(DEMO_TABLE_HEADERS.AHT),
+                accessor: "aht",
+                Cell: ({ cell: { value } }) => (
+                    <p className="cell_style">{value}</p>
+                ),
+            },
+            {
+                Header: intlTranslator(DEMO_TABLE_HEADERS.AGENT),
+                accessor: "agent",
+                Cell: ({ cell: { value } }) => (
+                    <p className="cell_style">{value}</p>
+                ),
+            },
+            {
+                Header: intlTranslator(DEMO_TABLE_HEADERS.USECASE),
+                accessor: "useCase",
+                Cell: ({ cell: { value } }) => (
+                    <p className="cell_style">{value}</p>
+                ),
+            },
+            {
+                Header: intlTranslator(DEMO_TABLE_HEADERS.INDUSTRY),
+                accessor: "industry",
+                Cell: ({ cell: { value } }) => (
+                    <p className="cell_style">{value}</p>
+                ),
+            },
+            {
+                Header: intlTranslator(DEMO_TABLE_HEADERS.CHANNEL),
+                accessor: "channel",
+                Cell: ({ cell: { value } }) => (
+                    <p className="cell_style"> {value}</p>
+                ),
+            },
+            {
+                Header: intlTranslator(DEMO_TABLE_HEADERS.INTERACTION_DATE),
+                accessor: "date",
+                Cell: ({ cell: { value } }) => (
+                    <p className="cell_style">{value}</p>
+                ),
+            },
+            {
+                Header: intlTranslator(DEMO_TABLE_HEADERS.LAUNCH),
+                accessor: "platform",
+                Cell: ({ cell: { value } }) => (
+                    <FaPlay onClick={() => smartAgent(value.client, value.version)} className="button_style" />
+                ),
+            },
+        ],
+        [intlTranslator]
+    );
+
+    const filteredColumns = useMemo(
+        () =>
+            isDashboard
+                ? columns
+                    .map((column) => {
+                        if (column.Header !== "Call ID") return column;
+                        return <td style={{ textAlign: "start" }}></td>;
+                    })
+                    .filter((col) => col)
+                : columns,
+        [columns, isDashboard]
+    );
+
+    return (
+        <div style={{ padding: "1rem" }} >
+            <Table
+                data={clientList}
+                columns={filteredColumns}
+                showPagination={!isDashboard}
+                isCallTable
+                clientListData={selectedClient}
+            />
+        </div>
+    );
+};
+
+
+export default function ClientList() {
+    const { oktaAuth, authState } = useOktaAuth();
+    const availableStateRef = useRef(null);
+    const dispatch = useDispatch();
+    const router = useRouter();
+    // const appUser = useSelector((state) => state.user);
+    // const appCallData = useSelector((state) => state.call);
+    const [tabValue, setTabValue] = useState<number>(0);
+
+    const [isAvailable, setIsAvailable] = useState(false);
+    const [availableState, setAvailableState] = useState(
+        CALL_AVAILABLE_STATE.READY
+    );
+    const [showAvailableState, setShowAvailableState] = useState(false);
+
+    return (
+        <>
+            <div className="page_container">
+
+                <main>
+                    {tabValue === 0 && <MyCallScreen />}
+                </main>
+
+            </div>
+        </>
+    );
+}
