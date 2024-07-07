@@ -1,14 +1,7 @@
-    const response = await fetch(marketDataJson);
-    if (response.ok) {
-      const responseJson = await response.json();
-      this.marketAnalysis.push(responseJson.description)
-    }
-
-    import marketDataJson from "@salesforce/resourceUrl/market_analysis";
-
-    import { LightningElement, api, wire } from "lwc";
+import { LightningElement, api, wire, track } from "lwc";
 import INTERACTION_HISTORY from "@salesforce/resourceUrl/Interation_history";
 import EYE_ICON from "@salesforce/resourceUrl/marketingEyes";
+import marketDataJson from "@salesforce/resourceUrl/market_analysis";
 import fetchCustomerData from "@salesforce/apex/CustomerDataPageHandler.fetchCustomerData";
 
 export default class SimulationMarketingAnalysis extends LightningElement {
@@ -17,11 +10,27 @@ export default class SimulationMarketingAnalysis extends LightningElement {
   eye = EYE_ICON;
   marketingAnalysis = [];
   analysis = [];
-  marketAnalysis =[];
+  @track marketAnalysisData;
 
   connectedCallback () {
     console.log("Current Record ID:", this.recordId);
+    this.loadStaticData();
   }
+
+  async loadStaticData() {
+    try {
+      const response = await fetch(marketDataJson);
+      if (response.ok) {
+        const responseJson = await response.json();
+          this.marketAnalysisData= responseJson
+      } else {
+        console.error("Error in fetching contact data ", response.status);
+      }
+    } catch (err) {
+      console.error("Error in fetching contact json data ", err);
+    }
+  }
+
 
   @wire(fetchCustomerData, { recordID: "$recordId" })
   wiredCustomerData({ error, data }) {
@@ -45,4 +54,73 @@ export default class SimulationMarketingAnalysis extends LightningElement {
       console.error("Error fetching customer data:", error);
     }
   }
+}
+
+<template>
+    <div class="Parent_container">
+      <div class="header_parent_container">
+        <div class="header_parent_subContainer">
+          <div class="slds-col slds-size_2-of-12 image_container">
+            <img src={icon} alt="Life Events" />
+          </div>
+          <div class="slds-col slds-size_10-of-12 header_Label_container">
+            Marketing Analysis
+          </div>
+        </div>
+      </div>
+      <div class="information-container">
+        <div class="progress-container">
+          <template for:each={rateData} for:item="rate">
+            <div class="open-rate-container" key={rate.Id}>
+              <div class="open-rate-sub-container">
+                <div class="content-container">
+                  {rate.key}
+                </div>
+                <div class="content-container">
+                  {rate.value}
+                </div>
+              </div>
+              <div>
+                <lightning-progress-bar value={rate.value} size="large" variant="circular"
+                  style="background-color: #B89EDD;"></lightning-progress-bar>
+              </div>
+            </div>
+          </template>
+        </div>
+        <div class="summary-container">
+          <ul class="summary-sub-container">
+            Summary
+            <template for:each={marketingAnalysis.summary} for:item="summary">
+              <div class="details-container" key={summary.Id}>
+                <li>
+                  <span>
+                    {summary.description}
+                  </span>
+                </li>
+              </div>
+            </template>
+          </ul>
+        </div>
+        <div class="market-analysis-container">
+          <ul class="market-analysis-sub-container">
+            market Analysis
+            <template if:true={marketAnalysisData}>
+              <p>{marketAnalysisData}</p>
+            </template>
+          </ul>
+        </div>
+        <div class="activity-container">
+          <div class="activity-sub-container">
+            <div class="slds-col slds-size_3-of-12 image-container"><img src={eye} alt="Eye Icon" /></div>
+            <div class="activity-label-container">
+              {marketingAnalysis.button}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  {
+    "description": "Has clicked on 3 FD scheme promotional offers in app",
 }
