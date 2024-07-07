@@ -1,49 +1,48 @@
-import { LightningElement, track, wire } from "lwc";
-import contactDataJson from "@salesforce/resourceUrl/bnym_contact_data";
-import contactIcon from "@salesforce/resourceUrl/smart_agent_contact_icon";
-import { subscribe, MessageContext } from "lightning/messageService";
-import visibility from "@salesforce/messageChannel/otherCompVisibility__c";
-
-export default class SimulationContact extends LightningElement {
-  @track contactData = [];
-  @track showComponent = true;
-
-  @wire(MessageContext)
-  messageContext;
-
-  contactIconUrl = `${contactIcon}#contactIcon`;
-
-  async loadStaticData() {
-    try {
-      const response = await fetch(contactDataJson);
-      if (response.ok) {
-        const responseJson = await response.json();
-        Object.keys(responseJson).forEach((key) => {
-          this.contactData.push({
-            field: key,
-            value: responseJson[key]
-          });
-        });
-      } else {
-        console.error("Error in fetching contact data ", response.status);
-      }
-    } catch (err) {
-      console.error("Error in fetching contact json data ", err);
+    const response = await fetch(marketDataJson);
+    if (response.ok) {
+      const responseJson = await response.json();
+      this.marketAnalysis.push(responseJson.description)
     }
+
+    import marketDataJson from "@salesforce/resourceUrl/market_analysis";
+
+    import { LightningElement, api, wire } from "lwc";
+import INTERACTION_HISTORY from "@salesforce/resourceUrl/Interation_history";
+import EYE_ICON from "@salesforce/resourceUrl/marketingEyes";
+import fetchCustomerData from "@salesforce/apex/CustomerDataPageHandler.fetchCustomerData";
+
+export default class SimulationMarketingAnalysis extends LightningElement {
+  @api recordId;
+  icon = INTERACTION_HISTORY;
+  eye = EYE_ICON;
+  marketingAnalysis = [];
+  analysis = [];
+  marketAnalysis =[];
+
+  connectedCallback () {
+    console.log("Current Record ID:", this.recordId);
   }
 
-  subscribeToMessages() {
-    this.subscription = subscribe(this.messageContext, visibility, (message) =>
-      this.handleMessage(message)
-    );
-  }
+  @wire(fetchCustomerData, { recordID: "$recordId" })
+  wiredCustomerData({ error, data }) {
+    if (data) {
+      const parsedData = JSON.parse(data);
 
-  handleMessage(message) {
-    this.showComponent = message.show;
-  }
-
-  connectedCallback() {
-    this.loadStaticData();
-    this.subscribeToMessages();
+      console.log("parsedData :", parsedData.marketingAnalysis);
+      this.analysis = parsedData.marketingAnalysis;
+      this.marketingAnalysis = this.analysis;
+      console.log("Marketing Analysis Information:", this.marketingAnalysis);
+      // Convert rates object to array
+      const ratesArray = Object.keys(this.marketingAnalysis.rates).map(
+        (key) => ({
+          key: key,
+          value: this.marketingAnalysis.rates[key]
+        })
+      );
+      this.rateData = ratesArray;
+      console.log("rates Arry :", this.rateData);
+    } else if (error) {
+      console.error("Error fetching customer data:", error);
+    }
   }
 }
