@@ -1,301 +1,181 @@
-import { useCallback, useState, useEffect } from "react";
-import { RecognizeTextCommand } from "@aws-sdk/client-lex-runtime-v2";
-import { v4 as uuidv4 } from "uuid";
-import moment from "moment";
+import { LightningElement, api, wire,track } from "lwc";
+import INTERACTION_HISTORY from "@salesforce/resourceUrl/Interation_history";
+import EYE_ICON from "@salesforce/resourceUrl/marketingEyes";
+import marketDataJson from "@salesforce/resourceUrl/market_analysis";
+// import fetchCustomerData from "@salesforce/apex/CustomerDataPageHandler.fetchCustomerData";
+import {getRecord, getFieldValue} from 'lightning/uiRecordApi';
+import CUSTOMER360_FIELD from '@salesforce/schema/Custom_Contact__c.Customer360__c'
+
+// import Field from "@salesforce/schema/AccountHistory.Field";
  
-import ChatboxContent from "./chatboxContent/chatboxContent";
-import ChatboxHeader from "./chatboxHeader/chatboxHeader";
-import ChatboxInput from "./chatboxInput/chatboxInput";
-import styles from "./chatbox.module.css";
-import { getLexParams, lexV2Client } from "../../lex/config";
-// import { botMessages } from "../../App";
-import CreditCard from "../creditCard/CreditCard";
-import Carousel from "../carousel/carousel";
- 
-const Chatbox = ({ chats, setChats, hasEnded, setHasEnded }) => {
-  // const [botMessageIndex, setBotMessageIndex] = useState(0);
-  const [sessionId, setSessionId] = useState("");
-  const [showCreditForm, setShowCreditForm] = useState(false);
-  const [showCarousel, setShowCarousel] = useState(false);    // To handle Carousel
-  const [carouselData, setCarouselData] = ([]);
-  const [inputType, setInputType] = useState("");    // Store the intent captured from LEX
-  const lastChat = chats[chats.length - 1];
- 
-  // const onOptionClick = useCallback(
-  //   (option, type) => {
-  //     let selected = option;
-  //     if (type === "button") {
-  //       selected = option.ButtonName;
-  //     }
-  //     if (
-  //       lastChat.type === "confirmation" &&
-  //       lastChat?.input?.inputText &&
-  //       lastChat?.input?.masked
-  //     ) {
-  //       selected = option
-  //         .split("")
-  //         .map((el) => "•")
-  //         .join("");
-  //     }
-  //     let newChats = [
-  //       ...chats,
-  //       { messages: [{ text: selected }], sender: "user" },
-  //       { isLoading: true, sender: "bot" },
-  //     ];
-  //     setChats(newChats);
-  //   },
-  //   [chats, botMessageIndex]
-  // );
- 
-  // useEffect(() => {
-  //   if (chats.length && lastChat.isLoading) {
-  //     setTimeout(() => {
-  //       let newChats = [...chats];
-  //       const nextBotChat = botMessages[botMessageIndex + 1];
-  //       if (nextBotChat.type) {
-  //         newChats[newChats.length - 1] = { ...nextBotChat, sender: "bot" };
-  //       } else {
-  //         newChats[newChats.length - 1] = {
-  //           ...nextBotChat,
-  //           endedTime: moment(new Date()).format("h:mm A"),
-  //           hasEnded: true,
-  //           sender: "bot",
-  //         };
-  //         setHasEnded(true);
-  //       }
-  //       setChats(newChats);
-  //       setBotMessageIndex((prev) => prev + 1);
-  //     }, 1000);
-  //   }
-  // }, [chats, lastChat]);
- 
-  // const startNewChat = useCallback(() => {
-  //   setChats((prev) => [
-  //     ...prev,
-  //     { hasStarted: true, startedTime: moment(new Date()).format("h:mm A") },
-  //     { ...botMessages[0], sender: "bot" },
-  //   ]);
-  //   setBotMessageIndex(0);
-  //   setHasEnded(false);
-  // }, []);
- 
-  //  **** API CALLS ****** //
-  const getInitialIntent = useCallback(async () => {
-    const id = uuidv4();
-    const params = getLexParams("Intial intent", id);
-    try {
-      const res = await lexV2Client.send(new RecognizeTextCommand(params));
-      const content = JSON.parse(res?.messages?.[0]?.content || "{}");
-      setChats([{ ...content, sender: "bot" }]);
-      setSessionId(id);
- 
-      console.log("Response: ", res, "Content: ", content, "SessionID: ", sessionId);
-    } catch (error) {
-      console.error(`got an error :${error.message}`);
-      throw error;
-    }
-  }, []);
- 
-  useEffect(() => {
-    getInitialIntent();
-  }, [getInitialIntent]);
- 
-  const onOptionClick = async (option, type, inputMessages) => {
-    inputMessages = inputMessages || null;
- 
-    // console.log("Option: ", option, "Type: ", type, "Input Message: ", inputMessages);
- 
-    // console.log("Before: ", inputType);
- 
-    // if(
-    //   lastChat.type === "confirmation" &&
-    //   lastChat?.input?.inputText &&
-    //   lastChat?.input?.inputType === "date"
-    // ) {
-    //   setInputType("date");
-    // }
- 
-    // console.log("After: ", inputType);
- 
-    let selected = option,
-      value = option;
-    if (type === "button") {
-      selected = option.ButtonValue;
-      value = option.ButtonValue;
-    }
-    if (
-      lastChat.type === "confirmation" &&
-      lastChat?.input?.inputText &&
-      lastChat?.input?.masked
-    ) {
-      selected = option
-        .split("")
-        .map(() => "•")
-        .join("");
-    }
-    let newChats = [
-      ...chats
-    ];
- 
-    if (inputMessages) {
-      inputMessages.forEach(msg => {
-        newChats.push({ messages: [msg], sender: "bot" })
-      })
-    }
- 
-    newChats.push({ messages: [{ text: selected }], sender: "user" })
-    newChats.push({ isLoading: true, value, sender: "bot" })
- 
-    setChats(newChats);
-  };
- 
-  useEffect(()=>{
-    console.log(carouselData,"aman")
-  },[carouselData]);
- 
-  useEffect(() => {
-    if (chats.length && lastChat?.isLoading) {
-      (async function () {
-        const params = getLexParams(lastChat?.value, sessionId);
- 
-        try {
-          const res = await lexV2Client.send(new RecognizeTextCommand(params));
-          const content = JSON.parse(res?.messages?.[0]?.content || "{}");
-          let newChats = [...chats];
- 
-          console.log("Content: ", content);
-          console.log("Chats: ", newChats);
- 
-          console.log("Before: ", inputType);
- 
-          if(
-            content.type === "confirmation" &&
-            content?.input?.inputText &&
-            content?.input?.inputType === "date"
-          ) {
-            setInputType("date");
-          } else if(
-            content.type === "confirmation" &&
-            content?.input?.inputText &&
-            content?.input?.masked
-          ) {
-            setInputType("password");
-          } else if(
-            content.type === "confirmation" &&
-            content?.input?.inputText &&
-            content?.input?.inputType === "upload"
-          ) {
-            setInputType("upload");
-          } else if(
-            content.type === "carousel" &&
-            content?.input?.carousel
-          ) {
-            setShowCarousel("true");
-            // console.log("Carousel Data: ", content.input.carousel);
-            content.input.carousel.map((items, index) => {
-              setCarouselData([...carouselData, items]);
-            })
-          }
- 
-          console.log("After: ", inputType);
-          console.log("Shivam: ", carouselData);
- 
-          if (content.type) {
-            newChats[newChats.length - 1] = { ...content, sender: "bot" };
-          } else {
-            newChats[newChats.length - 1] = {
-              ...content,
-              endedTime: moment(new Date()).format("h:mm A"),
-              hasEnded: true,
-              sender: "bot",
-            };
-            setHasEnded(true);
-          }
-          setChats(newChats);
-        } catch (error) {
-          console.error(`got an error :${error.message}`);
-          throw error;
-        }
-      })();
-    }
-  }, [chats, lastChat]);
- 
-  const startNewChat = useCallback(async () => {
-    const params = getLexParams("Intial intent", sessionId);
-    try {
-      const res = await lexV2Client.send(new RecognizeTextCommand(params));
-      const content = JSON.parse(res?.messages?.[0]?.content || "{}");
-      setChats((prev) => [
-        ...prev,
-        { hasStarted: true, startedTime: moment(new Date()).format("h:mm A") },
-        { ...content, sender: "bot" },
-      ]);
-      setHasEnded(false);
-    } catch (error) {
-      console.error(`got an error :${error.message}`);
-      throw error;
-    }
-  }, [sessionId]);
- 
-  const onCreditCardClose = () => {
-    let newChats = [
-      ...chats,
-      { messages: [{ text: "close" }], sender: "user" },
-      { isLoading: true, sender: "bot", value: 'close' },
-    ].filter((chat) => chat.type !== "creditCard");
-    setChats(newChats);
-    setShowCreditForm(false);
-  };
- 
-  const onCarouselClose = () => {
-    let newChats = [
-      ...chats,
-      { messages: [{ text: "close" }], sender: "user" },
-      { isLoading: true, sender: "bot", value: 'close' },
-    ].filter((chat) => chat.type !== "creditCard");
-    setChats(newChats);
-    setShowCarousel(false);
-  };
- 
-  const displayChange = () => {
-    if (showCreditForm) {
-      return <CreditCard onClose={onCreditCardClose} />;
-    } else if (showCarousel) {
-      // return <Carousel />;
-      // return <Carousel onClose={onCarouselClose} data={carouselData} />;
-    } else {
-      return <>
-                <ChatboxContent
-                  chats={chats}
-                  onOptionClick={onOptionClick}
-                  hasEnded={hasEnded}
-                  startNewChat={startNewChat}
-                  setShowCreditForm={setShowCreditForm}
-                />
- 
-                <ChatboxInput lastChat={lastChat} onOptionClick={onOptionClick} type={inputType}/>
-              </>;
+export default class SimulationMarketingAnalysis extends LightningElement {
+  @api recordId;
+  @track customer360;
+  icon = INTERACTION_HISTORY;
+  eye = EYE_ICON;
+  marketingAnalysis = [];
+  analysis = [];
+  @track marketAnalysisData ='';
+
+  connectedCallback () {
+    console.log("recordId", this.recordId);
+    this.loadStaticData();
+    console.log(this.customer360,"customer360")
+  }
+
+
+  loadStaticData() {
+fetch(marketDataJson)
+  .then(response => response.json())
+  .then(data => {
+    this.marketAnalysisData = data.description;
+  })
+  .catch(error => console.log(error));
+  }
+
+  @wire(getRecord,{recordId:"$recordId", fields:[CUSTOMER360_FIELD]})
+  wiredRecord({ error, data }) {
+    if (data) {
+      console.log("customer360",this.recordId)
+      this.customer360 = getFieldValue(data, CUSTOMER360_FIELD);
+      console.log("customer360", this.customer360);
+    } else if (error) {
+      console.log(error);
     }
   }
- 
-  return (
-    <main
-      className={styles.wrapper}
-      style={{ top: chats.length > 1 || showCreditForm || showCarousel ? "50px" : "25%" }}
-    >
-      <>
-        <ChatboxHeader
-          size={chats.length > 1 || showCreditForm || showCarousel ? "sm" : "lg"}
-          showCredit={showCreditForm}
-        />
- 
-        {displayChange()}
- 
-      </>
-    </main>
-  );
-};
- 
-export default Chatbox;
- 
-has context menu
+  // @wire(fetchCustomerData, { recordID: "$recordId" })
+  // wiredCustomerData({ error, data }) {
+  //   console.log("recordID",this.recordId)
+  //   if (data) {
+  //     const parsedData = JSON.parse(data);
+  //     console.log("parsedData :", parsedData.marketingAnalysis);
+  //     this.analysis = parsedData.marketingAnalysis;
+  //     this.marketingAnalysis = this.analysis;
+  //     console.log("Marketing Analysis Information:", this.marketingAnalysis);
+  //     // Convert rates object to array
+  //     const ratesArray = Object.keys(this.marketingAnalysis.rates).map(
+  //       (key) => ({
+  //         key: key,
+  //         value: this.marketingAnalysis.rates[key]
+  //       })
+  //     );
+  //     this.rateData = ratesArray;
+  //     console.log("rates Arry :", this.rateData);
+  //   } else if (error) {
+  //     console.error("Error fetching customer data:", error);
+  //   }
+  // }
+}
+
+
+{
+    "interActionHistory": [
+        {
+            "resolution": "Resolved",
+            "date": "14/01/24",
+            "description": "complaint about high premium"
+        },
+        {
+            "resolution": "Unresolved",
+            "date": "14/01/24",
+            "description": "Query about policy coverage, Complaint about claim processing"
+        }
+    ],
+    "accountInformation": [
+        {
+            "labels": [
+                {
+                    "value": "savings",
+                    "key": "Account Type"
+                },
+                {
+                    "value": "Rs 10,000",
+                    "key": "Balance"
+                },
+                {
+                    "value": "Rs 200 withdrawal 14/2/24",
+                    "key": "Last Transaction"
+                }
+            ],
+            "headerValue": "12322435",
+            "headerAttributer": "Account Number"
+        },
+        {
+            "labels": [
+                {
+                    "value": "car loan",
+                    "key": "Account Type"
+                },
+                {
+                    "value": "Rs 12,00,000",
+                    "key": "Liability"
+                }
+            ],
+            "headerValue": "56778899",
+            "headerAttributer": "Account Number"
+        }
+    ],
+    "lifeEvents": [
+        {
+            "event": "recently married",
+            "date": "12/1/24"
+        },
+        {
+            "event": "new car",
+            "date": "24/12/23"
+        },
+        {
+            "event": "graduated",
+            "date": "12/3/21"
+        }
+    ],
+    "riskAssessment": {
+        "summary": [
+            {
+                "description": "No late payments in the last 12 months"
+            },
+            {
+                "description": "Low risk for loan default"
+            }
+        ],
+        "riskCategory": "LOW",
+        "creditScore": 750
+    },
+    "nextBestAction": [
+        {
+            "button": "Take Action",
+            "description": "discuss the benefits of a higher-tier savings account"
+        },
+        {
+            "button": "Take Action",
+            "description": "offer a home loan considering his recent browsing session"
+        },
+        {
+            "button": "Take Action",
+            "description": "discuss about the FD schema"
+        }
+    ],
+    "marketingAnalysis": {
+        "button": "See All Customer Marketing Activities",
+        "summary": [
+            {
+                "description": "responds well to email marketing (30% open rate)"
+            },
+            {
+                "description": "has clicked on 3 FD schema promotional offers in app"
+            }
+        ],
+        "rates": {
+            "clickRate": "12",
+            "openRate": "30"
+        }
+    },
+    "customerInformation": {
+        "email": "john@email.com",
+        "contact": 495405045,
+        "location": "Delhi",
+        "gender": "male",
+        "age": 35,
+        "name": "John"
+    }
+}
