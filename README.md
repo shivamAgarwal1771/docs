@@ -1,633 +1,427 @@
-import React from 'react'
-import { CiCircleRemove } from "react-icons/ci"
+import React, { useEffect, useRef } from 'react'
+import Slider from 'react-slick'
+import 'slick-carousel/slick/slick.css'
+import 'slick-carousel/slick/slick-theme.css'
+import { GrCaretPrevious, GrCaretNext } from "react-icons/gr"
+import { DisplayAudits, DisplaySentiment, DisplayAIWiki, DisplayChannelTime, DisplayWorkflow } from './Display'
+import { AI_ASSISTANT_TYPE } from '../../../utility/constants'
 
-// export function DisplayInsights({objIndex, insights, handleRemoveInsight, handleEditInsightsAuditsWiki}) {
-//   const handleInsightEdit = (index, field, newValue) => {
-//     const newInsights = [...insights]
-//     newInsights[index][field] = newValue
-//     handleEditInsightsAuditsWiki(objIndex, 'Insights', newInsights)
-//   }
-
-//   return(
-//     <>
-//         {insights.map((insight, index) => (
-//           <div key={index} className='transctpit-div-child' >
-//             <label className='transcript-div-label'>Insight</label>
-
-//             <input
-//               className='transctpit-div-grandchild transcript-div-input'
-//               type="text"
-//               placeholder='Value'
-//               value={insight.value}
-//               onChange={(e) => handleInsightEdit(index, 'value', e.target.value)}
-//               required
-//             />
-
-//             <input
-//               className='transctpit-div-grandchild transcript-div-input'
-//               type="text"
-//               placeholder='Type'
-//               value={insight.type}
-//               onChange={(e) => handleInsightEdit(index, 'type', e.target.value)}
-//               required
-//             />
-
-//             <input
-//               className='transctpit-div-grandchild transcript-div-input'
-//               type="text"
-//               placeholder='Actor'
-//               value={insight.actor}
-//               onChange={(e) => handleInsightEdit(index, 'actor', e.target.value)}
-//               required
-//             />
-
-//             <input
-//               className='transctpit-div-grandchild transcript-div-input'
-//               type="text"
-//               placeholder='Entity'
-//               value={insight.entity}
-//               onChange={(e) => handleInsightEdit(index, 'entity', e.target.value)}
-//               required
-//             />
-
-//             <button className='transcript-div-remove' onClick={() => handleRemoveInsight(objIndex, index)}>
-//               <CiCircleRemove size={24} />
-//             </button>
-//           </div>
-//         ))}
-//     </>
-//   )
-// }
-
-
-
-export function DisplayAudits({ objIndex, audits, handleRemoveAudit, handleEditInsightsAuditsWiki }) {
-
-  const handleAuditEdit = (index, field, newValue) => {
-    const newAudits = [...audits]
-    newAudits[index][field] = newValue
-    handleEditInsightsAuditsWiki(objIndex, 'Audits', newAudits)
-  }
-
-  const handleAddQuestion = (index) => {
-    const newAudits = [...audits]
-    newAudits[index].questions.push({ question: '', auditResponse: '', options: [] })
-    handleEditInsightsAuditsWiki(objIndex, 'Audits', newAudits)
-  }
-
-  const handleAddOption = (index, quesInd) => {
-    const newAudits = [...audits]
-    newAudits[index].questions[quesInd].options.push('')
-    handleEditInsightsAuditsWiki(objIndex, 'Audits', newAudits)
-  }
-
-  const handleEditQuestion = (index, quesInd, type, value) => {
-    const newAudits = [...audits]
-    newAudits[index].questions[quesInd][type] = value
-    handleEditInsightsAuditsWiki(objIndex, 'Audits', newAudits)
-  }
-
-  const handleEditOption = (index, quesInd, optInd, value) => {
-    const newAudits = [...audits]
-    newAudits[index].questions[quesInd].options[optInd] = value
-    handleEditInsightsAuditsWiki(objIndex, 'Audits', newAudits)
-  }
-
-  const handleRemoveQuestion = (index, quesInd) => {
-    const newAudits = [...audits]
-    newAudits[index].questions.splice(quesInd, 1)
-    handleEditInsightsAuditsWiki(objIndex, 'Audits', newAudits)
-  }
-
-  const handleRemoveOption = (index, quesInd, optInd) => {
-    const newAudits = [...audits]
-    newAudits[index].questions[quesInd].options.splice(optInd, 1)
-    handleEditInsightsAuditsWiki(objIndex, 'Audits', newAudits)
-  }
-
-  return (
-    <>
-      {audits.map((audit, index) => (
-        <>
-          <div key={index} className='transctpit-div-child' >
-            <label className='transcript-div-label'>Audit</label>
-            <input
-              className='transctpit-div-grandchild transcript-div-input'
-              type="text"
-              placeholder='Section'
-              value={audit.section}
-              onChange={(e) => handleAuditEdit(index, 'section', e.target.value)}
-            />
-
-            <select
-              className='transctpit-div-grandchild transcript-div-input'
-              onChange={(e) => handleAuditEdit(index, 'auditStatus', e.target.value)}
-              defaultValue={audit.auditStatus}
-              required
-            >
-              <option value={'FAIL'}>Fail</option>
-              <option value={'PASS'}>Pass</option>
-            </select>
-
-            <button
-              className='transcript-div-button'
-              onClick={() => handleAddQuestion(index)}
-            >
-              Add Question
-            </button>
-
-            <button className='transcript-div-remove' onClick={() => handleRemoveAudit(objIndex, index)}>
-              <CiCircleRemove size={24} />
-            </button>
-
-          </div>
-          <DisplayAuditQuestions auditInd={index} questions={audit.questions} handleEditQuestion={handleEditQuestion} handleEditOption={handleEditOption} handleRemoveQuestion={handleRemoveQuestion} handleRemoveOption={handleRemoveOption} handleAddOption={handleAddOption} />
-        </>
-      ))}
-    </>
-  )
+export const handleRemove = (index, transcript, setTranscript) => {
+  const newTranscript = [...transcript]
+  newTranscript.splice(index, 1)
+  setTranscript(newTranscript)
 }
 
-export function DisplayAuditQuestions({ auditInd, questions, handleEditQuestion, handleEditOption, handleRemoveQuestion, handleRemoveOption, handleAddOption }) {
-  return (
-    <>
-      {questions.map((question, quesIndex) => (
-        <>
-          <div key={quesIndex} className='transctpit-div-child' >
-            <label className='transcript-div-label'>Question</label>
-
-            <input
-              className='transctpit-div-grandchild transcript-div-input'
-              type="text"
-              placeholder='Question'
-              value={question.question}
-              onChange={(e) => {handleEditQuestion(auditInd, quesIndex, 'question', e.target.value) }}
-              required
-            />
-
-            <input
-              className='transctpit-div-grandchild transcript-div-input'
-              type="text"
-              placeholder='Audit Response'
-              value={question.auditResponse}
-              onChange={(e) => {handleEditQuestion(auditInd, quesIndex, 'auditResponse', e.target.value) }}
-              required
-            />
-
-            <button
-              className='transcript-div-button'
-              onClick={() => handleAddOption(auditInd, quesIndex)}
-            >
-              Add Option
-            </button>
-
-            <button className='transcript-div-remove' onClick={() => handleRemoveQuestion(auditInd, quesIndex)}>
-              <CiCircleRemove size={24} />
-            </button>
-          </div>
-
-          <DisplayOptions options={question.options} auditInd={auditInd} quesIndex={quesIndex} handleRemoveOption={handleRemoveOption} handleEditOption={handleEditOption} />
-        </>
-      ))}
-    </>
-  )
+export const handleAddRecommendation = (index, prevEndTime, nextStartTime, transcript, setTranscript, setIndex, type) => {
+  const newTranscript = [...transcript]
+  let newStartTime = (Number(prevEndTime) + Number(nextStartTime)) / 2
+  let recommendation = {
+    "StartTime": newStartTime.toFixed(3),
+    "EndTime": (newStartTime + 1).toFixed(3),
+    "eventData": {
+      "Transcript": {
+        "Transcript": '{"Title":"","subTitle":"","message":""}',
+        "ChannelId": "AGENT_ASSISTANT",
+        "StartTime": newStartTime.toFixed(3),
+        "EndTime": (newStartTime + 1).toFixed(3),
+        "IsPartial": false,
+        "ResultId": "result_id_example",
+        "Sentiment": "Neutral",
+        "SentimentScore": {
+          "Positive": 0.1,
+          "Negative": 0.1,
+          "Neutral": 0.8,
+          "Mixed": 0
+        }
+      },
+      "Audits": []
+    }
+  }
+  if (type === 'before') {
+    newTranscript.splice(index, 0, recommendation)
+    setIndex(index)
+  } else {
+    newTranscript.splice(index + 1, 0, recommendation)
+    setIndex(index + 1)
+  }
+  setTranscript(newTranscript)
 }
 
-export function DisplayOptions({ options, auditInd, quesIndex, handleRemoveOption, handleEditOption }) {
-  return (
-    <>
-      {options.map((option, optInd) => (
-        <div key={optInd} className='transctpit-div-child' >
-          <label className='transcript-div-label'>Option</label>
+function Body({ transcript, setTranscript, setIndex, index }) {
+  let sliderRef = useRef(null)
 
-          <input
-            className='transctpit-div-grandchild transcript-div-input'
-            type="text"
-            placeholder='Option'
-            value={option}
-            onChange={(e) => { handleEditOption(auditInd, quesIndex, optInd, e.target.value) }}
-            required
-          />
+  useEffect(() => {
+    sliderRef.slickGoTo(index)
+  }, [index])
 
-          <button className='transcript-div-remove' onClick={() => handleRemoveOption(auditInd, quesIndex, optInd)}>
-            <CiCircleRemove size={24} />
-          </button>
-        </div>
-      ))}
-    </>
-  )
-}
+  const handleEdit = (index, field, newValue) => {
+    const newTranscript = [...transcript]
+    newTranscript[index].eventData.Transcript[field] = newValue
+    setTranscript(newTranscript)
+  }
 
-export function DisplaySentiment({ objIndex, sentimentScore, handleEdit, handleAdjustSentiment }) {
-  const handleSentimentEdit = (field, newValue) => {
-    const newSentimentScore = { ...sentimentScore }
-    newSentimentScore[field] = newValue
-    handleEdit(objIndex, 'SentimentScore', newSentimentScore)
-    handleAdjustSentiment(objIndex)
+  const handleEditTime = (index, type, newValue) => {
+    const newTranscript = [...transcript]
+    newTranscript[index][type] = newValue
+    newTranscript[index].eventData.Transcript[type] = newValue
+    setTranscript(newTranscript)
+  }
+
+  const handleEditInsightsAuditsWiki = (index, type, newValue) => {
+    const newTranscript = [...transcript]
+    newTranscript[index].eventData[type] = newValue
+    setTranscript(newTranscript)
+  }
+
+  const handleEditKnowledgeArticle = (objIndex, type, value) => {
+    const newTranscript = [...transcript]
+    newTranscript[objIndex].eventData[type] = value
+    setTranscript(newTranscript)
+  }
+
+  const handleEditRecomendation = (index, field, newValue) => {
+    const newTranscript = [...transcript]
+    const newRecommendation = {
+      'Title': '',
+      'subTitle': '',
+      'message': ''
+    }
+    newRecommendation[field] = newValue
+    newTranscript[index].eventData.Transcript.Transcript = JSON.stringify(newRecommendation)
+    setTranscript(newTranscript)
+  }
+
+  const handleEditWorkflow = (objIndex, index, type, value) => {
+    const newTranscript = [...transcript]
+    newTranscript[objIndex].eventData.Guidance[index][type] = value
+    if (value !== 'running') {
+      newTranscript[objIndex].eventData.Guidance[index]["steps"] = []
+    }
+    setTranscript(newTranscript)
+  }
+
+  const handleEditSpeech = (objIndex, index, value) => {
+    const newTranscript = [...transcript]
+    newTranscript[objIndex].eventData.Guidance[index].value = value
+    setTranscript(newTranscript)
+  }
+
+  const handleEditWorkflowStep = (objIndex, guidInd, index, type, value) => {
+    const newTranscript = [...transcript]
+    let step = newTranscript[objIndex].eventData.Guidance[guidInd].steps[index]
+    if (type === 'stepName' || type === 'state') {
+      step[type] = value
+    }
+    if (type === 'type') {
+      step.card.type = value
+    }
+    if (type === 'text') {
+      step.card.messages[0].text = value
+    }
+    newTranscript[objIndex].eventData.Guidance[guidInd].steps[index] = step
+    setTranscript(newTranscript)
+  }
+
+  const handleRemoveAudit = (index, auditIndex) => {
+    const newTranscript = [...transcript]
+    newTranscript[index]?.eventData?.Audits.splice(auditIndex, 1)
+    setTranscript(newTranscript)
+  }
+
+  const handleRemoveWiki = (index, wikiIndex) => {
+    const newTranscript = [...transcript]
+    newTranscript[index].eventData.AIWikiChat.splice(wikiIndex, 1)
+    setTranscript(newTranscript)
+  }
+
+  const handleRemoveGuidance = (index, guidInd) => {
+    const newTranscript = [...transcript]
+    newTranscript[index].eventData.Guidance.splice(guidInd, 1)
+    setTranscript(newTranscript)
+  }
+
+  const handleRemoveWorkflowStep = (index, guidInd, stepInd) => {
+    const newTranscript = [...transcript]
+    newTranscript[index].eventData.Guidance[guidInd].steps.splice(stepInd, 1)
+    setTranscript(newTranscript)
+  }
+
+  const handleRemoveKnowledgeArticle = (index, guidInd) => {
+    const newTranscript = [...transcript]
+    newTranscript[index]?.eventData?.Guidance.splice(guidInd, 1)
+    setTranscript(newTranscript)
+  }
+
+  const handleAddAudit = (index, newAudit) => {
+    const newTranscript = [...transcript]
+
+    if (newTranscript[index].eventData.Audits) {
+      newTranscript[index].eventData.Audits.push(newAudit)
+    } else {
+      newTranscript[index].eventData['Audits'] = []
+      newTranscript[index].eventData.Audits.push(newAudit)
+    }
+    setTranscript(newTranscript)
+  }
+
+  const handleAddWiki = (index, newWiki) => {
+    const newTranscript = [...transcript]
+    let chats = newTranscript[index].eventData.AIWikiChat ?
+      newTranscript[index].eventData.AIWikiChat :
+      []
+    chats.push(newWiki)
+    newTranscript[index].eventData.AIWikiChat = chats
+    setTranscript(newTranscript)
+  }
+
+  const handleAdjustSentiment = (index) => {
+    const newTranscript = [...transcript]
+    let pos = newTranscript[index].eventData.Transcript.SentimentScore.Positive
+    let neg = newTranscript[index].eventData.Transcript.SentimentScore.Negative
+    let neu = newTranscript[index].eventData.Transcript.SentimentScore.Neutral
+
+    let sen = Math.max(pos, neg, neu) === pos ? "Positive" : Math.max(pos, neg, neu) === neg ? "Negative" : "Neutral"
+
+    newTranscript[index].eventData.Transcript.Sentiment = sen
+    setTranscript(newTranscript)
+  }
+
+  const handleAddSpeechSuggestion = (index, value) => {
+    const newTranscript = [...transcript]
+    let guidance = {
+      "type": AI_ASSISTANT_TYPE.SPEECH_SUGGESTION,
+      "name": "Speech Suggestion",
+      "value": value
+    }
+    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
+    Gui.push(guidance)
+    newTranscript[index].eventData.Guidance = Gui
+    setTranscript(newTranscript)
+  }
+
+  const handleAddActionWorkflow = (index, type, intent, name) => {
+    const newTranscript = [...transcript]
+    let guidance = {
+      "type": AI_ASSISTANT_TYPE.ACTION_WORKFLOW,
+      "cardShown": true,
+      "workflowType": type,
+      "intent": intent,
+      "name": name,
+      "steps": []
+    }
+    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
+    Gui.push(guidance)
+    newTranscript[index].eventData.Guidance = Gui
+    setTranscript(newTranscript)
+  }
+
+  const handleAddWorkflowStep = (index, guidInd, name, state, type, text) => {
+    const newTranscript = [...transcript]
+    let runningFlow = newTranscript[index].eventData.Guidance[guidInd]
+    if (runningFlow.workflowType !== 'running') {
+      return
+    }
+
+    let step = {
+      "stepName": name,
+      "state": state,
+      "card": {
+        "type": type,
+        "isEditable": false,
+        "messages": [
+          {
+            "text": text
+          }
+        ]
+      }
+    }
+
+    runningFlow.steps.push(step)
+
+    newTranscript[index].eventData.Guidance[guidInd] = runningFlow
+    setTranscript(newTranscript)
+  }
+
+  const handleStartActionWorkflow = (index, intent) => {
+    const newTranscript = [...transcript]
+    let guidance = {
+      "type": AI_ASSISTANT_TYPE.ACTION_WORKFLOW,
+      "cardShown": false,
+      "intent": intent,
+    }
+    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
+    Gui.push(guidance)
+    newTranscript[index].eventData.Guidance = Gui
+    setTranscript(newTranscript)
+  }
+
+  const handleClick = (index) => {
+    let falseworkflow = true
+
+    transcript.forEach(element => {
+      element?.eventData?.Guidance?.forEach(el => {
+        if (el?.cardShown === false) {
+          falseworkflow = false
+        }
+      })
+    })
+
+    if (falseworkflow) {
+      handleStartActionWorkflow(index, '')
+    }
+  }
+
+  const handleAddKnowledgeArticle = (index) => {
+    const newTranscript = [...transcript]
+    let guidance = {
+      "type": AI_ASSISTANT_TYPE.KNOWLEDGE_ARTICLE,
+      "name": '',
+      "value": []
+    }
+    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
+    Gui.push(guidance)
+    newTranscript[index].eventData.Guidance = Gui
+    setTranscript(newTranscript)
   }
 
   return (
-    <>
-      {sentimentScore ?
-        <div className='transctpit-div-child'>
+    <Slider
+      dots={false}
+      infinite={false}
+      speed={250}
+      slidesToShow={1}
+      slidesToScroll={1}
+      draggable = {false}
+      prevArrow={<GrCaretPrevious color='black' />}
+      nextArrow={<GrCaretNext color='black' />}
+      afterChange={(current) => { setIndex(current) }}
+      ref={slider => { sliderRef = slider }}
+    >
+      {transcript.map((obj, index) => {
+        let text = obj.eventData.Transcript.Transcript
+        let channelId = obj.eventData.Transcript.ChannelId
 
-          <label className='transcript-div-label'>Sentiment</label>
+        let isRecommendation = text && text.includes('"Title"') && channelId === 'AGENT_ASSISTANT' ? JSON.parse(text) : null
 
-          <input
-            className='transctpit-div-grandchild transcript-div-input'
-            type="number"
-            step="0.01"
-            placeholder='Positive'
-            value={sentimentScore.Positive}
-            onChange={(e) => handleSentimentEdit('Positive', parseFloat(e.target.value))}
-            required
-          />
+        return (
+          <div key={index} className='transctpit-div'>
 
-          <input
-            className='transctpit-div-grandchild transcript-div-input'
-            type="number"
-            step="0.01"
-            placeholder='Negative'
-            value={sentimentScore.Negative}
-            onChange={(e) => handleSentimentEdit('Negative', parseFloat(e.target.value))}
-            required
-          />
-
-          <input
-            className='transctpit-div-grandchild transcript-div-input'
-            type="number"
-            step="0.01"
-            placeholder='Neutral'
-            value={sentimentScore.Neutral}
-            onChange={(e) => handleSentimentEdit('Neutral', parseFloat(e.target.value))}
-            required
-          />
-
-        </div>
-        : null}
-    </>
-  )
-}
-
-export function DisplayAIWiki({ objIndex, wikiChats, handleEditInsightsAuditsWiki, handleRemoveWiki }) {
-  const handleWikiEdit = (index, type, newValue) => {
-    const newWikiChats = [...wikiChats]
-    newWikiChats[index][type] = newValue
-    handleEditInsightsAuditsWiki(objIndex, 'AIWikiChat', newWikiChats)
-  }
-
-  return (
-    <>
-      {wikiChats.map((chat, index) => (
-        <div key={index} className='transctpit-div-child' >
-          <label className='transcript-div-label'>Wiki</label>
-          <input
-            className='transctpit-div-grandchild transcript-div-input'
-            type="text"
-            placeholder='User'
-            value={chat.user}
-            onChange={(e) => handleWikiEdit(index, 'user', e.target.value)}
-            required
-          />
-
-          <input
-            className='transctpit-div-grandchild transcript-div-input'
-            type="text"
-            placeholder='Utterance'
-            value={chat.utterance}
-            onChange={(e) => handleWikiEdit(index, 'utterance', e.target.value)}
-            required
-          />
-
-          <button className='transcript-div-remove' onClick={() => handleRemoveWiki(objIndex, index)}>
-            <CiCircleRemove size={24} />
-          </button>
-
-        </div>
-      ))}
-    </>
-  )
-}
-
-export function DisplayChannelTime({ obj, index, handleEdit, handleEditTime }) {
-  return (
-    <div className='transcript-div-child'>
-      <label className='transcript-div-label'>Channel:</label>
-      <input
-        className='transcript-div-input'
-        type="text"
-        placeholder='Channel ID'
-        value={obj.eventData.Transcript.ChannelId}
-        onChange={(e) => handleEdit(index, 'ChannelId', e.target.value)}
-        required
-      />
-
-      <label className='transcript-div-label'>Start Time:</label>
-      <input
-        className='transcript-div-input'
-        type="number"
-        placeholder='Start Time'
-        value={obj.StartTime}
-        onChange={(e) => handleEditTime(index, 'StartTime', e.target.value)}
-        required
-      />
-
-      <label className='transcript-div-label'>End Time:</label>
-      <input
-        className='transcript-div-input'
-        type="number"
-        placeholder='End Time'
-        value={obj.EndTime}
-        onChange={(e) => handleEditTime(index, 'EndTime', e.target.value)}
-        required
-      />
-    </div>
-  )
-}
-
-export function DisplayWorkflow({ objIndex, guidance, handleEditWorkflow, handleEditWorkflowStep, handleEditKnowledgeArticle, handleRemoveKnowledgeArticle, handleAddWorkflowStep, handleRemoveGuidance, handleRemoveWorkflowStep, handleEditSpeech }) {
-  return (
-    <>
-      {guidance.map((item, index) => (
-        item.type === 'KNOWLEDGE_ARTICLE' ?
-          <div key={index} className="transctpit-div-child">
-            <DisplayKnowledgeArticle objIndex={objIndex} transcript={guidance} index={index} item={item} handleEditKnowledgeArticle={handleEditKnowledgeArticle} handleRemoveKnowledgeArticle={handleRemoveKnowledgeArticle} />
-
-          </div>
-          :
-          item.type === 'ACTION_WORKFLOW' ? item.cardShown === false ?
-            <div key={index} className='transctpit-div-child' >
-              <label className='transcript-div-label'>Workflow</label>
-              Workflow starts here.
-            </div> :
-            <>
-              <div key={index} className='transctpit-div-child' >
-                <label className='transcript-div-label'>Workflow</label>
-                <select
-                  className='transctpit-div-grandchild transcript-div-input'
-                  onChange={(e) => { handleEditWorkflow(objIndex, index, 'workflowType', e.target.value) }}
+            <div className='transcript-div-child'>
+              {isRecommendation ?
+                <div className='transcript-div-recommendation'>
+                  <input
+                    className='transcript-div-recommendation-input'
+                    type="text"
+                    placeholder='Title'
+                    value={isRecommendation.Title}
+                    onChange={(e) => handleEditRecomendation(index, 'Title', e.target.value)}
+                    required
+                  />
+                  <input
+                    className='transcript-div-recommendation-input'
+                    type="text"
+                    placeholder='subTitle'
+                    value={isRecommendation.subTitle}
+                    onChange={(e) => handleEditRecomendation(index, 'subTitle', e.target.value)}
+                    required
+                  />
+                  <textarea
+                    className='transcript-div-textarea'
+                    type="text"
+                    placeholder='message'
+                    value={isRecommendation.message}
+                    onChange={(e) => handleEditRecomendation(index, 'message', e.target.value)}
+                    required
+                  />
+                </div> :
+                <textarea
+                  className='transcript-div-textarea'
+                  placeholder='Add recommendation / transcript here'
+                  value={text}
+                  onChange={(e) => handleEdit(index, 'Transcript', e.target.value)}
                   required
-                >
-                  <option value={'detected'}>Detected</option>
-                  <option value={'running'}>Running</option>
-                  <option value={'completed'}>Completed</option>
-                </select>
+                />}
+            </div>
 
-                <input
-                  className='transctpit-div-grandchild transcript-div-input'
-                  type="text"
-                  placeholder='Intent Detected'
-                  value={item.intent}
-                  onChange={(e) => { handleEditWorkflow(objIndex, index, 'intent', e.target.value) }}
-                  required
-                />
+            <div className='transcript-div-child'>
 
-                <input
-                  className='transctpit-div-grandchild transcript-div-input'
-                  style={{ width: '25%' }}
-                  type="text"
-                  placeholder='Name of Workflow'
-                  value={item.name}
-                  onChange={(e) => { handleEditWorkflow(objIndex, index, 'name', e.target.value) }}
-                  required
-                />
+              <button
+                className='transcript-div-button'
+                onClick={() => handleAddAudit(index, { section: "", auditStatus: "FAIL", questions: [] })}
+              >
+                Add Audit
+              </button>
 
-                {item.workflowType === 'running' &&
-                  <button
-                    className='transcript-div-button'
-                    onClick={() => handleAddWorkflowStep(objIndex, index, '', 'InProgress', 'textBox', '')}
-                  >
-                    Add Step
-                  </button>}
+              <button
+                className='transcript-div-button'
+                onClick={() => handleAddWiki(index, { user: '', utterance: '' })}
+              >
+                Add AI Wiki
+              </button>
 
-                <button className='transcript-div-remove' onClick={() => handleRemoveGuidance(objIndex, index)}>
-                  <CiCircleRemove size={24} />
-                </button>
+              <button
+                className='transcript-div-button'
+                onClick={() => handleAddSpeechSuggestion(index, '')}
+              >
+                Add Speech Suggestion
+              </button>
 
-              </div>
-              {item.workflowType === 'running' && <DisplaySteps objIndex={objIndex} guidInd={index} steps={item.steps} handleEditWorkflowStep={handleEditWorkflowStep} handleRemoveWorkflowStep={handleRemoveWorkflowStep} />}
-            </>
-            : item.type === 'SPEECH_SUGGESTION' ?
-              <DisplaySpeechSuggestion objIndex={objIndex} guidInd={index} item={item} handleEditSpeech={handleEditSpeech} handleRemoveGuidance={handleRemoveGuidance} /> : null
-      ))}
-      {/* 
-        {guidance.map((item, index)=>
-        item.type === 'ACTION_WORKFLOW' && item.cardShown === false &&
-        <div key={index} className='transctpit-div-child' >
-          <label className='transcript-div-label'>Workflow</label>
-          <input />
-        </div>
+              <button
+                className='transcript-div-button'
+                onClick={() => handleAddActionWorkflow(index, 'detected', '', '')}
+              >
+                Add Action Workflow
+              </button>
 
-        ))} */}
-    </>
-  )
-}
+              <button
+                className='transcript-div-button'
+                onClick={() => handleClick(index, '')}
+              >
+                Start Action Workflow
+              </button>
 
-export function DisplayKnowledgeArticle({ objIndex, transcript, index, item, handleEditKnowledgeArticle, handleRemoveKnowledgeArticle }) {
+              <button
+                className='transcript-div-button'
+                onClick={() => handleAddKnowledgeArticle(index)}
+              >
+                Add Knowledge Article
+              </button>
 
-  const handleEditName = (index, nameValue) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].name = nameValue
-    handleEditKnowledgeArticle(objIndex, 'Guidance', newTranscript)
-  }
+              <button
+                className="transcript-div-button"
+                onClick={() => { handleAddRecommendation(index, (index !== 0 ? transcript[index - 1].EndTime : 0), obj.StartTime, transcript, setTranscript, setIndex, 'before') }}
+              >
+                Add Guidance Before
+              </button>
 
-  const handleAddValue = (index) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].value.push({ title: '', detail: [] })
-    handleEditKnowledgeArticle(objIndex, 'Guidance', newTranscript)
-  }
+              <button
+                className="transcript-div-button"
+                onClick={() => { handleAddRecommendation(index, obj.EndTime, (index !== transcript.length - 1 ? transcript[index + 1].StartTime : obj.EndTime), transcript, setTranscript, setIndex) }}
+              >
+                Add Guidance After
+              </button>
 
-  const handleAddDetail = (index, valueInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].value[valueInd].detail.push('')
-    handleEditKnowledgeArticle(objIndex, 'Guidance', newTranscript)
-  }
+              <button className='transcript-div-button' onClick={() => handleRemove(index, transcript, setTranscript)}>
+                Remove Event
+              </button>
 
-  const handleEditValue = (index, valueInd, type, value) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].value[valueInd][type] = value
-    handleEditKnowledgeArticle(objIndex, 'Guidance', newTranscript)
-  }
+            </div>
 
-  const handleEditDetail = (index, valueInd, detailInd, value) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].value[valueInd].detail[detailInd] = value
-    handleEditKnowledgeArticle(objIndex, 'Guidance', newTranscript)
-  }
+            <DisplayChannelTime obj={obj} index={index} handleEdit={handleEdit} handleEditTime={handleEditTime} />
 
-  const handleRemoveValue = (index, valueInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].value.splice(valueInd, 1)
-    handleEditKnowledgeArticle(objIndex, 'Guidance', newTranscript)
-  }
+            <DisplayAudits objIndex={index} audits={obj.eventData.Audits ? obj.eventData.Audits : []} handleRemoveAudit={handleRemoveAudit} handleEditInsightsAuditsWiki={handleEditInsightsAuditsWiki} />
 
-  const handleRemoveDetail = (index, valueInd, detailInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].value[valueInd].detail.splice(detailInd, 1)
-    handleEditKnowledgeArticle(objIndex, 'Guidance', newTranscript)
-  }
+            <DisplaySentiment objIndex={index} sentimentScore={obj.eventData.Transcript.SentimentScore} handleEdit={handleEdit} handleAdjustSentiment={handleAdjustSentiment} />
 
+            <DisplayAIWiki objIndex={index} wikiChats={obj.eventData.AIWikiChat ? obj.eventData.AIWikiChat : []} handleEditInsightsAuditsWiki={handleEditInsightsAuditsWiki} handleRemoveWiki={handleRemoveWiki} />
 
-  return (
-    <div>
-      <>
-        <label className="transcript-div-label">Knowledge Article</label>
-        <input
-          className='transctpit-div-grandchild transcript-div-input'
-          type="text"
-          placeholder='Name'
-          value={item.name}
-          onChange={(e) => { handleEditName(index, e.target.value) }}
-          required
-        />
-        <button
-          className='transcript-div-button'
-          onClick={(e) => handleAddValue(index)}
-        >
-          Add Value
-        </button>
+            <DisplayWorkflow objIndex={index} guidance={obj.eventData.Guidance ? obj.eventData.Guidance : []} handleEditWorkflow={handleEditWorkflow} handleEditWorkflowStep={handleEditWorkflowStep} handleAddWorkflowStep={handleAddWorkflowStep} handleEditKnowledgeArticle={handleEditKnowledgeArticle} handleRemoveKnowledgeArticle={handleRemoveKnowledgeArticle} handleRemoveGuidance={handleRemoveGuidance} handleRemoveWorkflowStep={handleRemoveWorkflowStep} handleEditSpeech={handleEditSpeech} />
 
-        <button className='transcript-div-remove' onClick={() => handleRemoveKnowledgeArticle(objIndex, index)}>
-          <CiCircleRemove size={24} />
-        </button>
-      </>
-      <DisplayValue objIndex={objIndex} guidInd={index} value={item.value} handleEditValue={handleEditValue} handleRemoveValue={handleRemoveValue} handleAddDetail={handleAddDetail} handleEditDetail={handleEditDetail} handleRemoveDetail={handleRemoveDetail} />
-    </div>
-  )
-}
-
-export function DisplayValue({objIndex, guidInd, value, handleEditValue, handleRemoveValue, handleAddDetail, handleEditDetail, handleRemoveDetail }) {
-  return (
-    <>
-      {value.map((item, index) => (
-        <>
-          <div key={index} className='transctpit-div-child' >
-            <label className='transcript-div-label'>Value</label>
-            <input
-              className='transctpit-div-grandchild transcript-div-input'
-              type="text"
-              placeholder='title'
-              value={item.title}
-              onChange={(e) => { handleEditValue(guidInd, index, 'title', e.target.value) }}
-              required
-            />
-
-            <button
-              className='transcript-div-button'
-              onClick={(e) => handleAddDetail(guidInd, index)}
-            >
-              Add Detail
-            </button>
-
-            <button className='transcript-div-remove' onClick={() => handleRemoveValue(guidInd, index)}>
-              <CiCircleRemove size={24} />
-            </button>
           </div>
-          <DisplayDetail guidInd={guidInd} valueInd={index} detail={item.detail} handleEditDetail={handleEditDetail} handleRemoveDetail={handleRemoveDetail} />
-        </>
-      ))}
-    </>
+        )
+      })}
+    </Slider>
   )
 }
 
-export function DisplayDetail({ guidInd, valueInd, detail, handleEditDetail, handleRemoveDetail }) {
-  return (
-    <>
-      {detail.map((item, index) => (
-        <div key={index} className='transctpit-div-child' >
-          <label className='transcript-div-label'>Detail</label>
-          <input
-            className='transctpit-div-grandchild transcript-div-input'
-            type="text"
-            placeholder='detail'
-            value={item.detail}
-            onChange={(e) => { handleEditDetail(guidInd, valueInd, index, e.target.value) }}
-            required
-          />
-
-          <button className='transcript-div-remove' onClick={() => handleRemoveDetail(guidInd, valueInd, index)}>
-            <CiCircleRemove size={24} />
-          </button>
-        </div>
-
-      ))}
-    </>
-  )
-}
-
-
-export function DisplaySteps({ objIndex, guidInd, steps, handleEditWorkflowStep, handleRemoveWorkflowStep }) {
-  return (
-    <>
-      {steps.map((item, index) => (
-        <div key={index} className='transctpit-div-child' >
-          <label className='transcript-div-label'>Step</label>
-          <input
-            className='transctpit-div-grandchild transcript-div-input'
-            type="text"
-            placeholder='Step Name'
-            value={item.stepName}
-            onChange={(e) => { handleEditWorkflowStep(objIndex, guidInd, index, 'stepName', e.target.value) }}
-            required
-          />
-
-          <select
-            className='transctpit-div-grandchild transcript-div-input'
-            onChange={(e) => { handleEditWorkflowStep(objIndex, guidInd, index, 'state', e.target.value) }}
-            defaultValue={item.card.type}
-            required
-          >
-            <option value={'InProgress'}>In Progress</option>
-            <option value={'Completed'}>Completed</option>
-            <option value={'None'}>None</option>
-          </select>
-
-          <select
-            className='transctpit-div-grandchild transcript-div-input'
-            onChange={(e) => { handleEditWorkflowStep(objIndex, guidInd, index, 'type', e.target.value) }}
-            defaultValue={item.card.type}
-            required
-          >
-            <option value={'textBox'}>Text Box</option>
-          </select>
-
-          <input
-            className='transctpit-div-grandchild transcript-div-input'
-            type="text"
-            placeholder='Text'
-            value={item.card.messages[0].text}
-            onChange={(e) => { handleEditWorkflowStep(objIndex, guidInd, index, 'text', e.target.value) }}
-            required
-          />
-
-          <button className='transcript-div-remove' onClick={() => handleRemoveWorkflowStep(objIndex, guidInd, index)}>
-            <CiCircleRemove size={24} />
-          </button>
-
-        </div>
-      ))}
-    </>
-  )
-}
-
-export function DisplaySpeechSuggestion({ objIndex, guidInd, item, handleEditSpeech, handleRemoveGuidance }) {
-  return (
-    <div className='transctpit-div-child' >
-      <label className='transcript-div-label'>Speech</label>
-
-      <input
-        className='transctpit-div-grandchild transcript-div-input'
-        style={{ width: '100%' }}
-        type="text"
-        placeholder='Speech Suggestion'
-        value={item.value}
-        onChange={(e) => { handleEditSpeech(objIndex, guidInd, e.target.value) }}
-        required
-      />
-
-      <button className='transcript-div-remove' onClick={() => handleRemoveGuidance(objIndex, guidInd)}>
-        <CiCircleRemove size={24} />
-      </button>
-    </div>
-  )
-}
+export default Body;
