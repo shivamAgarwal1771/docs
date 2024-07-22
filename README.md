@@ -1,1 +1,1 @@
-    typeof(option)==='string' && (option?.includes("data:image/") || option.includes("data:audio/") || option.includes("data:video/") || option.includes("application/pdf") || option.includes("application/vnd.openxmlformats")) ? value = "file uploaded" : value=option
+value = typeof(option) === 'string' && /^(data:image\/|data:audio\/|data:video\/|application\/pdf|application\/vnd\.openxmlformats)/.test(option) ? "file uploaded" : option;
