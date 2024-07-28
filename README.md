@@ -1,628 +1,339 @@
 <template>
-  <div class="whole-comp" if:true={showContent}>
-    <lightning-card>
-      <div slot="title" class="summary-header">
-        <img
-          src={icon}
-          alt="AI Assistant Icon"
-          style="margin-left: 2vh; height: 25px; width: 25px; margin-right: 2vh"
-        />
-        <div
-          slot="title"
-          style="
-            font-size: large;
-            font-weight: 600;
-            font-family: sans-serif;
-            margin-left: -3px;
-          "
-        >
-          Call Summary
-        </div>
-      </div>
-    </lightning-card>
-    <lightning-card>
-      <div class="call-info">
-        <template if:true={callInfo}>
-          <h2
-            slot="title"
-            style="
-              margin-left: 3vh;
-              font-size: 1rem;
-              font-weight: bold;
-              color: #373737;
-            "
-          >
-            Call Info
-          </h2>
-          <div
-            style="padding: 1vh 1vh 1vh 2vh; margin-top: -2vh; margin-left: 3vh"
-          >
-            <div>
-              <div style="margin: 1vh">
-                <table>
-                  <thead style="color: #a09fa3">
-                    <tr
-                      style="
-                        font-weight: bold;
-                        display: flex;
-                        width: 100%;
-                        align-items: center;
-                        justify-content: space-around;
-                      "
-                    >
-                      <th style="width: 50%">Intent Captured</th>
-                      <th style="width: 50%">Repeat Call</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- Loop through callInfo array -->
-                    <template for:each={callInfo} for:item="call">
-                      <tr
-                        key={call.Id}
-                        style="
-                          display: flex;
-                          width: 100%;
-                          align-items: center;
-                          justify-content: space-around;
-                        "
-                      >
-                        <td style="width: 50%">{call.intentCaptured}</td>
-                        <td style="width: 50%">{call.repeatCall}</td>
-                      </tr>
-                    </template>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            <div>
-              <div style="margin: 1vh">
-                <table>
-                  <thead style="color: #a09fa3">
-                    <tr
-                      style="
-                        font-weight: bold;
-                        display: flex;
-                        width: 100%;
-                        align-items: center;
-                        justify-content: space-around;
-                      "
-                    >
-                      <th style="width: 50%">Incoming Time</th>
-                      <th style="width: 50%">Call duration</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <!-- Loop through callInfo array -->
-                    <template for:each={callInfo} for:item="call">
-                      <tr
-                        key={call.Id}
-                        style="
-                          display: flex;
-                          width: 100%;
-                          align-items: center;
-                          justify-content: space-around;
-                        "
-                      >
-                        <td style="width: 50%">{call.incomingTime}</td>
-                        <td style="width: 50%">{call.callDuration}</td>
-                      </tr>
-                    </template>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </template>
-      </div>
-    </lightning-card>
-    <lightning-card>
-      <div onclick={AddLastRow} class="call-notes">
-        <template if:true={Notes}>
-          <h2
-            slot="title"
-            style="
-              margin-left: 3vh;
-              font-size: 1rem;
-              font-weight: bold;
-              color: #373737;
-            "
-          >
-            Call Notes
-          </h2>
-          <ul style="margin-top: 5vh">
-            <div style="margin-left: 3vh">
-              <template for:each={Notes} for:item="note" for:index="index">
-                <li
-                  key={note.id}
-                  style="
-                    margin-top: -6vh;
-                    padding-right: 15px;
-                    padding-bottom: 10px;
-                    padding-left: 15px;
-                    margin-bottom: 3vh;
-                  "
-                >
-                  <lightning-textarea
-                    type="text"
-                    value={note}
-                    onchange={handleNoteChange}
-                    onkeypress={handleKeyPress}
-                    onclick={handleInputClick}
-                    class="input-field"
-                    style="max-height: 52px; margin-bottom: 4vh"
-                    data-id={index}
-                  >
-                    ></lightning-textarea
-                  >
-                </li>
-              </template>
-            </div>
-          </ul>
-        </template>
-        <template for:each={inputFieldItem} for:item="itemField">
-          <div
-            style="padding: 10px 15px 10px 15px; margin-bottom: 1.7vh"
-            key={itemField.id}
-            onkeypress={addRow}
-          >
-            <div
-              style="
-                margin-left: 3vh;
-                margin-top: -7vh;
-                display: flex;
-                flex-direction: row;
-                justify-content: center;
-                align-items: center;
-              "
-              class="input-container slds-form-element__control slds-input-has-icon slds-input-has-icon_right"
-            >
-              <lightning-input
-                type="text"
-                value={itemField.value}
-                data-id={itemField.id}
-                onchange={handleInputChange}
-                placeholder="Create New Notes....."
-                class="input-field custom-input"
-                onclick={handleInputClick}
-                style="margin-right: 2vh; width: 100%"
-              >
-              </lightning-input>
-              <lightning-button-icon
-                style="
-                  margin-top: 1vh;
-                  width: 20px;
-                  height: 20px;
-                  margin-right: 2vh;
-                "
-                icon-name="utility:delete"
-                data-id={itemField.id}
-                onclick={deleteEmptyRow}
-              >
-              </lightning-button-icon>
-            </div>
-          </div>
-        </template>
-      </div>
-    </lightning-card>
-    <lightning-card>
-      <div class="resolution">
-        <h2
-          slot="title"
-          style="
-            margin-left: 3vh;
-            font-size: 1rem;
-            font-weight: bold;
-            color: #373737;
-          "
-        >
-          Resolution
-        </h2>
-        <template if:true={myQuestions}>
-          <ul>
-            <div style="margin-left: 3vh">
-              <template for:each={myQuestions} for:item="quiz">
-                <div
-                  key={quiz.id}
-                  style="margin-bottom: 3vh; margin-left: 2.5vh"
-                >
-                  <div style="color: #a09fa3; font-weight: 500">
-                    <strong>{quiz.question}</strong>
-                  </div>
-                  <div
-                    style="
-                      display: flex;
-                      flex-direction: row;
-                      justify-content: flex-start;
-                      align-items: center;
-                    "
-                  >
+    <template if:true={isChat}>
+        <img src={iconButton} class="draggable-icon" onclick={handleChat} />
+    </template>
+    <template if:true={isSection}>
+        <div role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true"
+            aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open slds-modal_medium"
+            style="opacity: 1;visibility: visible;transform: none;position: fixed;top: auto;right: 20px;bottom: 80px;left: auto;z-index: 9001;padding:0px 0px 10px 0px;background-color: #FFFFFF;width: 330px;">
+            <div class="header">
+                <div class="logoContainer">
+                    <div class="logoImageContainer">
+                        <img src={svgUrl} alt="chatBot" />
+                    </div>
                     <div>
-                      <input
-                        type="radio"
-                        name={quiz.id}
-                        value="a"
-                        onchange={changeHandler}
-                        style="margin-right: 1.5vh; accent-color: #713dba"
-                      />
-                      {quiz.answers.a}
+                        <span class="HeaderTextContainer">Ask Assist</span>
                     </div>
-                    <div style="margin-left: 1rem">
-                      <input
-                        type="radio"
-                        name={quiz.id}
-                        value="b"
-                        onchange={changeHandler}
-                        style="margin-right: 1.5vh; accent-color: #713dba"
-                      />
-                      {quiz.answers.b}
-                    </div>
-                    <!-- <div class="slds-col">
-                                    <input type="radio" name={quiz.id} value="c" onchange={changeHandler}/>
-                                    
-                                </div> -->
-                  </div>
+
                 </div>
-              </template>
+                <div>
+                    <img src={crossIcon} alt="cancel" class="CrossContainer" onclick={closeChatHandler} />
+                </div>
             </div>
-          </ul>
-        </template>
-      </div>
-    </lightning-card>
-    <lightning-card>
-      <div class="footer">
-        <button class="button" onclick={submitHandler}>Submit</button>
-      </div>
-    </lightning-card>
-  </div>
+            <div class="chat-container">
+                <template for:each={communicationData} for:item="msg" for:index="index">
+                   <div key = {msg.id} class="custom-msg-card">
+                    <template if:true={msg.isBot}>
+                        <div class="botResponseController">
+                            <div class="botTimeContainer">
+                                <h1 class="botIdentification">Assist Bot</h1>
+                                <h1 class="botIdentification botTime">{msg.time}</h1>
+                            </div>
+                            <div class="botResponseText userText">
+                                {msg.text}
+                                <div class="imgContainer">
+                                    <button
+                                        class="slds-button slds-button_icon"
+                                        onclick={positiveResponseHandler}
+                                        data-id={index}
+                                    >
+                                        <img
+                                        if:false={msg.liked}
+                                        src={like}
+                                        alt="AI Wiki Like Icon"
+                                        class="likeCss"
+                                        data-id={index}
+                                        />
+                                        <img
+                                        if:true={msg.liked}
+                                        src={likefill}
+                                        alt="AI Wiki Liked Icon"
+                                        class="dislikeCss"
+                                        data-id={index}
+                                        />
+                                    </button>
+                                    <!-- <img src={like} alt="AI Assistant Icon" class="like-container" onclick={positiveResponseHandler} /> -->
+                                    <button
+                                        class="slds-button slds-button_icon"
+                                        data-id={index}
+                                        onclick={negativeResponseHandler}
+                                    >
+                                        <img
+                                        if:false={msg.disliked}
+                                        src={unlike}
+                                        alt="AI Wiki Dislike Icon"
+                                        class="dislikeCss"
+                                        data-id={index}
+                                        />
+                                        <img
+                                        if:true={msg.disliked}
+                                        src={unlikefill}
+                                        alt="AI Wiki Disliked Icon"
+                                        class="likeCss"
+                                        data-id={index}
+                                        />
+                                    </button>
+                                        <!-- <img src={unlike} alt="AI Assistant Icon" class="dislike-container" onclick={NegativeResponseHandler} /> -->
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                    <template if:true={msg.isAgent}>
+                        <div class="userInputContainer">
+                            <div class="userTimeContainer">
+                                <h1 class="userTime"> {msg.time} </h1>
+                                <h1 class="userTime userIdentification"> You </h1>
+                            </div>
+                            <div class="userInputTextContainer">
+                                <h1 class="userText">{msg.text}</h1>
+                            </div>
+                        </div>
+                    </template>
+                    </div>
+                </template>
+
+
+            </div>
+            <hr class="horizontalLine">
+            <div class="slds-form-element__control slds-input-has-icon_right slds-grid slds-wrap inputContainer">
+                <div class="slds-col slds-size_12-of-12">
+                    <img class="slds-icon slds-input__icon slds-input__icon_right slds-icon-text-default imgInputContainer"
+                        src={insideIcon} onclick={handleUserInput} />
+                    <input type="text" placeholder="Ask AssistBot..." class="inputFieldContainer userText"
+                        onchange={handleInput} value={userInput} onkeypress={HandleKeyPress} />
+                </div>
+            </div>
+        </div>
+    </template>
+
 </template>
 
+import { LightningElement, wire } from 'lwc';
+import INSIDE_ICON from '@salesforce/resourceUrl/Inside_Icon';
+import AI_Assistant from '@salesforce/resourceUrl/chatBotHeaderIcon';
+import CROSS_ICON from '@salesforce/resourceUrl/Cross_Icon';
+import CHAT_BOT from '@salesforce/resourceUrl/chatBot';
+import LIKE from '@salesforce/resourceUrl/LikeAgentAssist';
+import UNLIKE from '@salesforce/resourceUrl/unLikeAgentAssist';
+import sendMessageToBot from '@salesforce/apex/awc_ChatBotController.sendMessageToBot';
+import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { subscribe, MessageContext } from 'lightning/messageService';
+import aiWikiSimulate from '@salesforce/messageChannel/aiWikiSimulate__c';
+import { AGENT_TYPES } from "c/exlConstants_version2";
+import LIKEFILL from '@salesforce/resourceUrl/likeFillAgentAssistant';
+import UNLIKEFILL from '@salesforce/resourceUrl/unlikeFillAgentAssistant';
 
+export default class SimulationAiWiki extends LightningElement {
+    insideIcon = INSIDE_ICON;
+    svgUrl = AI_Assistant;
+    crossIcon = CROSS_ICON;
+    userInput = '';
+    isChat = true;
+    isSection = false;
+    iconButton = CHAT_BOT;
+    like = LIKE;
+    unlike = UNLIKE;
+    likefill = LIKEFILL;
+    unlikefill = UNLIKEFILL;
+    communicationData = [];
+    @wire(MessageContext)
+    messageContext;
+    chatDataToProcess = [];
+    isProcessing = false;
 
-import { LightningElement, api, track, wire } from "lwc";
-import interactionCallSummary from "@salesforce/apex/CallSummaryInteraction.interactionCallSummary";
-import { subscribe, MessageContext } from "lightning/messageService";
-import { ShowToastEvent } from "lightning/platformShowToastEvent";
-// import callMsg from "@salesforce/messageChannel/callMessage__c";
-import CALL_SUMMARY from "@salesforce/resourceUrl/SolarNotes";
-import summaryDataJson from "@salesforce/resourceUrl/bnym_summary";
-import transcriptSimulate from "@salesforce/messageChannel/transcriptSimulate__c";
+    connectedCallback() {
+        this.subscribeToAiWikiChannel();
+    }
 
-export default class SimulationCallSummary extends LightningElement {
-  @api recordId;
-  @track callInfo = [];
-  @track callNotes = { statements: [] };
-  @track myQuestions = [];
-  Notes = this.callNotes.statements;
-  @track showContent = false;
-  interactionData = {};
-  selected = {};
-  correctAnswers = 0;
-  isSubmitted = false;
-  inputfield;
-  followUpNeeded;
-  issueResolved;
-  intentCorrect;
-  icon = CALL_SUMMARY;
-  inputValue;
-  keyIndex = 0;
-
-  async loadStaticData() {
-    try {
-      const response = await fetch(summaryDataJson);
-      if (response.ok) {
-        const responseJson = await response.json();
-
-        let infoObj = {
-          intentCaptured: "",
-          repeatCall: "",
-          incomingTime: "",
-          callDuration: ""
-        };
-
-        infoObj.intentCaptured = responseJson.callSummary["Intent Captured"];
-        infoObj.repeatCall = responseJson.callSummary["Repeat Call"];
-        infoObj.incomingTime = responseJson.callSummary["Incoming Time"];
-        infoObj.callDuration = responseJson.callSummary["Call Duration"];
-
-        this.callInfo.push(infoObj);
-
-        responseJson.callNotes.forEach((item) => {
-          this.callNotes.statements.push(item.description);
-        });
-
-        responseJson.resolution.forEach((item, index) => {
-          let obj = {
-            id: "Question" + String(index + 1),
-            question: item.QUESTION,
-            answers: {
-              a: item.OPTIONS[0].value,
-              b: item.OPTIONS[1].value
+    subscribeToAiWikiChannel() {
+        this.subscription = subscribe(
+            this.messageContext,
+            aiWikiSimulate,
+            (message) => {
+            this.handleChatMessage(message);
             }
-          };
-
-          this.myQuestions.push(obj);
-        });
-      } else {
-        console.error("Error in fetching summary data ", response.status);
-      }
-    } catch (err) {
-      console.error("Error in fetching summary json data ", err);
+        );
     }
-  }
-
-  inputFieldItem = [
-    {
-      id: 0
-    }
-  ];
-
-  addRow(event) {
-    console.log("event invoked");
-    if (event.key === "Enter") {
-      // const index = this.inputFieldItem.findIndex(
-      //   (item) => item.id === event.target.dataset.id
-      // );
-      // console.log("INdex==> " + index);
-      // const currentValue = event.target.value.trim();
-      // console.log("Current Value " + currentValue);
-
-      let isEmpty = false;
-
-      console.log("Summary ", [...this.inputFieldItem]);
-
-      this.inputFieldItem.forEach((item) => {
-        console.log("Summary ", { ...item });
-        if (!item.value || item.value === "") {
-          isEmpty = true;
+    
+    handleChatMessage(message) {
+        console.log("ai wiki message recieved", message);
+        const aiWikiData = message?.wikiChat;
+        const id = `${this.chatDataToProcess?.length + 1}`;
+        if (aiWikiData) {
+            let wikiChat = {
+                ...aiWikiData, 
+                speaker: aiWikiData?.user,
+                text: aiWikiData?.utterance,
+                id: id, 
+                isBot: aiWikiData.user === "Agent Wiki",
+                isAgent: aiWikiData.user !== "Agent Wiki"
+            };
+            this.chatDataToProcess.push(wikiChat);
+            this.handleChat();
+            this.processNextChat();
         }
-      });
-
-      if (!isEmpty) {
-        ++this.keyIndex;
-        const newInputField = [{ id: this.keyIndex }];
-
-        this.inputFieldItem = this.inputFieldItem.concat(newInputField);
-      } else {
-        console.log("Error found");
-        const toastEvent = new ShowToastEvent({
-          title: "Error",
-          message: "Input Fields Can Not Be Empty",
-          variant: "Error"
-        });
-        this.dispatchEvent(toastEvent);
-      }
     }
-  }
 
-  handleNoteChange(event) {
-    const noteId = event.target.dataset.id;
-    const editedNote = event.target.value;
-    if (editedNote !== this.Notes[noteId]) {
-      // Update the corresponding call note in the array
-      this.Notes[noteId] = editedNote;
-    }
-    // this.Notes[noteId] = editedNote;
-    console.log("this.Notes[noteId] :", this.Notes[noteId]);
-    console.log("this.Notes :", this.Notes);
-  }
-
-  handleInputChange(event) {
-    const dataId = parseInt(event.target.dataset.id, 10);
-    console.log("dataId :", dataId);
-    const editNotes = event.target.value;
-    console.log("editNotes :", editNotes);
-    this.inputFieldItem = this.inputFieldItem.map((item) => {
-      return item.id === dataId ? { ...item, value: editNotes } : item;
-    });
-    console.log("inputField :", JSON.stringify(this.inputFieldItem));
-  }
-
-  deleteEmptyRow(event) {
-    event.stopPropagation();
-
-    console.log("Delete Method Invoke");
-
-    const itemId = parseInt(event.target.dataset.id, 10); // Convert data-id to integer
-    console.log("Item ID:", itemId);
-
-    const index = this.inputFieldItem.findIndex((item) => item.id === itemId);
-    console.log("Index:", index);
-
-    if (index !== -1) {
-      if (
-        !this.inputFieldItem[index].value ||
-        this.inputFieldItem[index].value.trim() === ""
-      ) {
-        this.inputFieldItem.splice(index, 1);
-        // To ensure reactivity, assign a new array reference
-        this.inputFieldItem = [...this.inputFieldItem];
-      } else {
-        console.log("The field is not empty, so it will not be removed.");
-        const toastEvent = new ShowToastEvent({
-          title: "Error",
-          message: "Input Fields have data",
-          variant: "Error"
-        });
-        this.dispatchEvent(toastEvent);
-      }
-    } else {
-      console.error("Item not found in the array.");
-      const toastEvent = new ShowToastEvent({
-        title: "Error",
-        message: "Not Found",
-        variant: "Error"
-      });
-      this.dispatchEvent(toastEvent);
-    }
-  }
-
-  AddLastRow() {
-    console.log("AddlastRow invoke");
-    // if (this.inputFieldItem.length > 1) {
-    //     this.inputFieldItem = this.inputFieldItem.slice(0, -1);
-    // }
-    // console.log('this.inputFieldItem :',this.inputFieldItem);
-    const allFilled = this.inputFieldItem.every(
-      (item) => item.value && item.value.trim() !== ""
-    );
-
-    if (allFilled) {
-      ++this.keyIndex;
-      const newInputField = [
-        {
-          id: this.keyIndex
+    async processNextChat() {
+        if (this.isProcessing || this.chatDataToProcess.length === 0) {
+            return;
         }
-      ];
-      this.inputFieldItem = this.inputFieldItem.concat(newInputField);
-    } else {
-      console.log("2nd Error found");
-      const toastEvent = new ShowToastEvent({
-        title: "Error",
-        message: "Input Fields Can Not Be Empty",
-        variant: "Error"
-      });
-      this.dispatchEvent(toastEvent);
-      console.log("Not all input fields are filled");
+        this.isProcessing = true;
+        const currentItem = this.chatDataToProcess.shift();
+        await this.processItem(currentItem);
+        this.isProcessing = false;
+
+        if(this.chatDataToProcess.length > 0) {
+            this.processNextChat()
+        }
+        this.scrollToBottom();
+    }
+    
+    async processItem(item) {
+        // eslint-disable-next-line no-async-promise-executor
+        return new Promise(async (resolve) => {
+            if (AGENT_TYPES.has(item.user)) {
+                let strArray = [...item.utterance];
+                this.userInput = '';
+                for (const char of strArray) {
+                    this.userInput += char;
+                    this.scrollToBottom();
+                    // eslint-disable-next-line no-await-in-loop
+                    await this.delay(100);
+                }
+                this.communicationData = [...this.communicationData, item];
+                this.userInput = '';
+            } else {
+                await this.delay(1500);
+                this.communicationData = [...this.communicationData, item];
+            }
+            this.scrollToBottom();
+            resolve(item);
+        });
+    }
+    
+    delay(ms) {
+        // eslint-disable-next-line @lwc/lwc/no-async-operation
+        return new Promise(resolve => setTimeout(resolve, ms))
     }
 
-    console.log("inputField :", this.inputFieldItem);
-  }
-
-  handleInputClick(event) {
-    event.stopPropagation();
-    console.log("this.inputFieldItem :", this.inputFieldItem);
-  }
-
-  // handleInputChange(event) {
-
-  //     const noteId = event.target.dataset.id;
-  //     const editedNote = event.target.value;
-  //     if (editedNote !== this.Notes[noteId]) {
-  //         // Update the corresponding call note in the array
-  //         this.Notes[noteId] = editedNote;
-  //     }
-  //    // this.Notes[noteId] = editedNote;
-  //     const cardID  = event.target.dataset.id;
-  //     if(cardID === "1"){
-  //        this.inputfield = event.target.value;
-  //     }
-
-  // }
-
-  submitHandler() {
-    if (this.callInfo[0].repeatCall === "Yes") {
-      this.callInfo[0].repeatCall = true;
-    } else {
-      this.callInfo[0].repeatCall = false;
+    scrollToBottom() {
+        const customCardContainer = this.template.querySelector('.chat-container');
+        if (customCardContainer) {
+            customCardContainer.scrollTop = customCardContainer.scrollHeight;
+        }
     }
-    console.log("SubmitHandler called");
-    console.log("Call Notes:", this.Notes);
-    console.log("input Field :", this.inputfield);
 
-    console.log("Interaction Data:", this.interactionData);
-    interactionCallSummary({
-      recordId: this.recordId,
-      notes: this.Notes,
-      customCallNotes: this.inputFieldItem,
-      followUpNeeded: this.followUpNeeded,
-      issueResolved: this.issueResolved,
-      intentCorrect: this.intentCorrect,
-      callDuration: this.callInfo[0].callDuration,
-      incomingTime: this.callInfo[0].incomingTime,
-      repeatCall: this.callInfo[0].repeatCall,
-      intendCaptured: this.callInfo[0].intendCaptured
-    })
-      .then(() => {
-        const successToastEvent = new ShowToastEvent({
-          title: "Success",
-          message: "Interation History Record Created Successfully",
-          variant: "success"
-        });
-        this.dispatchEvent(successToastEvent);
+    handleChat(){
+        this.isSection = true;
+    }
+    closeChatHandler(){
+        this.isSection = false;
+    }
 
-        // this.selected = {};
-      })
-      .catch((error) => {
-        console.error("Error is" + JSON.stringify(error));
-        const errorToastEvent = new ShowToastEvent({
-          title: "Error",
-          message: error.body.message,
-          variant: "error"
-        });
-        this.dispatchEvent(errorToastEvent);
-      });
-  }
+    positiveResponseHandler(event) {
+        // const postiveResponse = new ShowToastEvent({
+        //     title: 'Success',
+        //     message : 'Your Response is captured',
+        //     variant: 'success',
+        // })
+        // this.dispatchEvent(postiveResponse);
+        // const targetDiv = event.target.closest('.like-container');
+        // targetDiv.classList.toggle('liked');
 
-  changeHandler(event) {
-    console.log("Change handler called");
-    const questionId = event.target.name;
-    const selectedAnswer = event.target.value;
-    this.selected[questionId] = selectedAnswer;
-    for (const key in this.selected) {
-      if (Object.hasOwnProperty.call(this.selected, key)) {
-        const question = this.myQuestions.find((item) => item.id === key);
-        const questionText = question ? question.question : "Unknown Question";
-        const selectAnswer = this.selected[key];
-        let answerValue;
-        if (selectAnswer === "a") {
-          answerValue = true;
-        } else if (selectAnswer === "b") {
-          answerValue = false;
+        let guidInd = Number(event.target.dataset.id)
+
+        let dupe = JSON.parse(JSON.stringify([...this.communicationData]))
+
+        if (this.communicationData[guidInd].liked) {
+            dupe[guidInd].liked = false
+            dupe[guidInd].disliked = false
         } else {
-          answerValue = null; // Or any default value if needed
+            dupe[guidInd].liked = true
+            dupe[guidInd].disliked = false
         }
-        this.interactionData[questionText] = selectAnswer;
-        // Assigning to different properties based on the condition
-        if (questionText === "Was the captured intent correct?") {
-          this.intentCorrect = answerValue;
-        } else if (questionText === "Was this issue resolved?") {
-          this.issueResolved = answerValue;
-        } else if (questionText === "Is any follow-up needed?") {
-          this.followUpNeeded = answerValue;
+
+        this.communicationData = dupe
+    }
+
+    negativeResponseHandler(event) {
+        // const negativeResponse = new ShowToastEvent({
+        //     title: 'Warning',
+        //     message : 'Your Response is captured',
+        //     variant: 'Warning',
+        // })
+        // this.dispatchEvent(negativeResponse);
+        // const targetDiv = event.target.closest('.dislike-container');
+        // targetDiv.classList.toggle('disliked');
+
+        let guidInd = Number(event.target.dataset.id)
+
+        let dupe = JSON.parse(JSON.stringify([...this.communicationData]))
+
+        if (this.communicationData[guidInd].disliked) {
+            dupe[guidInd].disliked = false
+            dupe[guidInd].liked = false
+        } else {
+            dupe[guidInd].disliked = true
+            dupe[guidInd].liked = false
         }
-        console.log("followUpNeeded :", this.followUpNeeded);
-        console.log("issueResolved :", this.issueResolved);
-        console.log("intentCorrect :", this.intentCorrect);
-        console.log("Interaction Data:", this.interactionData);
-      }
+
+        this.communicationData = dupe;
     }
-  }
 
-  @wire(MessageContext)
-  messageContext;
-
-  subscription;
-
-  connectedCallback() {
-    this.subscribeToMessageChannel();
-    this.loadStaticData();
-  }
-
-  subscribeToMessageChannel() {
-    // this.subscription = subscribe(this.messageContext, callMsg, (message) => {
-    //   this.handleMessage(message);
-    // });
-    this.subscription = subscribe(
-      this.messageContext,
-      transcriptSimulate,
-      (message) => {
-        this.handleMessage(message);
-      }
-    );
-  }
-
-  handleMessage(message) {
-    console.log("summary ", message);
-    // if (message.callStatus) {
-    //   let status = message.callStatus;
-    //   if (status === "ENDED") {
-    //     this.showContent = true;
-    //   } else {
-    //     this.showContent = false;
-    //   }
-    // }
-    if (message?.transcriptSegment?.isCallEnded) {
-      this.showContent = true;
+    handleInput(event){
+        this.userInput = event.target.value;
     }
-  }
+    handleUserInput(){
+        if(this.userInput == null || this.userInput.trim() === ''){
+                // console.log('First click in if part');
+                // const negativeResponse = new ShowToastEvent({
+                //     title: 'Error',
+                //     message : 'No Input Found',
+                //     variant: 'Error',
+                // })
+                // this.dispatchEvent(negativeResponse);  
+            
+        }
+        else{
+            console.log('Second click in if part');
+        const userInput = {
+            speaker : 'agent',
+            text : this.userInput,
+            isBot: false,
+            isAgent: true
+        };
+        console.log('userInput :',userInput)
+        
+        this.communicationData.unshift(userInput);
+        console.log('UserInput Array :',this.communicationData);
+        
+        sendMessageToBot({
+         userMessage : this.userInput
+        }).then((response)=>{
+          console.log('response :',response);
+          const botResponse = {
+             speaker : 'AssistBot',
+             text : response,
+             isBot: true,
+             isAgent: false
+          }
+        //  this.communicationData.unshift(botResponse);
+        this.communicationData = [botResponse, ...this.communicationData];
+          console.log('communicationData :',this.communicationData);
+        }).catch((err)=>{
+           console.log('err :',err.meesage.body);
+        })
+        this.userInput = '';
+        this.template.querySelector('.inputFieldContainer').value = '';
+        }
+    }
+    HandleKeyPress(event){
+        if(event.key === 'Enter'){
+           this.handleUserInput(); 
+        }
+        else{
+            console.log('other keys pressed');
+        }
+    }
 }
