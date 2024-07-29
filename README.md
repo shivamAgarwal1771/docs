@@ -1,3 +1,6 @@
+https://html.spec.whatwg.org/multipage/parsing.html#parse-error-unexpected-equals-sign-before-attribute-name (245:54)
+
+
 import { LightningElement, api, track, wire } from "lwc";
 import interactionCallSummary from "@salesforce/apex/CallSummaryInteraction.interactionCallSummary";
 import { subscribe, MessageContext } from "lightning/messageService";
