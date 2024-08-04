@@ -1,10 +1,20 @@
-.dropdown-container {
-  position: absolute;
-  z-index: 10;
-  background: #ffffff;
-  box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
-  border-radius: 6px;
-  width: 100%;
-  max-height: 300px; /* Adjust as needed */
-  overflow-y: auto;
-}
+Local DynamoDB Setup : 
+
+Docker installation & Read about Docker.
+
+Pull Circleci/DynamoDB: 11 Image
+
+Install Globally: npm: dynamodb-admin 
+
+Configure AWS SSO
+RUN CMD : aws configure
+
+Enter random AccessKeyId and SecretKey.
+
+Region: local
+
+Press enter to select default values for next prompts
+
+Local Service Setup:
+
+Checkout : smart-agent-microservices [development] [Code First Approach Used]
