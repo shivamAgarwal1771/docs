@@ -1,189 +1,325 @@
-#set( $PK = "c#${ctx.args.input.CallId}" )
-#set( $UpdatedAt = $util.defaultIfNull($ctx.args.input.UpdatedAt, $util.time.nowISO8601() ) )
-$util.qr( $ctx.args.input.put("UpdatedAt", $UpdatedAt ) )
-## Set up some space to keep track of things we're updating **
-#set( $expNames = {} )
-#set( $expValues = {} )
-#set( $expSet = {} )
-## Iterate through each argument with values and update expression variables **
-#foreach( $entry in $ctx.args.input.entrySet() )
-    ## avoid overwriting CreatedAt and skip empty values **
-    #if( $entry != "CreatedAt" && !$util.isNullOrBlank($entry.value)  )
-        $util.qr( $expSet.put("#${entry.key}", ":${entry.key}") )
-        $util.qr( $expNames.put("#${entry.key}", "${entry.key}") )
-        $util.qr( $expValues.put(":${entry.key}", $util.dynamodb.toDynamoDB($entry.value)) )
-    #end
-#end
-## Start building the update expression, starting with attributes we're going to SET **
-#set( $expression = "" )
-#if( !${expSet.isEmpty()} )
-    #set( $expression = "SET" )
-    #foreach( $entry in $expSet.entrySet() )
-        #if( $entry.key == "#CallCategories" )
-            $util.qr( $expValues.put(":EmptyList", $util.dynamodb.toDynamoDB([])) )
-            #set( $expression = "${expression} ${entry.key} = list_append(if_not_exists(${entry.key}, :EmptyList), ${entry.value})" )
-        #else
-            #set( $expression = "${expression} ${entry.key} = ${entry.value}" )
-        #end
-        #if ( $foreach.hasNext )
-            #set( $expression = "${expression}," )
-        #end
-    #end
-#end
-{
-  "version" : "2018-05-29",
-  "operation" : "UpdateItem",
-  "key": {
-    "PK": $util.dynamodb.toDynamoDBJson($PK),
-    "SK": $util.dynamodb.toDynamoDBJson($PK),
-  },
-  "update" : {
-    "expression": "$expression"
-    #if( !${expNames.isEmpty()} )
-      , "expressionNames": $utils.toJson($expNames)
-    #end
-    #if( !${expValues.isEmpty()} )
-      , "expressionValues": $utils.toJson($expValues)
-    #end
-  },
-  "condition": {
-    ## Only update if item already exists and UpdatedAt is newer **
-    "expression": "attribute_exists(#PK) AND #UpdatedAt < :UpdatedAt",
-    "expressionNames": {
-      "#PK": "PK",
-      "#UpdatedAt": "UpdatedAt"
-    },
-    "expressionValues": {
-      ":UpdatedAt": $utils.dynamodb.toDynamoDBJson($UpdatedAt)
+import { LightningElement, api, wire, track } from 'lwc';
+import bnym_v1 from '@salesforce/resourceUrl/bnym_v1';
+import bnym_v1_json from '@salesforce/resourceUrl/bnym_v1_json';
+import paypal_audio from '@salesforce/resourceUrl/paypal_audio';
+import paypal_transcript from '@salesforce/resourceUrl/paypal_transcript';
+import transcriptSimulate from '@salesforce/messageChannel/transcriptSimulate__c';
+import autoAuditSimulate from '@salesforce/messageChannel/autoAuditSimulate__c';
+import { publish, MessageContext } from 'lightning/messageService';
+import HideLightningHeader from '@salesforce/resourceUrl/HideLightningHeader';
+import { loadStyle } from 'lightning/platformResourceLoader';
+import aiWikiSimulate from '@salesforce/messageChannel/aiWikiSimulate__c';
+import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
+import customerNameField from '@salesforce/schema/Custom_Contact__c.Name';
+ 
+export default class AudioPlayer extends LightningElement {
+    @track mp3Url = "";
+    jsonPath = "";
+    audio = "";
+    json = "";
+    @api autoPlay = false;
+    staticData = [];
+    completedIndexes = [];
+    @wire(MessageContext)
+    messageContext
+ 
+    @api recordId; // Provided automatically by Lightning Experience
+    @track customerName;
+ 
+    @wire(getRecord, { recordId: (window.location.href).split('/view')[0].split('/').pop(), fields: [customerNameField] })
+    wiredGetRecord({ error, data }) {
+        if (data) {
+            this.customerName = data ? getFieldValue(data, customerNameField) : '';
+            switch (this.customerName) {
+                case "Elizabeth": {
+                    this.audio = `${bnym_v1}/bnym.mp3`;
+                    this.json = bnym_v1_json;
+                }
+                    break;
+                case "John Smith": {
+                    this.audio = paypal_audio;
+                    this.json = paypal_transcript;
+                }
+                    break;
+                default:
+                    console.log("Unable to fetch User");
+                    break;
+            }
+            this.updateStaticResourcePath();
+            this.loadStaticData();
+        } else if (error) {
+            console.log("error", error);
+        }
     }
-  }
-}
-
-
-this is update agent mutation 
-
-#set( $PK = "c#${ctx.args.input.CallId}" )
-#set( $UpdatedAt = $util.defaultIfNull($ctx.args.input.UpdatedAt, $util.time.nowISO8601() ) )
-$util.qr( $ctx.args.input.put("UpdatedAt", $UpdatedAt ) )
-## Set up some space to keep track of things we're updating **
-#set( $expNames = {} )
-#set( $expValues = {} )
-#set( $expSet = {} )
-## Iterate through each argument with values and update expression variables **
-#foreach( $entry in $ctx.args.input.entrySet() )
-    ## avoid overwriting CreatedAt and skip empty values **
-    #if( $entry != "CreatedAt" && !$util.isNullOrBlank($entry.value)  )
-        $util.qr( $expSet.put("#${entry.key}", ":${entry.key}") )
-        $util.qr( $expNames.put("#${entry.key}", "${entry.key}") )
-        $util.qr( $expValues.put(":${entry.key}", $util.dynamodb.toDynamoDB($entry.value)) )
-    #end
-#end
-## Start building the update expression, starting with attributes we're going to SET **
-#set( $expression = "" )
-#if( !${expSet.isEmpty()} )
-    #set( $expression = "SET" )
-    #foreach( $entry in $expSet.entrySet() )
-        #if( $entry.key == "#CallCategories" )
-            $util.qr( $expValues.put(":EmptyList", $util.dynamodb.toDynamoDB([])) )
-            #set( $expression = "${expression} ${entry.key} = list_append(if_not_exists(${entry.key}, :EmptyList), ${entry.value})" )
-        #else
-            #set( $expression = "${expression} ${entry.key} = ${entry.value}" )
-        #end
-        #if ( $foreach.hasNext )
-            #set( $expression = "${expression}," )
-        #end
-    #end
-#end
-{
-  "version" : "2018-05-29",
-  "operation" : "UpdateItem",
-  "key": {
-    "PK": $util.dynamodb.toDynamoDBJson($PK),
-    "SK": $util.dynamodb.toDynamoDBJson($PK),
-  },
-  "update" : {
-    "expression": "$expression"
-    #if( !${expNames.isEmpty()} )
-      , "expressionNames": $utils.toJson($expNames)
-    #end
-    #if( !${expValues.isEmpty()} )
-      , "expressionValues": $utils.toJson($expValues)
-    #end
-  },
-  "condition": {
-    ## Only update if item already exists and UpdatedAt is newer **
-    "expression": "attribute_exists(#PK) AND #UpdatedAt < :UpdatedAt",
-    "expressionNames": {
-      "#PK": "PK",
-      "#UpdatedAt": "UpdatedAt"
-    },
-    "expressionValues": {
-      ":UpdatedAt": $utils.dynamodb.toDynamoDBJson($UpdatedAt)
+ 
+    updateStaticResourcePath() {
+        if (this.customerName) {
+            // const data = this.staticResource[this.customerName];
+            this.mp3Url = this.audio;
+            this.jsonPath = this.json;
+        }
     }
-  }
-}
-
-this is the mutation for issue detected
-
-#set( $PK = "c#${ctx.args.input.CallId}" )
-#set( $UpdatedAt = $util.defaultIfNull($ctx.args.input.UpdatedAt, $util.time.nowISO8601() ) )
-$util.qr( $ctx.args.input.put("UpdatedAt", $UpdatedAt ) )
-## Set up some space to keep track of things we're updating **
-#set( $expNames = {} )
-#set( $expValues = {} )
-#set( $expSet = {} )
-## Iterate through each argument with values and update expression variables **
-#foreach( $entry in $ctx.args.input.entrySet() )
-    ## avoid overwriting CreatedAt and skip empty values **
-    #if( $entry != "CreatedAt" && !$util.isNullOrBlank($entry.value)  )
-        $util.qr( $expSet.put("#${entry.key}", ":${entry.key}") )
-        $util.qr( $expNames.put("#${entry.key}", "${entry.key}") )
-        $util.qr( $expValues.put(":${entry.key}", $util.dynamodb.toDynamoDB($entry.value)) )
-    #end
-#end
-## Start building the update expression, starting with attributes we're going to SET **
-#set( $expression = "" )
-#if( !${expSet.isEmpty()} )
-    #set( $expression = "SET" )
-    #foreach( $entry in $expSet.entrySet() )
-        #if( $entry.key == "#CallCategories" )
-            $util.qr( $expValues.put(":EmptyList", $util.dynamodb.toDynamoDB([])) )
-            #set( $expression = "${expression} ${entry.key} = list_append(if_not_exists(${entry.key}, :EmptyList), ${entry.value})" )
-        #else
-            #set( $expression = "${expression} ${entry.key} = ${entry.value}" )
-        #end
-        #if ( $foreach.hasNext )
-            #set( $expression = "${expression}," )
-        #end
-    #end
-#end
-{
-  "version" : "2018-05-29",
-  "operation" : "UpdateItem",
-  "key": {
-    "PK": $util.dynamodb.toDynamoDBJson($PK),
-    "SK": $util.dynamodb.toDynamoDBJson($PK),
-  },
-  "update" : {
-    "expression": "$expression"
-    #if( !${expNames.isEmpty()} )
-      , "expressionNames": $utils.toJson($expNames)
-    #end
-    #if( !${expValues.isEmpty()} )
-      , "expressionValues": $utils.toJson($expValues)
-    #end
-  },
-  "condition": {
-    ## Only update if item already exists and UpdatedAt is newer **
-    "expression": "attribute_exists(#PK) AND #UpdatedAt < :UpdatedAt",
-    "expressionNames": {
-      "#PK": "PK",
-      "#UpdatedAt": "UpdatedAt"
-    },
-    "expressionValues": {
-      ":UpdatedAt": $utils.dynamodb.toDynamoDBJson($UpdatedAt)
+ 
+    /**
+     * Adding initial computation here which is required for this component.
+     */
+    connectedCallback() {
+        // Responsible for loading static json for mutating other components
+        this.loadStaticData();
+        loadStyle(this, HideLightningHeader);
     }
-  }
+ 
+    async loadStaticData() {
+        // Create a request for the JSON data and load it synchronously,
+        // parsing the response as JSON into the tracked property
+ 
+        try {
+            if (this.jsonPath && this.mp3Url) {
+                const response = await fetch(this.jsonPath);
+                if (response.ok) {
+                    const responseJson = await response.json();
+                    this.staticData = responseJson;
+                    this.playAudio();
+                } else {
+                    console.error("Error in fetching data", response.status);
+                }
+            }
+        } catch (err) {
+            console.error("Error in fetching json data", err);
+        }
+    }
+ 
+    playAudio() {
+        const audioElement = this.template.querySelector('audio');
+        console.log("audioElement", audioElement)
+        if (audioElement) {
+            audioElement.play()
+                .then(() => {
+                    console.log('Audio playback started successfully.');
+                })
+                .catch(error => {
+                    console.error('Error attempting to play audio:', error);
+                });
+        }
+    }
+ 
+    publishTranscriptSegments(transcriptSegment) {
+        if(transcriptSegment) {
+            // Define the message payload
+            const messagePayload = {
+                transcriptSegment: transcriptSegment
+            };
+            // Publish the message
+            publish(this.messageContext, transcriptSimulate, messagePayload);
+        }
+    }
+ 
+    publishAutoAudit(auditData) {
+        if(auditData) {
+            // Define the message payload
+            const messagePayload = {
+                auditData: auditData
+            };
+            // Publish the message
+            publish(this.messageContext, autoAuditSimulate, messagePayload);
+        }
+    }
+ 
+    publishAiWiki(wikiChat) {
+        if(wikiChat) {
+            // Define the message payload
+            const messagePayload = {
+                wikiChat: wikiChat
+            };
+            // Publish the message
+            publish(this.messageContext, aiWikiSimulate, messagePayload);
+        }
+    }
+ 
+    extractLiveTranscript(currentTime) {
+        let transcript = this.staticData
+        let currentIndex = transcript?.findIndex(obj => (currentTime > obj.StartTime && currentTime < obj.EndTime))
+        if (!this.completedIndexes.includes(currentIndex) && currentIndex > -1) {
+            this.completedIndexes.push(currentIndex);
+            setTimeout(async () => {
+                let eventData = transcript?.[currentIndex].eventData
+                let endTime = transcript?.[currentIndex].EndTime
+                let {
+                    Transcript: {
+                        ChannelId = undefined,
+                        Transcript: utterance = undefined,
+                        IsPartial = undefined,
+                        ResultId = undefined,
+                        Sentiment = undefined,
+                        SentimentScore = undefined,
+                        showDisabilityForm = false
+                    },
+                    Insights = undefined,
+                    Audits = undefined,
+                    AIWikiChat = undefined,
+                    Guidance = undefined,
+                    Cases = undefined,
+                    InteractionHistory = undefined,
+                    CallSummary = undefined,
+                    ContactInfo = undefined
+                } = eventData
+ 
+                if (IsPartial === true || IsPartial === undefined) {
+                    return
+                }
+ 
+                let timeToSort = Date.now() + endTime * 1000
+                let session = new Date().toISOString()
+ 
+                if (Audits?.length !== 0) {
+                    Audits?.forEach(audit => {
+                        this.publishAutoAudit(audit);
+                    })
+                }
+ 
+                if (Guidance && Guidance?.length !== 0) {
+                    Guidance?.forEach(item => {
+                        if (item.type === "SPEECH_SUGGESTION") {
+                            this.publishTranscriptSegments({
+                                "user": "AGENT_ASSISTANT",
+                                "isSpeechSuggestion": true,
+                                "key": currentIndex,
+                                "liked": false,
+                                "disliked": false,
+                                "type": item.type,
+                                "entityName": item.name,
+                                "entityValue": item.value,
+                                "createdAt": session
+                            });
+                        } else if (item.type === "KNOWLEDGE_ARTICLE") {
+                            this.publishTranscriptSegments({
+                                "user": "AGENT_ASSISTANT",
+                                "isKnowledgeArticle": true,
+                                "key": currentIndex,
+                                "liked": false,
+                                "disliked": false,
+                                "type": item.type,
+                                "entityName": item.name,
+                                "entityValue": item.value,
+                                "createdAt": session
+                            });
+                        }
+ 
+                        if (item.type === "ACTION_WORKFLOW" && item.cardShown) {
+                            let steps = item?.steps || [];
+                            steps?.map((step) => {
+                                step.promptValue = step?.card?.messages && step?.card?.messages[0] && step?.card?.messages[0]?.text ? step?.card?.messages[0]?.text : "";
+                                step.isDisabled = (step?.card?.isEditable === true || step?.card?.isEditable === false) ? step?.card?.isEditable : false;
+                            });
+                            this.publishTranscriptSegments({
+                                "user": "AGENT_ASSISTANT",
+                                "type": item?.type,
+                                "intent": item?.intent,
+                                "steps": steps,
+                                "workflowType": item?.workflowType,
+                                "name": item?.name,
+                                "createdAt": new Date(),
+                                "isActionWorkflow": true,
+                            });
+                        }
+                    })
+                }
+ 
+                // if (Cases && Cases?.length !== 0) {
+                //     Cases?.forEach(item => {
+                //         dispatch(updateCases(item))
+                //     })
+                // }
+ 
+                // if (InteractionHistory && InteractionHistory?.length !== 0) {
+                //     InteractionHistory?.forEach(item => {
+                //         dispatch(updateInteractionHistory(item))
+                //     })
+                // }
+ 
+                let trancriptObj = {
+                    "user": ChannelId === 'ch_0' ? "Customer" : "Agent",
+                    "segmentId": ResultId,
+                    utterance,
+                    session,
+                    "sentiment": Sentiment,
+                    "sentimentScore": SentimentScore,
+                    timeToSort
+                }
+ 
+                console.log("trancriptObj", trancriptObj);
+ 
+                if (ChannelId === 'AGENT_ASSISTANT') {
+                    let agentAssitObj = JSON.parse(utterance);
+                    if (agentAssitObj?.Title && agentAssitObj?.message) {
+                        this.publishTranscriptSegments({
+                            "user": "AGENT_ASSISTANT",
+                            "type": "AI_GUIDANCE",
+                            "key": currentIndex,
+                            "isAiGuidance": true,
+                            "liked": false,
+                            "disliked": false,
+                            "createdAt": session,
+                            "entityName": agentAssitObj.Title,
+                            "entityValue": agentAssitObj.message,
+                        });
+                    }
+                } else {
+                    this.publishTranscriptSegments(trancriptObj);
+                }
+ 
+                // if (Insights?.length !== 0) {
+                //     Insights?.forEach(insight => {
+                //         let insightData = {
+                //             "type": AI_ASSISTANT_TYPE.AI_GUIDANCE,
+                //             "createdAt": session,
+                //             "entityName": insight.entity,
+                //             "entityValue": insight.value,
+                //             "user": USER_TYPE.CALLER
+                //         }
+ 
+                //         dispatch(setAiAssistantData(insightData))
+                //     })
+                // }
+ 
+                if (AIWikiChat && AIWikiChat?.length !== 0) {
+                    AIWikiChat?.forEach(wiki => {
+                        let wikiChat = {
+                            "utterance": wiki?.utterance,
+                            "user": wiki?.user,
+                            "feedback": 0,
+                            "time": new Date().toLocaleTimeString([], { hour: 'numeric', minute: 'numeric' })
+                        }
+                        this.publishAiWiki(wikiChat);
+                    })
+                }
+ 
+                // if (ContactInfo) {
+                //     dispatch(setSimulationContactInfo(ContactInfo))
+                // }
+ 
+            }, (transcript?.[currentIndex].EndTime - currentTime) * 1000)
+        }
+    }
+ 
+    handlePlay(event) {
+        console.log('Audio playback started at: ', event.target.currentTime);
+    }
+ 
+    handlePause(event) {
+        console.log('Audio playback paused at: ', event.target.currentTime);
+    }
+ 
+    handleEnded(event) {
+        console.log('Audio playback ended at: ', event.target.currentTime);
+        this.publishTranscriptSegments({
+            isCallEnded: true
+        });
+    }
+ 
+    handleTimeUpdate(event) {
+        const currentTime = event.target.currentTime;
+        this.extractLiveTranscript(currentTime);
+    }
 }
-this is the mutation for call category
-
+has context menu
