@@ -1,37 +1,34 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { InputType, Field } from '@nestjs/graphql';
 
-@ObjectType()
-export class UpdateAgentResponse {
+@InputType()
+export class UpdateAgentInput {
   @Field()
-  success: boolean;
+  CallId: string;
 
-  @Field()
-  message: string;
+  @Field({ nullable: true })
+  UpdatedAt?: string;
 
   // Add other fields as necessary
 }
 
-@ObjectType()
-export class AddIssueDetectedResponse {
+@InputType()
+export class AddIssueDetectedInput {
   @Field()
-  success: boolean;
+  CallId: string;
 
-  @Field()
-  message: string;
+  @Field({ nullable: true })
+  UpdatedAt?: string;
 
   // Add other fields as necessary
 }
 
-@ObjectType()
-export class CallCategoryResponse {
+@InputType()
+export class CallCategoryInput {
   @Field()
-  success: boolean;
+  CallId: string;
 
-  @Field()
-  message: string;
+  @Field({ nullable: true })
+  UpdatedAt?: string;
 
   // Add other fields as necessary
 }
-
-
-
