@@ -1,27 +1,24 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel, Model } from 'nestjs-dynamoose';
+import { Resolver, Mutation, Args } from '@nestjs/graphql';
+import { CallService } from './call.service';
 import { UpdateAgentInput, AddIssueDetectedInput, CallCategoryInput } from './input/call.input';
 import { UpdateAgentResponse, AddIssueDetectedResponse, CallCategoryResponse } from './model/call.model';
 
-@Injectable()
-export class CallService {
-  constructor(
-    @InjectModel('call')
-    private readonly model: Model<Call>,
-  ) {}
+@Resolver()
+export class CallResolver {
+  constructor(private readonly callService: CallService) {}
 
-  async updateAgent(input: UpdateAgentInput): Promise<UpdateAgentResponse> {
-    // Implement update logic here
-    return { success: true, message: 'Agent updated successfully' };
+  @Mutation(() => UpdateAgentResponse)
+  async updateAgent(@Args('input') input: UpdateAgentInput): Promise<UpdateAgentResponse> {
+    return this.callService.updateAgent(input);
   }
 
-  async addIssueDetected(input: AddIssueDetectedInput): Promise<AddIssueDetectedResponse> {
-    // Implement add issue logic here
-    return { success: true, message: 'Issue added successfully' };
+  @Mutation(() => AddIssueDetectedResponse)
+  async addIssueDetected(@Args('input') input: AddIssueDetectedInput): Promise<AddIssueDetectedResponse> {
+    return this.callService.addIssueDetected(input);
   }
 
-  async callCategory(input: CallCategoryInput): Promise<CallCategoryResponse> {
-    // Implement call category logic here
-    return { success: true, message: 'Call category updated successfully' };
+  @Mutation(() => CallCategoryResponse)
+  async callCategory(@Args('input') input: CallCategoryInput): Promise<CallCategoryResponse> {
+    return this.callService.callCategory(input);
   }
 }
