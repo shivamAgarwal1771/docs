@@ -1,28 +1,27 @@
-import { ObjectType, Field } from '@nestjs/graphql';
+import { Injectable } from '@nestjs/common';
+import { InjectModel, Model } from 'nestjs-dynamoose';
+import { UpdateAgentInput, AddIssueDetectedInput, CallCategoryInput } from './input/call.input';
+import { UpdateAgentResponse, AddIssueDetectedResponse, CallCategoryResponse } from './model/call.model';
 
-@ObjectType()
-export class UpdateAgentResponse {
-  @Field()
-  success: boolean;
+@Injectable()
+export class CallService {
+  constructor(
+    @InjectModel('call')
+    private readonly model: Model<Call>,
+  ) {}
 
-  @Field()
-  message: string;
-}
+  async updateAgent(input: UpdateAgentInput): Promise<UpdateAgentResponse> {
+    // Implement update logic here
+    return { success: true, message: 'Agent updated successfully' };
+  }
 
-@ObjectType()
-export class AddIssueDetectedResponse {
-  @Field()
-  success: boolean;
+  async addIssueDetected(input: AddIssueDetectedInput): Promise<AddIssueDetectedResponse> {
+    // Implement add issue logic here
+    return { success: true, message: 'Issue added successfully' };
+  }
 
-  @Field()
-  message: string;
-}
-
-@ObjectType()
-export class CallCategoryResponse {
-  @Field()
-  success: boolean;
-
-  @Field()
-  message: string;
+  async callCategory(input: CallCategoryInput): Promise<CallCategoryResponse> {
+    // Implement call category logic here
+    return { success: true, message: 'Call category updated successfully' };
+  }
 }
