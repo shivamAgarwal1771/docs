@@ -1,193 +1,37 @@
-this is aws appsync data i want to make its mutation service and resolver and add in above code accordingly
+import { ObjectType, Field } from '@nestjs/graphql';
 
-#set( $PK = "c#${ctx.args.input.CallId}" )
-#set( $UpdatedAt = $util.defaultIfNull($ctx.args.input.UpdatedAt, $util.time.nowISO8601() ) )
-$util.qr( $ctx.args.input.put("UpdatedAt", $UpdatedAt ) )
-## Set up some space to keep track of things we're updating **
-#set( $expNames = {} )
-#set( $expValues = {} )
-#set( $expSet = {} )
-## Iterate through each argument with values and update expression variables **
-#foreach( $entry in $ctx.args.input.entrySet() )
-    ## avoid overwriting CreatedAt and skip empty values **
-    #if( $entry != "CreatedAt" && !$util.isNullOrBlank($entry.value)  )
-        $util.qr( $expSet.put("#${entry.key}", ":${entry.key}") )
-        $util.qr( $expNames.put("#${entry.key}", "${entry.key}") )
-        $util.qr( $expValues.put(":${entry.key}", $util.dynamodb.toDynamoDB($entry.value)) )
-    #end
-#end
-## Start building the update expression, starting with attributes we're going to SET **
-#set( $expression = "" )
-#if( !${expSet.isEmpty()} )
-    #set( $expression = "SET" )
-    #foreach( $entry in $expSet.entrySet() )
-        #if( $entry.key == "#CallCategories" )
-            $util.qr( $expValues.put(":EmptyList", $util.dynamodb.toDynamoDB([])) )
-            #set( $expression = "${expression} ${entry.key} = list_append(if_not_exists(${entry.key}, :EmptyList), ${entry.value})" )
-        #else
-            #set( $expression = "${expression} ${entry.key} = ${entry.value}" )
-        #end
-        #if ( $foreach.hasNext )
-            #set( $expression = "${expression}," )
-        #end
-    #end
-#end
-{
-  "version" : "2018-05-29",
-  "operation" : "UpdateItem",
-  "key": {
-    "PK": $util.dynamodb.toDynamoDBJson($PK),
-    "SK": $util.dynamodb.toDynamoDBJson($PK),
-  },
-  "update" : {
-    "expression": "$expression"
-    #if( !${expNames.isEmpty()} )
-      , "expressionNames": $utils.toJson($expNames)
-    #end
-    #if( !${expValues.isEmpty()} )
-      , "expressionValues": $utils.toJson($expValues)
-    #end
-  },
-  "condition": {
-    ## Only update if item already exists and UpdatedAt is newer **
-    "expression": "attribute_exists(#PK) AND #UpdatedAt < :UpdatedAt",
-    "expressionNames": {
-      "#PK": "PK",
-      "#UpdatedAt": "UpdatedAt"
-    },
-    "expressionValues": {
-      ":UpdatedAt": $utils.dynamodb.toDynamoDBJson($UpdatedAt)
-    }
-  }
+@ObjectType()
+export class UpdateAgentResponse {
+  @Field()
+  success: boolean;
+
+  @Field()
+  message: string;
+
+  // Add other fields as necessary
 }
 
-this is for update agent i want to write its mutation and add it in above code and changes in other files accordingly
+@ObjectType()
+export class AddIssueDetectedResponse {
+  @Field()
+  success: boolean;
 
+  @Field()
+  message: string;
 
-#set( $PK = "c#${ctx.args.input.CallId}" )
-#set( $UpdatedAt = $util.defaultIfNull($ctx.args.input.UpdatedAt, $util.time.nowISO8601() ) )
-$util.qr( $ctx.args.input.put("UpdatedAt", $UpdatedAt ) )
-## Set up some space to keep track of things we're updating **
-#set( $expNames = {} )
-#set( $expValues = {} )
-#set( $expSet = {} )
-## Iterate through each argument with values and update expression variables **
-#foreach( $entry in $ctx.args.input.entrySet() )
-    ## avoid overwriting CreatedAt and skip empty values **
-    #if( $entry != "CreatedAt" && !$util.isNullOrBlank($entry.value)  )
-        $util.qr( $expSet.put("#${entry.key}", ":${entry.key}") )
-        $util.qr( $expNames.put("#${entry.key}", "${entry.key}") )
-        $util.qr( $expValues.put(":${entry.key}", $util.dynamodb.toDynamoDB($entry.value)) )
-    #end
-#end
-## Start building the update expression, starting with attributes we're going to SET **
-#set( $expression = "" )
-#if( !${expSet.isEmpty()} )
-    #set( $expression = "SET" )
-    #foreach( $entry in $expSet.entrySet() )
-        #if( $entry.key == "#CallCategories" )
-            $util.qr( $expValues.put(":EmptyList", $util.dynamodb.toDynamoDB([])) )
-            #set( $expression = "${expression} ${entry.key} = list_append(if_not_exists(${entry.key}, :EmptyList), ${entry.value})" )
-        #else
-            #set( $expression = "${expression} ${entry.key} = ${entry.value}" )
-        #end
-        #if ( $foreach.hasNext )
-            #set( $expression = "${expression}," )
-        #end
-    #end
-#end
-{
-  "version" : "2018-05-29",
-  "operation" : "UpdateItem",
-  "key": {
-    "PK": $util.dynamodb.toDynamoDBJson($PK),
-    "SK": $util.dynamodb.toDynamoDBJson($PK),
-  },
-  "update" : {
-    "expression": "$expression"
-    #if( !${expNames.isEmpty()} )
-      , "expressionNames": $utils.toJson($expNames)
-    #end
-    #if( !${expValues.isEmpty()} )
-      , "expressionValues": $utils.toJson($expValues)
-    #end
-  },
-  "condition": {
-    ## Only update if item already exists and UpdatedAt is newer **
-    "expression": "attribute_exists(#PK) AND #UpdatedAt < :UpdatedAt",
-    "expressionNames": {
-      "#PK": "PK",
-      "#UpdatedAt": "UpdatedAt"
-    },
-    "expressionValues": {
-      ":UpdatedAt": $utils.dynamodb.toDynamoDBJson($UpdatedAt)
-    }
-  }
+  // Add other fields as necessary
 }
 
-this is the code for add issue detected i want to make its muation and changes in other files accordingly
+@ObjectType()
+export class CallCategoryResponse {
+  @Field()
+  success: boolean;
 
-#set( $PK = "c#${ctx.args.input.CallId}" )
-#set( $UpdatedAt = $util.defaultIfNull($ctx.args.input.UpdatedAt, $util.time.nowISO8601() ) )
-$util.qr( $ctx.args.input.put("UpdatedAt", $UpdatedAt ) )
-## Set up some space to keep track of things we're updating **
-#set( $expNames = {} )
-#set( $expValues = {} )
-#set( $expSet = {} )
-## Iterate through each argument with values and update expression variables **
-#foreach( $entry in $ctx.args.input.entrySet() )
-    ## avoid overwriting CreatedAt and skip empty values **
-    #if( $entry != "CreatedAt" && !$util.isNullOrBlank($entry.value)  )
-        $util.qr( $expSet.put("#${entry.key}", ":${entry.key}") )
-        $util.qr( $expNames.put("#${entry.key}", "${entry.key}") )
-        $util.qr( $expValues.put(":${entry.key}", $util.dynamodb.toDynamoDB($entry.value)) )
-    #end
-#end
-## Start building the update expression, starting with attributes we're going to SET **
-#set( $expression = "" )
-#if( !${expSet.isEmpty()} )
-    #set( $expression = "SET" )
-    #foreach( $entry in $expSet.entrySet() )
-        #if( $entry.key == "#CallCategories" )
-            $util.qr( $expValues.put(":EmptyList", $util.dynamodb.toDynamoDB([])) )
-            #set( $expression = "${expression} ${entry.key} = list_append(if_not_exists(${entry.key}, :EmptyList), ${entry.value})" )
-        #else
-            #set( $expression = "${expression} ${entry.key} = ${entry.value}" )
-        #end
-        #if ( $foreach.hasNext )
-            #set( $expression = "${expression}," )
-        #end
-    #end
-#end
-{
-  "version" : "2018-05-29",
-  "operation" : "UpdateItem",
-  "key": {
-    "PK": $util.dynamodb.toDynamoDBJson($PK),
-    "SK": $util.dynamodb.toDynamoDBJson($PK),
-  },
-  "update" : {
-    "expression": "$expression"
-    #if( !${expNames.isEmpty()} )
-      , "expressionNames": $utils.toJson($expNames)
-    #end
-    #if( !${expValues.isEmpty()} )
-      , "expressionValues": $utils.toJson($expValues)
-    #end
-  },
-  "condition": {
-    ## Only update if item already exists and UpdatedAt is newer **
-    "expression": "attribute_exists(#PK) AND #UpdatedAt < :UpdatedAt",
-    "expressionNames": {
-      "#PK": "PK",
-      "#UpdatedAt": "UpdatedAt"
-    },
-    "expressionValues": {
-      ":UpdatedAt": $utils.dynamodb.toDynamoDBJson($UpdatedAt)
-    }
-  }
+  @Field()
+  message: string;
+
+  // Add other fields as necessary
 }
 
-this is call catogory i want to add its muation in the above code accordingly
 
 
