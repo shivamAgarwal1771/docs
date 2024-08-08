@@ -1,31 +1,28 @@
-{
-  "errors": [
-    {
-      "message": "Bad Request",
-      "locations": [
-        {
-          "line": 2,
-          "column": 3
-        }
-      ],
-      "path": [
-        "updateAgent"
-      ],
-      "extensions": {
-        "code": "BAD_REQUEST",
-        "stacktrace": [
-          "BadRequestException: Bad Request",
-          "    at CallResolver.updateAgent (C:\\Users\\Shivam220802\\OneDrive - EXLService.com (I) Pvt. Ltd\\Desktop\\New folder\\smart-agent-microservices\\conversation-microservice\\src\\call\\call.resolver.ts:152:15)",
-          "    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)",
-          "    at async target (C:\\Users\\Shivam220802\\OneDrive - EXLService.com (I) Pvt. Ltd\\Desktop\\New folder\\smart-agent-microservices\\conversation-microservice\\node_modules\\@nestjs\\core\\helpers\\external-context-creator.js:74:28)",
-          "    at async Object.updateAgent (C:\\Users\\Shivam220802\\OneDrive - EXLService.com (I) Pvt. Ltd\\Desktop\\New folder\\smart-agent-microservices\\conversation-microservice\\node_modules\\@nestjs\\core\\helpers\\external-proxy.js:9:24)"
-        ],
-        "originalError": {
-          "message": "Bad Request",
-          "statusCode": 400
-        }
-      }
-    }
-  ],
-  "data": null
+@ObjectType()
+@InputType('CallCategoryInputType')
+export class CallCategoryInput {
+  @Field()
+  CallId: String;
+
+  @Field()
+  CallCategories:String;
+
+  @Field({ nullable: true })
+  UpdatedAt?: String;
 }
+input.ts
+
+  async callCategory(input: CallCategoryInput){
+    const keys = { PK: `c#${input.CallId}`, SK: `c#${input.CallId}` };
+    const args = {
+      CallCategories:[input.CallCategories],
+      UpdatedAt: new Date().toISOString(),
+    };
+
+    return this.model.update(keys, args, {
+      condition: new Condition().where('PK').eq(keys.PK).and().attribute('UpdatedAt').lt(args.UpdatedAt),
+      return: 'item'
+    });
+  }
+
+service.ts
