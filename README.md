@@ -1,3 +1,6 @@
+  @track donelike1 = true;
+    @track doneUnlike1 = true;
+    
     toggleLike() {
         this.donelike1 = !this.donelike1;
         this.doneUnlike1 = true;  // Reset the dislike state when like is toggled
