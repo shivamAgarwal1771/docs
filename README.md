@@ -1,460 +1,235 @@
-// Constants defining various URIs and authentication details for AWS AppSync
-export const host = "znh7evtkjjfevpy7mtp6ioc3tu.appsync-api.us-east-1.amazonaws.com";
-export const apiKey = "da2-ksvj4ldfczbw7h5c3utmldgkny";
-export const resourceWSURI = "wss://znh7evtkjjfevpy7mtp6ioc3tu.appsync-realtime-api.us-east-1.amazonaws.com/graphql";
-export const resourceHttpURI = "https://znh7evtkjjfevpy7mtp6ioc3tu.appsync-api.us-east-1.amazonaws.com/graphql";
-export const id = "ts-45786c2d536d6172742d4167656e74"//"transcript-90-4cb8-9fcb-152ae4fd1e90";
-const id_updateCall = "uc-45786c2d536d6172742d4167656e74";
-export const callIdPlaceholder = `#callid_placeholder#`;
-export const textPlaceholder = `#text_placeholder#`;
-const aliasId = `TSTALIASID`;
-const botId = `VVCTYRGZUO`;
-const sessionId = `220335042009125`;
 
-// Authentication information encoded for requests
-const authJSON = {
-    "host":`${host}`,
-    "x-api-key": `${apiKey}`
-}
+import React, { useState, useRef } from 'react';
+import './MediaSelection.css';
 
-// Encode authentication information
-export const authBase = () => {
-    return btoa(JSON.stringify(authJSON))
-}
+const MediaSelection = () => {
+  const [selectedMedia, setSelectedMedia] = useState('demoScript'); // Default selection
+  const [audioFile, setAudioFile] = useState(null);
+  const [trimmedAudioFile, setTrimmedAudioFile] = useState(null); // For storing trimmed audio
+  const [startTime, setStartTime] = useState(0);
+  const [endTime, setEndTime] = useState(0);
+  const audioRef = useRef(null);
+  const trimmedAudioRef = useRef(null);
 
-// Encode payload information
-export const payloadBase = () => {
-    return btoa(JSON.stringify({}));
-}
-
-// Subscription query for receiving new transcript segments
-const subOnAddTranscriptSegment = 
-`subscription OnAddTranscriptSegment {
-    onAddTranscriptSegment(CallId: "${callIdPlaceholder}") {
-        __typename
-        PK
-        SK
-        CreatedAt
-        UpdatedAt
-        ExpiresAfter
-        CallId
-        SegmentId
-        StartTime
-        EndTime
-        Transcript
-        IsPartial
-        Channel
-        Sentiment
-        SentimentWeighted
-        SentimentScore {
-            Positive
-            Negative
-            Neutral
-            Mixed
-        }
+  // Handle file upload for audio
+  const handleFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type.includes('audio')) {
+      setAudioFile(URL.createObjectURL(file));
+      setTrimmedAudioFile(null); // Reset trimmed audio on new upload
+    } else {
+      alert('Please upload a valid audio file.');
     }
-}`;
+  };
 
-// Query object for adding transcript segments
-const queryAddTranscriptSegment =
-{
-    "query":`${subOnAddTranscriptSegment}`,
-    "variables":{}
-};
+  // Handle trimming and playing trimmed audio
+  const handleTrim = () => {
+    if (!audioFile) {
+      alert('Please upload an audio file first.');
+      return;
+    }
 
-// Subscription registration details
-export const registerOnAddTranscript = {
-    "id": `${id}`,
-    "payload": {
-        "data": `${JSON.stringify(queryAddTranscriptSegment)}`,
-        "extensions": {
-            "authorization": {
-                "x-api-key": `${apiKey}`,
-                "host": `${host}`
+    const audio = audioRef.current;
+    if (audio) {
+      const start = parseFloat(startTime);
+      const end = parseFloat(endTime);
+
+      // Validation: Ensure the times are within bounds
+      if (start >= 0 && end > start && end <= audio.duration) {
+        // Create an in-memory trimmed audio (using Blob or MediaStream API)
+        const audioContext = new AudioContext();
+        fetch(audioFile)
+          .then((response) => response.arrayBuffer())
+          .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
+          .then((audioBuffer) => {
+            const trimmedBuffer = audioContext.createBuffer(
+              audioBuffer.numberOfChannels,
+              (end - start) * audioBuffer.sampleRate,
+              audioBuffer.sampleRate
+            );
+
+            // Copy the audio data for the specified time range into the new buffer
+            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+              const oldData = audioBuffer.getChannelData(channel);
+              const newData = trimmedBuffer.getChannelData(channel);
+              newData.set(oldData.slice(
+                start * audioBuffer.sampleRate,
+                end * audioBuffer.sampleRate
+              ));
             }
-        }
-    },
-    "type": "start"
-};
 
-const subOnUpdateCall = 
-`subscription OnUpdateCall {
-    onUpdateCall(CallId: "${callIdPlaceholder}") {
-        PK
-        SK
-        CreatedAt
-        UpdatedAt
-        ExpiresAfter
-        CallId
-        CustomerPhoneNumber
-        SystemPhoneNumber
-        Status
-        RecordingUrl
-        PcaUrl
-        TotalConversationDurationMillis
-        AgentId
-        Metadatajson
-        CallCategories
-        IssuesDetected
-        CallSummaryText
+            // Create a Blob from the trimmed audio buffer
+            const audioBlob = bufferToWave(trimmedBuffer, trimmedBuffer.length);
+            const trimmedAudioUrl = URL.createObjectURL(audioBlob);
+            setTrimmedAudioFile(trimmedAudioUrl);
+          })
+          .catch((error) => {
+            console.error('Error decoding audio', error);
+          });
+      } else {
+        alert('Invalid trim times. Please ensure they are within the audio duration.');
+      }
     }
-}`;
+  };
 
-const querySubUpdateCall =
-{
-    "query":`${subOnUpdateCall}`,
-    "variables":{}
-};
+  // Function to convert AudioBuffer to WAV format Blob
+  const bufferToWave = (abuffer, len) => {
+    const numOfChan = abuffer.numberOfChannels;
+    const length = len * numOfChan * 2 + 44;
+    const buffer = new ArrayBuffer(length);
+    const view = new DataView(buffer);
+    const channels = [];
+    let pos = 0;
 
-export const registerOnUpdateCall = {
-    "id": `${id_updateCall}`,
-    "payload": {
-        "data": `${JSON.stringify(querySubUpdateCall)}`,
-        "extensions": {
-            "authorization": {
-                "x-api-key": `${apiKey}`,
-                "host": `${host}`
-            }
-        }
-    },
-    "type": "start"
-};
-
-/**
- * UJJWAL: ADDED For Intent
- * Need to check and confirm if required or not
- */
-const subOnCreateIntent = 
-`subscription OnCreateIntent {
-    onCreateIntent(callId: "${callIdPlaceholder}", intent: null) {
-        callId
-        intent
+    // Write WAV container metadata
+    function setUint16(data) {
+      view.setUint16(pos, data, true);
+      pos += 2;
     }
-}`;
 
-/**
- * UJJWAL: ADDED For Intent
- * Need to check and confirm if required or not
- */
-const querySubCreateIntent =
-{
-    "query":`${subOnCreateIntent}`,
-    "variables":{}
-};
-
-/**
- * UJJWAL: ADDED For Intent
- * Need to check and confirm if required or not
- */
-export const registerOnCreateIntent = {
-    "id": `${id}`,
-    "payload": {
-        "data": `${JSON.stringify(querySubCreateIntent)}`,
-        "extensions": {
-            "authorization": {
-                "x-api-key": `${apiKey}`,
-                "host": `${host}`
-            }
-        }
-    },
-    "type": "start"
-};
-
-// Query for retrieving transcript segments
-export const getTranscriptsQuery = {
-    query:`query GetTranscriptSegments {
-        getTranscriptSegments(CallId: "${callIdPlaceholder}") {
-            nextToken
-            TranscriptSegments {
-                PK
-                SK
-                CreatedAt
-                UpdatedAt
-                ExpiresAfter
-                CallId
-                SegmentId
-                StartTime
-                EndTime
-                Transcript
-                IsPartial
-                Channel
-                Sentiment
-                SentimentWeighted
-                SentimentScore {
-                    Positive
-                    Negative
-                    Neutral
-                    Mixed
-                }
-            }
-        }
-    }`
-};
-
-// Query for retrieving call detail
-export const getCallQuery = {
-    query:`query GetCall {
-        getCall(CallId: "${callIdPlaceholder}") {
-            PK
-            SK
-            CreatedAt
-            UpdatedAt
-            ExpiresAfter
-            CallId
-            CustomerPhoneNumber
-            SystemPhoneNumber
-            Status
-            RecordingUrl
-            PcaUrl
-            TotalConversationDurationMillis
-            AgentId
-            Metadatajson
-            CallCategories
-            IssuesDetected
-            CallSummaryText
-        }
-    }`
-};
-/**
- * Format for Get IntentQuery
- */
-export const getIntentQuery = {
-    query:`query GetIntent {
-        getIntent(callId: "${callIdPlaceholder}") {
-            intent
-            callId
-        }
-    }`
-};
-/**
- * Format for Get AutomationBotQuery
- */
-export const automationBotQuery = {
-    query: `query MyQuery {
-        getAutomationBotResponse(inputBot: {
-            botID: "${botId}",
-            sessionId: "${sessionId}",
-            channel: "channel",
-            aliasId: "${aliasId}", 
-            text: "${textPlaceholder}"
-        })
-    }`
-};
-
-// Unsubscribe from the subscription
-export const unregisterSubscription = {
-    "type":"stop",
-    "id": `${id}`
-};
-
-export const consoleLog = (text) => {
-    let outputColor = "color:green; font-size:24px;"
-    console.log("%c "+text, outputColor);
-};
-
-export const errorToConsole = (text) => {
-    let outputColor = "color:red; font-size:24px;"
-console.error("%c "+text, outputColor);
-};
-
-export const convertMilliseconds = (ms) => {
-    const minutes = Math.floor(ms / 60000);
-    const seconds = ((ms % 60000) / 1000).toFixed(0);
-    console.log("minutes ====== "+minutes+' >>>>>>>>> seconds ========= '+seconds);
-    return minutes + ":" + (seconds < 10 ? '0' : '') + seconds;
-};
-
-
-// Constants defining various URIs and authentication details for AWS AppSync
-const id_updateCall = "uc-45786c2d536d6172742d4167656e74";
-export const callIdPlaceholder = `#callid_placeholder#`;
-export const textPlaceholder = `#text_placeholder#`;
-const aliasId = `TSTALIASID`;
-const botId = `RHVLZ1UOBV`;
-const sessionId = `220335042009125`;
-export const socketProtocol = 'graphql-ws';
-
-// Subscription query for receiving new transcript segments
-const subOnAddTranscriptSegment =
-    `subscription OnAddTranscriptSegment {
-    onAddTranscriptSegment(CallId: "${callIdPlaceholder}") {
-        __typename
-        PK
-        SK
-        CreatedAt
-        UpdatedAt
-        ExpiresAfter
-        CallId
-        SegmentId
-        StartTime
-        EndTime
-        Transcript
-        IsPartial
-        Channel
-        Sentiment
-        SentimentWeighted
-        SentimentScore {
-            Positive
-            Negative
-            Neutral
-            Mixed
-        }
+    function setUint32(data) {
+      view.setUint32(pos, data, true);
+      pos += 4;
     }
-}`;
 
-// Query object for adding transcript segments
-export const queryAddTranscriptSegment =
-{
-    "query": `${subOnAddTranscriptSegment}`,
-    "variables": {}
-};
+    setUint32(0x46464952); // "RIFF" marker
+    setUint32(length - 8); // RIFF chunk length
+    setUint32(0x45564157); // "WAVE" marker
+    setUint32(0x20746d66); // "fmt " chunk
+    setUint32(16); // Length of format chunk
+    setUint16(1); // Type of format (1 is PCM)
+    setUint16(numOfChan);
+    setUint32(abuffer.sampleRate);
+    setUint32(abuffer.sampleRate * 2 * numOfChan);
+    setUint16(numOfChan * 2);
+    setUint16(16); // 16-bit samples
+    setUint32(0x61746164); // "data" marker
+    setUint32(length - pos - 4); // Data chunk length
 
-const subOnUpdateCall =
-    `subscription OnUpdateCall {
-    onUpdateCall(CallId: "${callIdPlaceholder}") {
-        PK
-        SK
-        CreatedAt
-        UpdatedAt
-        ExpiresAfter
-        CallId
-        CustomerPhoneNumber
-        SystemPhoneNumber
-        Status
-        RecordingUrl
-        PcaUrl
-        TotalConversationDurationMillis
-        AgentId
-        Metadatajson
-        CallCategories
-        IssuesDetected
-        CallSummaryText
+    // Write the actual PCM samples
+    for (let i = 0; i < abuffer.numberOfChannels; i++) {
+      channels.push(abuffer.getChannelData(i));
     }
-}`;
 
-const querySubUpdateCall =
-{
-    "query": `${subOnUpdateCall}`,
-    "variables": {}
-};
-
-/*export const registerOnUpdateCall = {
-    "id": `${id_updateCall}`,
-    "payload": {
-        "data": `${JSON.stringify(querySubUpdateCall)}`,
-        "extensions": {
-            "authorization": {
-                "x-api-key": `${apiKey}`,
-                "host": `${host}`
-            }
-        }
-    },
-    "type": "start"
-};
-*/
-export const consoleLog = (text) => {
-    let outputColor = "color:green; font-size:24px;"
-    console.trace("%c EXL: " + text, outputColor);
-};
-
-export const errorToConsole = (text) => {
-    let outputColor = "color:red; font-size:24px;"
-    console.trace("%c EXL: " + text, outputColor);
-};
-
-export const Speaker = Object.freeze({
-    AGENT: 'AGENT',
-    CALLER: 'CALLER',
-    CUSTOMER: 'CUSTOMER'
-});
-
-export const Sentiment = Object.freeze({
-    POSITIVE: 'POSITIVE',
-    NEGATIVE: 'NEGATIVE',
-    NEUTRAL: 'NEUTRAL'
-});
-
-export const Color = Object.freeze({
-    POSITIVE_COLOR: '#49DAA1',
-    NEUTRAL_COLOR: '#3186FB',
-    NEGATIVE_COLOR: '#E8837B'
-});
-
-export const AGENT_TYPES = new Set(["Jane", "Elizabeth", "Agent"]);
-
-export const CALL_STATUS = {
-    CONNECTED: "CONNECTED",
-    ENDED: "ENDED"
-}
-
-export const SPEAKER = { 
-    CALLER: 'CALLER'
-}
-
-export const VISIBILITY = { 
-    HIDE: "Hide" ,
-    SHOW:"Show More"
-}
-
-export const FIELDS = {
-   ADDRESS: "newAddress",
-   DATE:"movementDate"
-}
-
-export const WORKFLOW = {
-   START_WORKFLOW: "start workflow"
-}
-
-export const NUDGES = {
-    AGENT_ASSISTANT:"AGENT_ASSISTANT",
-    AI_GUIDANCE:"AI Guidance",
-    KNOWLEDGE_ARTICLES:"Knowledge Articles"
-}
-
-export const CALL_NOTES = {
-    "statements": [
-        "A Payment Due date change request was raised by the John Doe due to the non-availability of the customer as He is not available for this weekend",
-        "Date changed to 15/04/2024",
-        "Amount changed to $2000"
-    ]
-};
-
-export const CALL_SUMMARY_AUDITS = [
-    {
-        id: "Question1",
-        question: "Was the captured intent correct?",
-        options: [
-            {key: "a", value: "Yes", booleanValue: true, checked: true},
-            {key: "b", value: "No", booleanValue: false, checked: false}
-        ],
-        answer: true,
-        interactionHistoryPayloadKey: "Was_the_captured_intent_correct__c"
-    },
-    {
-        id: "Question2",
-        question: "Was this issue resolved?",
-        options: [
-            {key: "a", value: "Yes", booleanValue: true, checked: true},
-            {key: "b", value: "No", booleanValue: false, checked: false}
-        ],
-        answer: true,
-        interactionHistoryPayloadKey: "Was_this_issue_resolved__c"
-    },
-    {
-        id: "Question3",
-        question: "Is any follow-up needed?",
-        options: [
-            {key: "a", value: "Yes", booleanValue: true, checked: false},
-            {key: "b", value: "No", booleanValue: false, checked: true}
-        ],
-        answer: false,
-        interactionHistoryPayloadKey: "Is_any_follow_up_needed__c"
+    for (let i = 0; i < len; i++) {
+      for (let c = 0; c < numOfChan; c++) {
+        const sample = Math.max(-1, Math.min(1, channels[c][i]));
+        view.setInt16(pos, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+        pos += 2;
+      }
     }
-];
 
-export const USER_FEEDBACK_EVENTS = {
-    LIKED: "liked",
-    LIKE: "like",
-    DISLIKED: "disliked",
-    DISLIKE: "dislike"
-}
+    return new Blob([buffer], { type: 'audio/wav' });
+  };
+
+  return (
+    <div className="media-selection-container">
+      <h2>Select Media type:</h2>
+      <div className="button-group">
+        <button
+          className={selectedMedia === 'demoScript' ? 'active' : ''}
+          onClick={() => setSelectedMedia('demoScript')}
+        >
+          Demo Script Radio Button
+        </button>
+        <button
+          className={selectedMedia === 'demoRecording' ? 'active' : ''}
+          onClick={() => setSelectedMedia('demoRecording')}
+        >
+          Demo Recording Radio Button
+        </button>
+      </div>
+
+      {selectedMedia === 'demoRecording' && (
+        <div className="content">
+          <h3>Upload Audio Recording</h3>
+          <input type="file" accept="audio/*" onChange={handleFileUpload} />
+          
+          {/* Preview uploaded audio */}
+          {audioFile && (
+            <div>
+              <h4>Uploaded Audio Preview</h4>
+              <audio controls src={audioFile} ref={audioRef}>
+                Your browser does not support the audio element.
+              </audio>
+
+              <h4>Trim Audio</h4>
+              <div className="media-trimmer">
+                <label>
+                  Start Time (seconds):
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                  />
+                </label>
+                <label>
+                  End Time (seconds):
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                  />
+                </label>
+              </div>
+
+              <button onClick={handleTrim}>Trim Audio</button>
+            </div>
+          )}
+
+          {/* Preview trimmed audio */}
+          {trimmedAudioFile && (
+            <div>
+              <h4>Trimmed Audio Preview</h4>
+              <audio controls src={trimmedAudioFile} ref={trimmedAudioRef}>
+                Your browser does not support the audio element.
+              </audio>
+            </div>
+          )}
+        </div>
+      )}
+
+      {selectedMedia === 'demoScript' && (
+        <div className="content">
+          <h3>Select Voice</h3>
+          <div className="dropdown-group">
+            <label>
+              Customer:
+              <select>
+                <option>Select</option>
+              </select>
+            </label>
+            <label>
+              Agent:
+              <select>
+                <option>Select</option>
+              </select>
+            </label>
+          </div>
+          <p className="script-text">
+            Here you can either upload the script, drag/drop script or you can
+            type the Agent and Customer utterances one by one.
+          </p>
+
+          <div className="script-upload">
+            <h4>Upload Script File</h4>
+            <input type="file" accept=".txt" />
+          </div>
+
+          <button className="create-resource-btn">Create Resource</button>
+        </div>
+      )}
+
+      <div className="navigation-buttons">
+        <button className="nav-btn">Previous</button>
+        <button className="nav-btn">Next</button>
+      </div>
+    </div>
+  );
+};
+
+export default MediaSelection;
