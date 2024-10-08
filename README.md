@@ -1,7 +1,4 @@
-
 import React, { useState, useRef } from 'react';
-import './MediaSelection.css';
-
 const MediaSelection = () => {
   const [selectedMedia, setSelectedMedia] = useState('demoScript'); // Default selection
   const [audioFile, setAudioFile] = useState(null);
@@ -34,9 +31,7 @@ const MediaSelection = () => {
       const start = parseFloat(startTime);
       const end = parseFloat(endTime);
 
-      // Validation: Ensure the times are within bounds
       if (start >= 0 && end > start && end <= audio.duration) {
-        // Create an in-memory trimmed audio (using Blob or MediaStream API)
         const audioContext = new AudioContext();
         fetch(audioFile)
           .then((response) => response.arrayBuffer())
@@ -48,7 +43,6 @@ const MediaSelection = () => {
               audioBuffer.sampleRate
             );
 
-            // Copy the audio data for the specified time range into the new buffer
             for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
               const oldData = audioBuffer.getChannelData(channel);
               const newData = trimmedBuffer.getChannelData(channel);
@@ -58,7 +52,6 @@ const MediaSelection = () => {
               ));
             }
 
-            // Create a Blob from the trimmed audio buffer
             const audioBlob = bufferToWave(trimmedBuffer, trimmedBuffer.length);
             const trimmedAudioUrl = URL.createObjectURL(audioBlob);
             setTrimmedAudioFile(trimmedAudioUrl);
@@ -72,7 +65,6 @@ const MediaSelection = () => {
     }
   };
 
-  // Function to convert AudioBuffer to WAV format Blob
   const bufferToWave = (abuffer, len) => {
     const numOfChan = abuffer.numberOfChannels;
     const length = len * numOfChan * 2 + 44;
@@ -106,7 +98,6 @@ const MediaSelection = () => {
     setUint32(0x61746164); // "data" marker
     setUint32(length - pos - 4); // Data chunk length
 
-    // Write the actual PCM samples
     for (let i = 0; i < abuffer.numberOfChannels; i++) {
       channels.push(abuffer.getChannelData(i));
     }
@@ -124,8 +115,8 @@ const MediaSelection = () => {
 
   return (
     <div className="media-selection-container">
-      <h2>Select Media type:</h2>
       <div className="button-group">
+      <h2>Select Media:</h2>
         <button
           className={selectedMedia === 'demoScript' ? 'active' : ''}
           onClick={() => setSelectedMedia('demoScript')}
@@ -147,13 +138,13 @@ const MediaSelection = () => {
           
           {/* Preview uploaded audio */}
           {audioFile && (
-            <div>
-              <h4>Uploaded Audio Preview</h4>
+            <div className='audio-trimmer'>
+              <h3>Uploaded Audio Preview</h3>
               <audio controls src={audioFile} ref={audioRef}>
                 Your browser does not support the audio element.
               </audio>
 
-              <h4>Trim Audio</h4>
+              <h3>Trim Audio</h3>
               <div className="media-trimmer">
                 <label>
                   Start Time (seconds):
@@ -177,14 +168,14 @@ const MediaSelection = () => {
                 </label>
               </div>
 
-              <button onClick={handleTrim}>Trim Audio</button>
+              <button style={{background:"#af8cf6", color:"white", padding:"4px"}} onClick={handleTrim}>Trim Audio</button>
             </div>
           )}
 
           {/* Preview trimmed audio */}
           {trimmedAudioFile && (
             <div>
-              <h4>Trimmed Audio Preview</h4>
+              <h3>Trimmed Audio Preview</h3>
               <audio controls src={trimmedAudioFile} ref={trimmedAudioRef}>
                 Your browser does not support the audio element.
               </audio>
@@ -200,34 +191,36 @@ const MediaSelection = () => {
             <label>
               Customer:
               <select>
-                <option>Select</option>
+                <option>Salli (Female)</option>
+                <option>Matthew (Male)</option>
+                <option>Kimberly (Female)</option>
+                <option>Kendra (Female)</option>
+                <option>Justin (male)</option>
+                <option>Joey(male)</option>
+                <option>Lvy(Female)</option>
               </select>
             </label>
             <label>
               Agent:
               <select>
-                <option>Select</option>
+                <option>Salli (Female)</option>
+                <option>Matthew (Male)</option>
+                <option>Kimberly (Female)</option>
+                <option>Kendra (Female)</option>
+                <option>Justin (male)</option>
+                <option>Joey(male)</option>
+                <option>Lvy(Female)</option>
               </select>
             </label>
           </div>
-          <p className="script-text">
-            Here you can either upload the script, drag/drop script or you can
-            type the Agent and Customer utterances one by one.
-          </p>
-
+          <h3>Upload Script File</h3>
           <div className="script-upload">
-            <h4>Upload Script File</h4>
-            <input type="file" accept=".txt" />
+            <textarea placeholder='Write your text area'></textarea>
+            <input style={{paddingBottom:"6px", paddingTop:"6px"}} type="file" accept=".txt" />
           </div>
-
           <button className="create-resource-btn">Create Resource</button>
         </div>
       )}
-
-      <div className="navigation-buttons">
-        <button className="nav-btn">Previous</button>
-        <button className="nav-btn">Next</button>
-      </div>
     </div>
   );
 };
