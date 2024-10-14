@@ -2,7 +2,7 @@ import "bootstrap/dist/css/bootstrap.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import "../assets/css/common.css";
 import "../assets/css/callmodal.css";
-import "../assets/css/languages.css"
+import "../assets/css/languages.css";
 // import "../assets/css/calldetails.css";
 import "../assets/css/chatDetails.css";
 import "../assets/css/reacttable.css";
@@ -33,24 +33,21 @@ import { useEffect } from "react";
 import { SessionProvider } from "next-auth/react";
 import { Provider } from "react-redux";
 import { OktaAuth, toRelativeUrl } from "@okta/okta-auth-js";
-import { Security } from "@okta/okta-react";
 import Router from "next/router";
 import { store, persistor } from "../store";
-import { IntlProviderWrapper } from '../components/IntlProviderWrapper'
+import { IntlProviderWrapper } from '../components/IntlProviderWrapper';
 import ApplicationLayoutHOC from "../components/hoc/applicationLayoutHOC";
 import "../utility/authentication/amplify-config";
-
 import ErrorBoundary from "../components/error/errorBoundary";
+import { ApolloProvider } from "@apollo/client";
+import client from "../apollo-client";
+import { PersistGate } from "redux-persist/integration/react";
+import logger from '../helpers/logger';
+import '../styles/globals.css';
 
 if (typeof window !== "undefined") {
   require("amazon-connect-streams");
 }
-
-import { ApolloProvider } from "@apollo/client";
-import { Amplify } from "aws-amplify";
-
-import client from "../apollo-client";
-import { PersistGate } from "redux-persist/integration/react";
 
 const oktaAuthClient = new OktaAuth({
   issuer: process.env.NEXT_PUBLIC_OKTA_ISSUER || "",
@@ -65,10 +62,11 @@ function MyApp({ Component, pageProps }) {
       : null;
 
     typeof document !== undefined ? require("moment/moment.js") : null;
+
+    logger.error('My App initialized');
   }, []);
 
   const restoreOriginalUri = async (_oktaAuth, originalUri) => {
-    // Router.replace(toRelativeUrl(originalUri || "/", window.location.origin));
     Router.replace("/");
   };
 
@@ -85,7 +83,7 @@ function MyApp({ Component, pageProps }) {
           > */}
           <SessionProvider session={pageProps.session}>
             <ApolloProvider client={client}>
-                <IntlProviderWrapper>
+              <IntlProviderWrapper>
                 <Head>
                   <title>Agent Assist</title>
                   <meta
@@ -96,7 +94,7 @@ function MyApp({ Component, pageProps }) {
                 <ApplicationLayoutHOC>
                   <Component {...pageProps} />
                 </ApplicationLayoutHOC>
-                </IntlProviderWrapper>
+              </IntlProviderWrapper>
             </ApolloProvider>
           </SessionProvider>
           {/* </Security> */}
@@ -106,23 +104,10 @@ function MyApp({ Component, pageProps }) {
   );
 }
 
-export default MyApp;
-
-
-import logger from '../helpers/logger';
-import '../styles/globals.css'
-
-function MyApp({ Component, pageProps }) {
-  logger.error( 'My App' )
-  return <Component {...pageProps} />
-}
-
 MyApp.getInitialProps = async (ctx) => {
- 
   const areLogsEnabled = ctx?.router?.query?.debug || '';
-	global.areLogsEnabled = areLogsEnabled === 'true';
+  global.areLogsEnabled = areLogsEnabled === 'true';
   return {};
-}
+};
 
-
-export default MyApp
+export default MyApp;
