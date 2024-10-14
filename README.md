@@ -1,146 +1,128 @@
-.media-selection-container {
-    font-family: Arial, sans-serif;
-    padding: 20px;
-    max-width: 600px;
-    margin: auto;
-    background-color: #ffffff;
-    border-radius: 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+import "bootstrap/dist/css/bootstrap.css";
+import "bootstrap/dist/css/bootstrap.min.css";
+import "../assets/css/common.css";
+import "../assets/css/callmodal.css";
+import "../assets/css/languages.css"
+// import "../assets/css/calldetails.css";
+import "../assets/css/chatDetails.css";
+import "../assets/css/reacttable.css";
+import "../assets/css/base-layout.css";
+import "../assets/css/ai-assistant.css";
+import "../assets/css/action-workflow.css";
+import "../assets/css/callWidget.css";
+import "../assets/css/sentiment.css";
+import "../assets/css/transcript.css";
+import "../assets/css/contactInformation.css";
+import "../assets/css/cases.css";
+import "../assets/css/editCase.css";
+import "../assets/css/interactionHistory.css";
+import "../assets/css/createCase.css";
+import "../assets/css/auto-audit.css";
+import "../assets/css/callsummary.css";
+import "../assets/css/ai-wiki.css";
+import "../assets/css/dashboard.css";
+import "../assets/css/customer-360.css";
+import "../assets/css/demoPage.css";
+import "../assets/css/callContext.css";
+import "../assets/css/automateApp.css";
+import "../assets/css/globals.css";
+import "../assets/css/custom.css";
+
+import Head from "next/head";
+import { useEffect } from "react";
+import { SessionProvider } from "next-auth/react";
+import { Provider } from "react-redux";
+import { OktaAuth, toRelativeUrl } from "@okta/okta-auth-js";
+import { Security } from "@okta/okta-react";
+import Router from "next/router";
+import { store, persistor } from "../store";
+import { IntlProviderWrapper } from '../components/IntlProviderWrapper'
+import ApplicationLayoutHOC from "../components/hoc/applicationLayoutHOC";
+import "../utility/authentication/amplify-config";
+
+import ErrorBoundary from "../components/error/errorBoundary";
+
+if (typeof window !== "undefined") {
+  require("amazon-connect-streams");
 }
 
-.button-group {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-bottom: 20px;
+import { ApolloProvider } from "@apollo/client";
+import { Amplify } from "aws-amplify";
+
+import client from "../apollo-client";
+import { PersistGate } from "redux-persist/integration/react";
+
+const oktaAuthClient = new OktaAuth({
+  issuer: process.env.NEXT_PUBLIC_OKTA_ISSUER || "",
+  clientId: process.env.OKTA_CLIENT_ID || "",
+  redirectUri: "/",
+});
+
+function MyApp({ Component, pageProps }) {
+  useEffect(() => {
+    typeof document !== undefined
+      ? require("bootstrap/dist/js/bootstrap")
+      : null;
+
+    typeof document !== undefined ? require("moment/moment.js") : null;
+  }, []);
+
+  const restoreOriginalUri = async (_oktaAuth, originalUri) => {
+    // Router.replace(toRelativeUrl(originalUri || "/", window.location.origin));
+    Router.replace("/");
+  };
+
+  return (
+    <ErrorBoundary>
+      <Provider store={store}>
+        <PersistGate
+          loading={<div className="loading-view">Loading...</div>}
+          persistor={persistor}
+        >
+          {/* <Security
+            oktaAuth={oktaAuthClient}
+            restoreOriginalUri={restoreOriginalUri}
+          > */}
+          <SessionProvider session={pageProps.session}>
+            <ApolloProvider client={client}>
+                <IntlProviderWrapper>
+                <Head>
+                  <title>Agent Assist</title>
+                  <meta
+                    name="viewport"
+                    content="width=device-width, initial-scale=1"
+                  />
+                </Head>
+                <ApplicationLayoutHOC>
+                  <Component {...pageProps} />
+                </ApplicationLayoutHOC>
+                </IntlProviderWrapper>
+            </ApolloProvider>
+          </SessionProvider>
+          {/* </Security> */}
+        </PersistGate>
+      </Provider>
+    </ErrorBoundary>
+  );
 }
 
-.button-group h2 {
-    font-weight: 600;
-    font-size: 16px;
-    margin-right: 10px;
+export default MyApp;
+
+
+import logger from '../helpers/logger';
+import '../styles/globals.css'
+
+function MyApp({ Component, pageProps }) {
+  logger.error( 'My App' )
+  return <Component {...pageProps} />
 }
 
-.button-group button {
-    padding: 10px 15px;
-    border: 1px solid #ddd;
-    background-color: #f4f4f4;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
+MyApp.getInitialProps = async (ctx) => {
+ 
+  const areLogsEnabled = ctx?.router?.query?.debug || '';
+	global.areLogsEnabled = areLogsEnabled === 'true';
+  return {};
 }
 
-.button-group button.active {
-    background-color: #af8cf6;
-    color: white;
-    border: none;
-}
 
-.button-group button:hover {
-    background-color: #af8cf6;
-    color: white;
-    transform: translateY(-2px);
-}
-
-.content {
-    border: 1px solid #ddd;
-    padding: 20px;
-    margin-bottom: 20px;
-    background-color: #fafafa;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-.content h3 {
-    font-weight: 600;
-    font-size: 16px;
-    margin-bottom: 10px;
-}
-
-.dropdown-group {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.dropdown-group label {
-    display: flex;
-    flex-direction: column;
-    flex-basis: 100%;
-}
-
-.dropdown-group select {
-    padding: 10px;
-    margin-top: 5px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-}
-
-.audio-trimmer h3 {
-    margin: 10px 0;
-}
-
-.audio-trimmer {
-    background-color: #f8f8f8;
-    padding: 15px;
-    border-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.media-trimmer {
-    margin-bottom: 20px;
-    padding: 10px;
-    background-color: #f2f2f2;
-    border-radius: 4px;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
-}
-
-.script-upload {
-    margin-top: 10px;
-}
-
-.script-upload textarea {
-    width: 100%;
-    height: 100px;
-    padding: 10px;
-    border-radius: 4px;
-    border: 1px solid #ddd;
-    font-size: 14px;
-}
-
-.script-upload h4 {
-    margin-bottom: 8px;
-    font-weight: 600;
-    font-size: 16px;
-}
-
-.create-resource-btn, .upload-media-btn {
-    padding: 10px 20px;
-    background-color: #28a745;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s, transform 0.2s;
-}
-
-.create-resource-btn:hover, .upload-media-btn:hover {
-    background-color: #218838;
-    transform: translateY(-2px);
-}
-
-/* Responsive Styles */
-@media (max-width: 768px) {
-    .button-group {
-        flex-direction: column;
-    }
-
-    .dropdown-group {
-        flex-direction: column;
-    }
-
-    .dropdown-group label {
-        width: 100%;
-    }
-}
+export default MyApp
