@@ -1,101 +1,199 @@
-.nudge-layout {
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  font-family: Arial, sans-serif;
-}
+import React, { useState } from 'react';
+import { FaPlus, FaMinus } from 'react-icons/fa'; // Importing Plus and Minus icons
 
-.nudge-types {
-  display: flex;
-  align-items: center;
-  margin-bottom: 20px;
-}
+const NudgeForm = () => {
+  const [selectedNudge, setSelectedNudge] = useState('cc'); // Default to Call Context
+  const [isUtteranceMode, setUtteranceMode] = useState(false); // To track whether we are in Utterance mode
+  const [fields, setFields] = useState({
+    cc: [],
+    ai: [],
+    ss: [],
+    ka: [],
+  });
 
-.nudge-options {
-  display: flex;
-  gap: 20px;
-}
+  // Function to handle selecting a nudge type
+  const handleNudgeType = (type) => {
+    setSelectedNudge(type);
+    setUtteranceMode(false); // Reset utterance mode when switching nudges
+  };
 
-.nudge-option {
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  padding: 8px 12px;
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  transition: background-color 0.3s ease;
-}
+  // Function to add fields dynamically based on nudge type
+  const addField = (type) => {
+    setFields((prev) => ({
+      ...prev,
+      [type]: [...prev[type], prev[type].length + 1], // Add new field for the selected nudge type
+    }));
+  };
 
-.nudge-option:hover {
-  background-color: #e0e0e0;
-}
+  // Function to remove a field
+  const removeField = (type, index) => {
+    setFields((prev) => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index), // Remove field at the specified index
+    }));
+  };
 
-.main-content {
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
-}
+  // Function to switch to utterance mode
+  const handleAddUtterance = () => {
+    setUtteranceMode(true);
+    setSelectedNudge(''); // Reset nudge type when switching to utterance
+  };
 
-.left-section, .right-section {
-  width: 48%; /* Adjust width to create space between left and right sections */
-  padding: 10px;
-}
+  // Handle switching back to Call Context if "Add Nudge" is clicked
+  const handleAddNudge = () => {
+    setUtteranceMode(false);
+    setSelectedNudge('cc'); // Reset to Call Context
+  };
 
-h3 {
-  margin: 15px 0;
-}
+  return (
+    <div className="nudge-layout">
+      {/* Nudge Types Section at the Top */}
+      <div className="nudge-types">
+        <div>Nudge Type:</div>
+        <div className="nudge-options">
+          <div className="nudge-option" onClick={() => handleNudgeType('cc')}>
+            <span>Call Context</span>
+          </div>
+          <div className="nudge-option" onClick={() => handleNudgeType('ai')}>
+           <span>AI Guidance</span>
+          </div>
+          <div className="nudge-option" onClick={() => handleNudgeType('ss')}>
+           <span>Speech Suggestion</span>
+          </div>
+          <div className="nudge-option" onClick={() => handleNudgeType('ka')}>
+            <span>Knowledge Article</span>
+          </div>
+        </div>
+      </div>
 
-.row {
-  display: flex;
-  align-items: center;
-  margin-bottom: 15px; /* Space between rows */
-}
+      <div className="main-content">
+        {/* Left Column (Details Section) */}
+        <div className="left-section">
+          {!isUtteranceMode && selectedNudge === 'cc' && (
+            <div>
+              <h3>Call Context Fields:</h3>
+              {fields.cc.map((id, index) => (
+                <div key={`cc-${id}`} className="row">
+                  <div className="label">CC: Call Context Message {id}</div>
+                  <input type="text" placeholder="Title" />
+                  <button className="styled-button remove-button" onClick={() => removeField('cc', index)}>
+                    <FaMinus /> Remove
+                  </button>
+                </div>
+              ))}
+              <button className="styled-button" onClick={() => addField('cc')}>
+                <FaPlus /> Add More Call Context Fields
+              </button>
+            </div>
+          )}
 
-.label {
-  width: 150px; /* Fixed width for labels for alignment */
-  font-weight: bold;
-}
+          {!isUtteranceMode && selectedNudge === 'ai' && (
+            <div>
+              <h3>AI Guidance Fields:</h3>
+              {fields.ai.map((id, index) => (
+                <div key={`ai-${id}`} className="row">
+                  <div className="label">AI: Message {id}</div>
+                  <input type="text" placeholder="Message" />
+                  <button className="styled-button remove-button" onClick={() => removeField('ai', index)}>
+                    <FaMinus /> Remove
+                  </button>
+                </div>
+              ))}
+              <button className="styled-button" onClick={() => addField('ai')}>
+                <FaPlus /> Add More AI Guidance Fields
+              </button>
+            </div>
+          )}
 
-input[type="text"] {
-  flex: 1; /* Allow input to grow */
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  margin-left: 10px; /* Space between label and input */
-}
+          {!isUtteranceMode && selectedNudge === 'ss' && (
+            <div>
+              <h3>Speech Suggestion Fields:</h3>
+              {fields.ss.map((id, index) => (
+                <div key={`ss-${id}`} className="row">
+                  <div className="label">SS: Speech Suggestion Message {id}</div>
+                  <input type="text" placeholder="Title" />
+                  <button className="styled-button remove-button" onClick={() => removeField('ss', index)}>
+                    <FaMinus /> Remove
+                  </button>
+                </div>
+              ))}
+              <button className="styled-button" onClick={() => addField('ss')}>
+                <FaPlus /> Add More Speech Suggestion Fields
+              </button>
+            </div>
+          )}
 
-.styled-button {
-  padding: 8px 12px;
-  background-color: #007bff; /* Bootstrap primary color */
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  margin-top: 10px; /* Space above buttons */
-  transition: background-color 0.3s ease;
-}
+          {!isUtteranceMode && selectedNudge === 'ka' && (
+            <div>
+              <h3>Knowledge Article Fields:</h3>
+              {fields.ka.map((id, index) => (
+                <div key={`ka-${id}`} className="row">
+                  <div className="label">KA: Knowledge Article {id}</div>
+                  <input type="text" placeholder="Title" />
+                  <button className="styled-button remove-button" onClick={() => removeField('ka', index)}>
+                    <FaMinus /> Remove
+                  </button>
+                </div>
+              ))}
+              <button className="styled-button" onClick={() => addField('ka')}>
+                <FaPlus /> Add More Knowledge Article Fields
+              </button>
+            </div>
+          )}
 
-.styled-button:hover {
-  background-color: #0056b3; /* Darker shade for hover effect */
-}
+          {/* Utterance Mode */}
+          {isUtteranceMode && (
+            <div>
+              <h3>Utterance Fields</h3>
+              <div className="row">
+                <div className="label">Start Time:</div>
+                <input type="text" placeholder="Start Time" />
+              </div>
+              <div className="row">
+                <div className="label">End Time:</div>
+                <input type="text" placeholder="End Time" />
+              </div>
+              <div className="row">
+                <div className="label">Speaker:</div>
+                <input type="text" placeholder="Agent or Customer" />
+              </div>
+              <div className="row">
+                <div className="label">Sentiment:</div>
+                <div>
+                  <input type="radio" name="sentiment" value="positive" /> Positive
+                  <input type="radio" name="sentiment" value="neutral" /> Neutral
+                  <input type="radio" name="sentiment" value="negative" /> Negative
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
 
-.remove-button {
-  background-color: #dc3545; /* Bootstrap danger color */
-}
+        {/* Right Column (Basic Info Section) */}
+        <div className="right-section">
+          <div className="row">
+            <div className="label">Start Time</div>
+            <input type="text" placeholder="Start Time" />
+          </div>
 
-.remove-button:hover {
-  background-color: #c82333; /* Darker shade for hover effect */
-}
+          <div className="row">
+            <div className="label">Customer or Agent</div>
+            <input type="text" placeholder="Customer or Agent" />
+          </div>
 
-/* Responsive adjustments */
-@media (max-width: 768px) {
-  .main-content {
-    flex-direction: column; /* Stack left and right sections on smaller screens */
-  }
+          <div className="row">
+            <button className="styled-button" onClick={handleAddNudge}>Add Nudge</button>
+            <button className="styled-button" onClick={handleAddUtterance}>Add Utterance</button>
+          </div>
 
-  .left-section, .right-section {
-    width: 100%; /* Full width for stacked sections */
-  }
-}
+          <div className="row">
+            <div className="label">End Time</div>
+            <input type="text" placeholder="End Time" />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default NudgeForm;
