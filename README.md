@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
-import { FaPlus, FaMinus } from 'react-icons/fa'; // Importing Plus and Minus icons
-import './NudgeForm.css'; // Importing the updated CSS
+import { FaPlus, FaMinus } from 'react-icons/fa'; // Plus and Minus icons
+import './NudgeForm.css'; // Importing updated CSS
 
 const NudgeForm = () => {
-  // State to track which nudge type or button is selected
-  const [selectedNudge, setSelectedNudge] = useState('');
-  const [isUtteranceMode, setUtteranceMode] = useState(false); // To track whether we are in Utterance mode
+  const [selectedNudge, setSelectedNudge] = useState('cc'); // Default to 'cc'
+  const [isUtteranceMode, setUtteranceMode] = useState(false); // Track utterance mode
   const [fields, setFields] = useState({
     cc: [],
     ai: [],
@@ -13,39 +12,38 @@ const NudgeForm = () => {
     ka: [],
   });
 
-  // Function to handle selecting a nudge type
   const handleNudgeType = (type) => {
     setSelectedNudge(type);
-    setUtteranceMode(false); // Reset utterance mode when switching nudges
+    setUtteranceMode(false); // Reset utterance mode when selecting a nudge
   };
 
-  // Function to add fields dynamically based on nudge type
   const addField = (type) => {
     setFields((prev) => ({
       ...prev,
-      [type]: [...prev[type], prev[type].length + 1], // Add new field for the selected nudge type
+      [type]: [...prev[type], prev[type].length + 1],
     }));
   };
 
-  // Function to remove a field
   const removeField = (type, index) => {
     setFields((prev) => ({
       ...prev,
-      [type]: prev[type].filter((_, i) => i !== index), // Remove field at the specified index
+      [type]: prev[type].filter((_, i) => i !== index),
     }));
   };
 
-  // Function to switch to utterance mode
   const handleAddUtterance = () => {
     setUtteranceMode(true);
-    setSelectedNudge(''); // Reset nudge type when switching to utterance
+  };
+
+  const handleAddNudge = () => {
+    setUtteranceMode(false);
   };
 
   return (
     <div className="nudge-layout">
-      {/* Nudge Types Section at the Top */}
+      {/* Nudge Types Section */}
       <div className="nudge-types">
-        <div>Nudge Type:</div>
+        <h2>Select Nudge Type:</h2>
         <div className="nudge-options">
           <div className="nudge-option" onClick={() => handleNudgeType('cc')}>
             <FaPlus /> <span>Call Context</span>
@@ -63,12 +61,11 @@ const NudgeForm = () => {
       </div>
 
       <div className="main-content">
-        {/* Left Column (Details Section) */}
+        {/* Left Column */}
         <div className="left-section">
-          {/* Render the selected Nudge fields */}
           {!isUtteranceMode && selectedNudge === 'cc' && (
             <div>
-              <h3>Call Context Fields:</h3>
+              <h3>Call Context Fields</h3>
               {fields.cc.map((id, index) => (
                 <div key={`cc-${id}`} className="row">
                   <div className="label">CC: Call Context Message {id}</div>
@@ -86,7 +83,7 @@ const NudgeForm = () => {
 
           {!isUtteranceMode && selectedNudge === 'ai' && (
             <div>
-              <h3>AI Guidance Fields:</h3>
+              <h3>AI Guidance Fields</h3>
               {fields.ai.map((id, index) => (
                 <div key={`ai-${id}`} className="row">
                   <div className="label">AI: Message {id}</div>
@@ -104,7 +101,7 @@ const NudgeForm = () => {
 
           {!isUtteranceMode && selectedNudge === 'ss' && (
             <div>
-              <h3>Speech Suggestion Fields:</h3>
+              <h3>Speech Suggestion Fields</h3>
               {fields.ss.map((id, index) => (
                 <div key={`ss-${id}`} className="row">
                   <div className="label">SS: Speech Suggestion Message {id}</div>
@@ -122,7 +119,7 @@ const NudgeForm = () => {
 
           {!isUtteranceMode && selectedNudge === 'ka' && (
             <div>
-              <h3>Knowledge Article Fields:</h3>
+              <h3>Knowledge Article Fields</h3>
               {fields.ka.map((id, index) => (
                 <div key={`ka-${id}`} className="row">
                   <div className="label">KA: Knowledge Article {id}</div>
@@ -156,7 +153,7 @@ const NudgeForm = () => {
               </div>
               <div className="row">
                 <div className="label">Sentiment:</div>
-                <div>
+                <div className="radio-group">
                   <input type="radio" name="sentiment" value="positive" /> Positive
                   <input type="radio" name="sentiment" value="neutral" /> Neutral
                   <input type="radio" name="sentiment" value="negative" /> Negative
@@ -166,7 +163,7 @@ const NudgeForm = () => {
           )}
         </div>
 
-        {/* Right Column (Basic Info Section) */}
+        {/* Right Column */}
         <div className="right-section">
           <div className="row">
             <div className="label">Start Time</div>
@@ -179,7 +176,7 @@ const NudgeForm = () => {
           </div>
 
           <div className="row">
-            <button className="styled-button" onClick={() => setUtteranceMode(false)}>Add Nudge</button>
+            <button className="styled-button" onClick={handleAddNudge}>Add Nudge</button>
             <button className="styled-button" onClick={handleAddUtterance}>Add Utterance</button>
           </div>
 
