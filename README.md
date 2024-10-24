@@ -382,7 +382,8 @@ function Body({ transcript, setTranscript, setIndex, index }) {
 
               <button
                 className='transcript-div-button'
-                onClick={() => handleAddContext(index, { Title: '', Content: '' })}
+                onClick={() => { handleAddRecommendation(index, obj.EndTime, (index !== transcript.length - 1 ? transcript[index + 1].StartTime : obj.EndTime), transcript, setTranscript, setIndex) }}
+                // onClick={() => handleAddContext(index, { Title: '', Content: '' })}
               >
                 Add Call Context
               </button>
@@ -396,7 +397,8 @@ function Body({ transcript, setTranscript, setIndex, index }) {
 
                   <button
                     className='transcript-div-button'
-                    onClick={() => handleAddSpeechSuggestion(index, '')}
+                    onClick={() => { handleAddRecommendation(index, obj.EndTime, (index !== transcript.length - 1 ? transcript[index + 1].StartTime : obj.EndTime), transcript, setTranscript, setIndex) }}
+                    // onClick={() => handleAddSpeechSuggestion(index, '')}
                   >
                     Add Speech Suggestion
                  </button>
@@ -419,24 +421,25 @@ function Body({ transcript, setTranscript, setIndex, index }) {
 
                 <button
                   className='transcript-div-button'
-                  onClick={() => handleAddKnowledgeArticle(index)}
+                  onClick={() => { handleAddRecommendation(index, obj.EndTime, (index !== transcript.length - 1 ? transcript[index + 1].StartTime : obj.EndTime), transcript, setTranscript, setIndex) }}
+                  // onClick={() => handleAddKnowledgeArticle(index)}
                 >
                   Add Knowledge Article
                 </button>
               </div>
               <div className='customize-btns'>
-                <button
+                {/* <button
                   className="transcript-div-button"
                   onClick={() => { handleAddRecommendation(index, (index !== 0 ? transcript[index - 1].EndTime : 0), obj.StartTime, transcript, setTranscript, setIndex, 'before') }}
                 >
                   Add Guidance Before
-                </button>
+                </button> */}
 
                 <button
                   className="transcript-div-button"
                   onClick={() => { handleAddRecommendation(index, obj.EndTime, (index !== transcript.length - 1 ? transcript[index + 1].StartTime : obj.EndTime), transcript, setTranscript, setIndex) }}
                 >
-                  Add Guidance After
+                  Add Guidance
                 </button>
 
               <button className='transcript-div-button' onClick={() => handleRemove(index, transcript, setTranscript)}>
