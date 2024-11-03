@@ -56,7 +56,7 @@ function FileUpload({ setTranscript, message, setMessage }) {
 export default function Customize({ audio, setAudio }) {
   const demoState = useSelector((state) => state?.demostate);
   const isEditDemo = demoState?.editDemo;
-  const [transcript, setTranscript] = useState(demoState?.getDemoData?.transcript);
+  const [transcript, setTranscript] = useState(demoState?.getDemoData?.transcript || []);
   const [message, setMessage] = useState(undefined);
   const [index, setIndex] = useState(0);
   const [selectedNudge, setSelectedNudge] = useState('cc'); // Default to Call Context
@@ -111,12 +111,12 @@ export default function Customize({ audio, setAudio }) {
         </div>
       </div>
 
-      {/* Existing FileUpload and Transcript logic */}
+      {/* File Upload Section */}
       {!transcript?.length && <FileUpload setTranscript={setTranscript} message={message} setMessage={setMessage} />}
       {transcript?.length &&
         <div style={{ display: 'flex' }}>
           <div className='transcript-body'>
-            <Body transcript={JSON.parse(JSON.stringify(transcript))} setTranscript={setTranscript} setIndex={setIndex} index={index} />
+            <Body transcript={transcript} setTranscript={setTranscript} setIndex={setIndex} index={index} />
           </div>
           <div className='transcript-preview'>
             <TranscriptPreview
@@ -224,23 +224,18 @@ export default function Customize({ audio, setAudio }) {
             <div style={{ display: 'flex' }}>
               {isEditDemo &&
                 <>
-                  <button
-                    className='transcript-download-btn'
-                    onClick={sendTranscriptData}
-                  >
+                  <button className='transcript-download-btn' onClick={sendTranscriptData}>
                     Save Changes
                   </button>
-                  <button
-                    className='transcript-download-btn back-btn-right-align'
-                    onClick={handleBack}
-                  >
+                  <button className='transcript-download-btn back-btn-right-align' onClick={() => dispatch(setEditDemoTranscript(false))}>
                     Back
                   </button>
                 </>
               }
             </div>
           </div>
-        </div>}
+        </div>
+      }
     </div>
   );
 }
