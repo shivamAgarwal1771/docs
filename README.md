@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import Body from './Body';
 import { useDispatch, useSelector } from 'react-redux';
 import { MdDownload } from "react-icons/md";
 import TranscriptPreview from './Preview';
-import { handleAddRecommendation, handleRemove } from './Body';
-import { FaArrowRightFromBracket, FaPlus, FaMinus } from "react-icons/fa6";
+import { FaPlus, FaMinus } from "react-icons/fa6";
 import { checkJson } from '../../../utility/customise/checkJson';
 import { setDemoTranscriptSubmitted, setEditDemoTranscript, updateDemoData } from '../../../store/demo-slice';
 
@@ -54,10 +53,6 @@ function FileUpload({ setTranscript, message, setMessage }) {
   );
 }
 
-function JsonPreview({ transcript, index }) {
-  // JSON preview logic...
-}
-
 export default function Customize({ audio, setAudio }) {
   const demoState = useSelector((state) => state?.demostate);
   const isEditDemo = demoState?.editDemo;
@@ -70,14 +65,11 @@ export default function Customize({ audio, setAudio }) {
     ai: [],
     ss: [],
     ka: [],
+    utterance: [],
   });
   const dispatch = useDispatch();
 
   audio && setAudio(audio);
-
-  const downloadTranscript = () => {
-    // Download transcript logic...
-  };
 
   const sendTranscriptData = () => {
     if (isEditDemo && transcript?.length) {
@@ -85,11 +77,6 @@ export default function Customize({ audio, setAudio }) {
     }
     dispatch(setEditDemoTranscript(false));
     dispatch(setDemoTranscriptSubmitted(true));
-  };
-
-  const handleBack = () => {
-    dispatch(setEditDemoTranscript(false));
-    dispatch(setDemoTranscriptSubmitted(false));
   };
 
   const handleNudgeType = (type) => {
@@ -116,18 +103,11 @@ export default function Customize({ audio, setAudio }) {
       <div className="nudge-types">
         <div className="options-types">NUDGE TYPE</div>
         <div className="nudge-options">
-          <div className="nudge-option" onClick={() => handleNudgeType('cc')}>
-            <span>CALL CONTEXT</span>
-          </div>
-          <div className="nudge-option" onClick={() => handleNudgeType('ai')}>
-            <span>AI GUIDANCE</span>
-          </div>
-          <div className="nudge-option" onClick={() => handleNudgeType('ss')}>
-            <span>SPEECH SUGGESTION</span>
-          </div>
-          <div className="nudge-option" onClick={() => handleNudgeType('ka')}>
-            <span>KNOWLEDGE ARTICLE</span>
-          </div>
+          {['cc', 'ai', 'ss', 'ka', 'utterance'].map(type => (
+            <div key={type} className="nudge-option" onClick={() => handleNudgeType(type)}>
+              <span>{type === 'cc' ? 'CALL CONTEXT' : type === 'ai' ? 'AI GUIDANCE' : type === 'ss' ? 'SPEECH SUGGESTION' : type === 'ka' ? 'KNOWLEDGE ARTICLE' : 'UTTERANCES'}</span>
+            </div>
+          ))}
         </div>
       </div>
 
@@ -143,11 +123,8 @@ export default function Customize({ audio, setAudio }) {
               transcript={transcript}
               setTranscript={setTranscript}
               setIndex={setIndex}
-              handleAdd={handleAddRecommendation}
-              handleRemove={handleRemove}
               index={index}
             />
-            <JsonPreview transcript={transcript} index={index} />
 
             {/* Nudge Fields Section */}
             <div className="nudge-fields">
@@ -223,6 +200,25 @@ export default function Customize({ audio, setAudio }) {
                   </button>
                 </div>
               )}
+
+              {selectedNudge === 'utterance' && (
+                <div className="field-section">
+                  <h3>Utterance Fields:</h3>
+                  {fields.utterance.map((id, index) => (
+                    <div key={`utterance-${id}`} className="row">
+                      <div className="label">Utterance Message {id}</div>
+                      <input type="text" placeholder="Start Time" />
+                      <input type="text" placeholder="End Time" />
+                      <button className="styled-button remove-button" onClick={() => removeField('utterance', index)}>
+                        <FaMinus /> Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button className="styled-button" onClick={() => addField('utterance')}>
+                    <FaPlus /> Add More Utterance Fields
+                  </button>
+                </div>
+              )}
             </div>
 
             <div style={{ display: 'flex' }}>
@@ -235,7 +231,7 @@ export default function Customize({ audio, setAudio }) {
                     Save Changes
                   </button>
                   <button
-                    className='transcript-download-btn'
+                    className='transcript-download-btn back-btn-right-align'
                     onClick={handleBack}
                   >
                     Back
@@ -244,8 +240,7 @@ export default function Customize({ audio, setAudio }) {
               }
             </div>
           </div>
-        </div>
-      }
+        </div>}
     </div>
   );
 }
