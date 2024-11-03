@@ -1,476 +1,243 @@
-import React, { useEffect, useRef, useState } from 'react'
-import Slider from 'react-slick'
-import 'slick-carousel/slick/slick.css'
-import 'slick-carousel/slick/slick-theme.css'
-import { GrCaretPrevious, GrCaretNext } from "react-icons/gr"
-import { DisplayAudits, DisplaySentiment, DisplayAIWiki, DisplayCallContext, DisplayButton, DisplayChannelTime, DisplayWorkflow } from './Display'
-import { AI_ASSISTANT_TYPE } from '../../../utility/constants'
-import { v4 as uuidv4 } from 'uuid'; 
+import React, { useState } from 'react';
 
-export const handleRemove = (index, transcript, setTranscript) => {
-  const newTranscript = [...transcript]
-  newTranscript.splice(index, 1)
-  setTranscript(newTranscript)
-}
+const DynamicForm = () => {
+  const [contactFields, setContactFields] = useState([]);
+  const [cases, setCases] = useState([]);
+  const [interactions, setInteractions] = useState([]);
+  const [selectedTab, setSelectedTab] = useState('Contact Card');
 
-export const handleAddRecommendation = (index, prevEndTime, nextStartTime, transcript, setTranscript, setIndex, type) => {
-  const newTranscript = [...transcript]
-  let newStartTime = (Number(prevEndTime) + Number(nextStartTime)) / 2
-  let recommendation = {
-    "StartTime": newStartTime.toFixed(3),
-    "EndTime": (newStartTime + 1).toFixed(3),
-    "eventData": {
-      "Transcript": {
-        "Transcript": '{"Title":"","subTitle":"","message":""}',
-        "ChannelId": "AGENT_ASSISTANT",
-        "StartTime": newStartTime.toFixed(3),
-        "EndTime": (newStartTime + 1).toFixed(3),
-        "IsPartial": false,
-        "ResultId": uuidv4(),
-        "Sentiment": "Neutral",
-        "SentimentScore": {
-          "Positive": 0.1,
-          "Negative": 0.1,
-          "Neutral": 0.8,
-          "Mixed": 0
-        }
-      },
-      "Audits": []
-    }
-  }
-  if (type === 'before') {
-    newTranscript.splice(index, 0, recommendation)
-    setIndex(index)
-  } else {
-    newTranscript.splice(index + 1, 0, recommendation)
-    setIndex(index + 1)
-  }
-  setTranscript(newTranscript)
-}
+  const handleAddContactField = () => {
+    setContactFields([...contactFields, { field: '', value: '' }]);
+  };
 
-function Body({ transcript, setTranscript, setIndex, index }) {
-  let sliderRef = useRef(null)
-  useEffect(() => {
-    sliderRef.slickGoTo(index)
-  }, [index])
+  const handleRemoveContactField = (index) => {
+    const updatedFields = contactFields.filter((_, i) => i !== index);
+    setContactFields(updatedFields);
+  };
 
-  const handleEdit = (index, field, newValue) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].eventData.Transcript[field] = newValue
-    setTranscript(newTranscript)
-  }
+  const handleAddCase = () => {
+    setCases([...cases, {
+      caseId: '',
+      creationDate: '',
+      subject: '',
+      priority: '',
+      description: '',
+      attachments: ['', ''],
+      linked: ['', '', ''],
+      caseComments: [{ date: '', message: '' }]
+    }]);
+  };
 
-  const handleEditTime = (index, type, newValue) => {
-    const newTranscript = [...transcript]
-    newTranscript[index][type] = newValue
-    newTranscript[index].eventData.Transcript[type] = newValue
-    setTranscript(newTranscript)
-  }
+  const handleRemoveCase = (index) => {
+    const updatedCases = cases.filter((_, i) => i !== index);
+    setCases(updatedCases);
+  };
 
-  const handleEditInsightsAuditsWiki = (index, type, newValue) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].eventData[type] = newValue
-    setTranscript(newTranscript)
-  }
+  const handleAddInteraction = () => {
+    setInteractions([...interactions, { title: '', date: '', time: '', description: '' }]);
+  };
 
-  const handleEditKnowledgeArticle = (objIndex, type, value) => {
-    const newTranscript = [...transcript]
-    newTranscript[objIndex].eventData[type] = value
-    setTranscript(newTranscript)
-  }
-
-
-  const handleEditRecomendation = (index, field, newValue) => {
-    const newTranscript = [...transcript]
-    const newRecommendation = JSON.parse(newTranscript[index].eventData.Transcript.Transcript)
-    newRecommendation[field] = newValue
-    newTranscript[index].eventData.Transcript.Transcript = JSON.stringify(newRecommendation)
-    setTranscript(newTranscript)
-  }
-
-  const handleEditWorkflow = (objIndex, index, type, value) => {
-    const newTranscript = [...transcript]
-    newTranscript[objIndex].eventData.Guidance[index][type] = value
-    if (value !== 'running') {
-      newTranscript[objIndex].eventData.Guidance[index]["steps"] = []
-    }
-    setTranscript(newTranscript)
-  }
-
-  const handleEditSpeech = (objIndex, index, value) => {
-    const newTranscript = [...transcript]
-    newTranscript[objIndex].eventData.Guidance[index].value = value
-    setTranscript(newTranscript)
-  }
-
-  const handleEditWorkflowStep = (objIndex, guidInd, index, type, value) => {
-    const newTranscript = [...transcript]
-    let step = newTranscript[objIndex].eventData.Guidance[guidInd].steps[index]
-    if (type === 'stepName' || type === 'state') {
-      step[type] = value
-    }
-    if (type === 'type') {
-      step.card.type = value
-    }
-    if (type === 'text') {
-      step.card.messages[0].text = value
-    }
-    newTranscript[objIndex].eventData.Guidance[guidInd].steps[index] = step
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveAudit = (index, auditIndex) => {
-    const newTranscript = [...transcript]
-    newTranscript[index]?.eventData?.Audits.splice(auditIndex, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveWiki = (index, wikiIndex) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].eventData.AIWikiChat.splice(wikiIndex, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveGuidance = (index, guidInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].eventData.Guidance.splice(guidInd, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveWorkflowStep = (index, guidInd, stepInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].eventData.Guidance[guidInd].steps.splice(stepInd, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveKnowledgeArticle = (index, guidInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index]?.eventData?.Guidance.splice(guidInd, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveCallContext = (index, guidInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index]?.eventData?.Context?.splice(guidInd, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveButton = (index, guidInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index]?.eventData?.Button?.splice(guidInd, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleAddAudit = (index, newAudit) => {
-    const newTranscript = [...transcript]
-
-    let audit = newTranscript[index].eventData?.Audits ?
-      newTranscript[index].eventData.Audits :
-      []
-    audit.push(newAudit)
-    newTranscript[index].eventData.Audits = audit
-    setTranscript(newTranscript)
-  }
-
-  const handleAddContext = (index, newContext) => {
-    const newTranscript = [...transcript]
-    let context = newTranscript[index].eventData?.Context ?
-      newTranscript[index].eventData.Context :
-      []
-    context.push(newContext)
-    newTranscript[index].eventData.Context = context
-    setTranscript(newTranscript)
-  }
-
-  const handleAddButton = (index, newButton) => {
-    const newTranscript = [...transcript]
-    let button = newTranscript[index].eventData?.Button ?
-      newTranscript[index].eventData.Button :
-      []
-    button.push(newButton)
-    newTranscript[index].eventData.Button = button
-    setTranscript(newTranscript)
-  }
-
-  const handleAddWiki = (index, newWiki) => {
-    const newTranscript = [...transcript]
-    let chats = newTranscript[index].eventData?.AIWikiChat ?
-      newTranscript[index].eventData.AIWikiChat :
-      []
-    chats.push(newWiki)
-    newTranscript[index].eventData.AIWikiChat = chats
-    setTranscript(newTranscript)
-  }
-
-  const handleAdjustSentiment = (index) => {
-    const newTranscript = [...transcript]
-    let pos = newTranscript[index].eventData.Transcript.SentimentScore.Positive
-    let neg = newTranscript[index].eventData.Transcript.SentimentScore.Negative
-    let neu = newTranscript[index].eventData.Transcript.SentimentScore.Neutral
-
-    let sen = Math.max(pos, neg, neu) === pos ? "Positive" : Math.max(pos, neg, neu) === neg ? "Negative" : "Neutral"
-
-    newTranscript[index].eventData.Transcript.Sentiment = sen
-    setTranscript(newTranscript)
-  }
-
-  const handleAddSpeechSuggestion = (index, value) => {
-    const newTranscript = [...transcript]
-    let guidance = {
-      "type": AI_ASSISTANT_TYPE.SPEECH_SUGGESTION,
-      "name": "Speech Suggestion",
-      "value": value
-    }
-    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
-    Gui.push(guidance)
-    newTranscript[index].eventData.Guidance = Gui
-    setTranscript(newTranscript)
-  }
-
-  const handleAddActionWorkflow = (index, type, intent, name) => {
-    const newTranscript = [...transcript]
-    let guidance = {
-      "type": AI_ASSISTANT_TYPE.ACTION_WORKFLOW,
-      "cardShown": true,
-      "workflowType": type,
-      "intent": intent,
-      "name": name,
-      "steps": []
-    }
-    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
-    Gui.push(guidance)
-    newTranscript[index].eventData.Guidance = Gui
-    setTranscript(newTranscript)
-  }
-
-  const handleAddWorkflowStep = (index, guidInd, name, state, type, text) => {
-    const newTranscript = [...transcript]
-    let runningFlow = newTranscript[index].eventData.Guidance[guidInd]
-    if (runningFlow.workflowType !== 'running') {
-      return
-    }
-
-    let step = {
-      "stepName": name,
-      "state": state,
-      "card": {
-        "type": type,
-        "isEditable": false,
-        "messages": [
-          {
-            "text": text
-          }
-        ]
-      }
-    }
-
-    runningFlow.steps.push(step)
-
-    newTranscript[index].eventData.Guidance[guidInd] = runningFlow
-    setTranscript(newTranscript)
-  }
-
-  const handleStartActionWorkflow = (index, intent) => {
-    const newTranscript = [...transcript]
-    let guidance = {
-      "type": AI_ASSISTANT_TYPE.ACTION_WORKFLOW,
-      "cardShown": false,
-      "intent": intent,
-    }
-    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
-    Gui.push(guidance)
-    newTranscript[index].eventData.Guidance = Gui
-    setTranscript(newTranscript)
-  }
-
-  const handleClick = (index) => {
-    let falseworkflow = true
-
-    transcript.forEach(element => {
-      element?.eventData?.Guidance?.forEach(el => {
-        if (el?.cardShown === false) {
-          falseworkflow = false
-        }
-      })
-    })
-
-    if (falseworkflow) {
-      handleStartActionWorkflow(index, '')
-    }
-  }
-
-  const handleAddKnowledgeArticle = (index) => {
-    const newTranscript = [...transcript]
-    let guidance = {
-      "type": AI_ASSISTANT_TYPE.KNOWLEDGE_ARTICLE,
-      "name": '',
-      "value": []
-    }
-    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
-    Gui.push(guidance)
-    newTranscript[index].eventData.Guidance = Gui
-    setTranscript(newTranscript)
-  }
+  const handleRemoveInteraction = (index) => {
+    const updatedInteractions = interactions.filter((_, i) => i !== index);
+    setInteractions(updatedInteractions);
+  };
 
   return (
-    <Slider
-      dots={false}
-      infinite={false}
-      speed={250}
-      slidesToShow={1}
-      slidesToScroll={1}
-      draggable = {false}
-      prevArrow={<GrCaretPrevious color='black' />}
-      nextArrow={<GrCaretNext color='black' />}
-      afterChange={(current) => { setIndex(current) }}
-      ref={slider => { sliderRef = slider }}
-    >
-      {transcript.map((obj, index) => {
-        let text = obj.eventData.Transcript.Transcript
-        let channelId = obj.eventData.Transcript.ChannelId
+    <div>
+      <div className="tabs">
+        <button onClick={() => setSelectedTab('Contact Card')}>Contact Card</button>
+        <button onClick={() => setSelectedTab('Cases')}>Cases</button>
+        <button onClick={() => setSelectedTab('Interaction History')}>Interaction History</button>
+      </div>
 
-        let isRecommendation = text && text.includes('"Title"') && channelId === 'AGENT_ASSISTANT' ? JSON.parse(text) : null
-
-        return (
-          <div key={index} className='transcript-div'>
-
-            <div className='transcript-div-child'>
-              {isRecommendation ? 
-                <div className='transcript-div-recommendation' >
-                  <input
-                    className='transcript-div-recommendation-input'
-                    type="text"
-                    placeholder='Title'
-                    value={isRecommendation.Title}
-                    onChange={(e) => {handleEditRecomendation(index, 'Title', e.target.value)}}
-                    required
-                  />
-                  <input
-                    className='transcript-div-recommendation-input'
-                    type="text"
-                    placeholder='subTitle'
-                    value={isRecommendation.subTitle}
-                    onChange={(e) => {handleEditRecomendation(index, 'subTitle', e.target.value)}}
-                    required
-                  />
-                  <textarea
-                    className='transcript-div-textarea'
-                    type="text"
-                    placeholder='message'
-                    value={isRecommendation.message}
-                    onChange={(e) => {handleEditRecomendation(index, 'message', e.target.value)}}
-                    required
-                  />
-                </div> :
-                <textarea
-                  className='transcript-div-textarea'
-                  placeholder='Add recommendation / transcript here'
-                  value={text}
-                  onChange={(e) => handleEdit(index, 'Transcript', e.target.value)}
-                  required
-                />}
+      {selectedTab === 'Contact Card' && (
+        <div className="contact-card">
+          <h2>Contact Card</h2>
+          <button onClick={handleAddContactField}>Add Customer Field</button>
+          {contactFields.map((_, index) => (
+            <div key={index} className="field-row">
+              <input type="text" placeholder="Field" />
+              <input type="text" placeholder="Value" />
+              <button onClick={() => handleRemoveContactField(index)}>Remove</button>
             </div>
+          ))}
+        </div>
+      )}
 
-            <div className='transcript-div-child'>
-              <div className="customize-btns">
-                {/* <button
-                  className='transcript-div-button'
-                  onClick={() => handleAddAudit(index, { section: "", auditStatus: "FAIL", questions: [] })}
-                >
-                  Add Audit
-                </button> */}
+      {selectedTab === 'Cases' && (
+        <div className="cases">
+          <h2>Cases</h2>
+          <button onClick={handleAddCase}>Add Case</button>
+          {cases.map((caseItem, index) => (
+            <div key={index} className="case-section">
+              <input type="text" placeholder="Case ID" />
+              <input type="date" placeholder="Creation Date" />
+              <input type="text" placeholder="Subject" />
+              <input type="text" placeholder="Priority" />
+              <textarea placeholder="Description"></textarea>
 
-              <button
-                className='transcript-div-button'
-                onClick={() => handleAddContext(index, { Title: '', Content: '' })}
-              >
-                Add Call Context
-              </button>
-              
-                {/* <button
-                  className='transcript-div-button'
-                  onClick={() => handleAddWiki(index, { user: '', utterance: '' })}
-                >
-                  Add AI Wiki
-                </button> */}
-
-                  <button
-                    className='transcript-div-button'
-                    onClick={() => handleAddSpeechSuggestion(index, '')}
-                  >
-                    Add Speech Suggestion
-                 </button>
-                </div>
+              <div className="attachments">
+                <h4>Attachments</h4>
+                {caseItem.attachments.map((_, i) => (
+                  <input key={i} type="text" placeholder={`Attachment ${i + 1}`} />
+                ))}
               </div>
-              <div className='customize-btns'>
-                {/* <button
-                  className='transcript-div-button'
-                  onClick={() => handleAddActionWorkflow(index, 'detected', '', '')}
-                >
-                  Add Action Workflow
-                </button> */}
 
-                {/* <button
-                  className='transcript-div-button'
-                  onClick={() => handleClick(index, '')}
-                >
-                  Start Action Workflow
-                </button> */}
-
-                <button
-                  className='transcript-div-button'
-                  onClick={() => handleAddKnowledgeArticle(index)}
-                >
-                  Add Knowledge Article
-                </button>
+              <div className="linked">
+                <h4>Linked</h4>
+                {caseItem.linked.map((_, i) => (
+                  <input key={i} type="text" placeholder={`Linked ${i + 1}`} />
+                ))}
               </div>
-              <div className='customize-btns'>
-                {/* <button
-                  className="transcript-div-button"
-                  onClick={() => { handleAddRecommendation(index, (index !== 0 ? transcript[index - 1].EndTime : 0), obj.StartTime, transcript, setTranscript, setIndex, 'before') }}
-                >
-                  Add Guidance Before
-                </button> */}
 
-                <button
-                  className="transcript-div-button"
-                  onClick={() => { handleAddRecommendation(index, obj.EndTime, (index !== transcript.length - 1 ? transcript[index + 1].StartTime : obj.EndTime), transcript, setTranscript, setIndex) }}
-                >
-                  Add Guidance
-                </button>
+              <div className="case-comments">
+                <h4>Case Comments</h4>
+                {caseItem.caseComments.map((comment, i) => (
+                  <div key={i} className="comment-row">
+                    <input type="date" placeholder="Date" />
+                    <textarea placeholder="Message"></textarea>
+                  </div>
+                ))}
+              </div>
 
-              <button className='transcript-div-button' onClick={() => handleRemove(index, transcript, setTranscript)}>
-                Remove Event
-              </button>
-
-              <button
-                className='transcript-div-button'
-                onClick={() => handleAddButton(index, { intialText: '', finalText: '' })}
-              >
-                Add Button
-              </button>
-
+              <button onClick={() => handleRemoveCase(index)}>Remove Case</button>
             </div>
+          ))}
+        </div>
+      )}
 
-            {<DisplayChannelTime obj={obj} index={index} handleEdit={handleEdit} handleEditTime={handleEditTime} />
+      {selectedTab === 'Interaction History' && (
+        <div className="interaction-history">
+          <h2>Interaction History</h2>
+          <button onClick={handleAddInteraction}>Add Interaction</button>
+          {interactions.map((interaction, index) => (
+            <div key={index} className="interaction-section">
+              <input type="text" placeholder="Title" />
+              <input type="date" placeholder="Date" />
+              <input type="time" placeholder="Time" />
+              <textarea placeholder="Description"></textarea>
+              <button onClick={() => handleRemoveInteraction(index)}>Remove Interaction</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
 
-            /*<DisplayAudits objIndex={index} audits={obj.eventData.Audits ? obj.eventData.Audits : []} handleRemoveAudit={handleRemoveAudit} handleEditInsightsAuditsWiki={handleEditInsightsAuditsWiki} />
-            
-            <DisplayCallContext objIndex={index} callContext={obj.eventData.Context ? obj.eventData.Context : []} handleEditInsightsAuditsWiki={handleEditInsightsAuditsWiki} handleRemoveCallContext={handleRemoveCallContext} />
+export default DynamicForm;
 
-            <DisplayButton objIndex={index} button={obj.eventData.Button ? obj.eventData.Button : []} handleEditInsightsAuditsWiki={handleEditInsightsAuditsWiki} handleRemoveButton={handleRemoveButton} />
 
-            <DisplaySentiment objIndex={index} sentimentScore={obj.eventData.Transcript.SentimentScore} handleEdit={handleEdit} handleAdjustSentiment={handleAdjustSentiment} />
 
-            <DisplayAIWiki objIndex={index} wikiChats={obj.eventData.AIWikiChat ? obj.eventData.AIWikiChat : []} handleEditInsightsAuditsWiki={handleEditInsightsAuditsWiki} handleRemoveWiki={handleRemoveWiki} />
 
-            <DisplayWorkflow objIndex={index} guidance={obj.eventData.Guidance ? obj.eventData.Guidance : []} handleEditWorkflow={handleEditWorkflow} handleEditWorkflowStep={handleEditWorkflowStep} handleAddWorkflowStep={handleAddWorkflowStep} handleEditKnowledgeArticle={handleEditKnowledgeArticle} handleRemoveKnowledgeArticle={handleRemoveKnowledgeArticle} handleRemoveGuidance={handleRemoveGuidance} handleRemoveWorkflowStep={handleRemoveWorkflowStep} handleEditSpeech={handleEditSpeech} /> */}
-
-          </div>
-        )
-      })}
-    </Slider>
-  )
+/* Styles for the tabs */
+.tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
 }
 
-export default Body;
+.tabs button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.tabs button:hover {
+  background-color: #0056b3;
+}
+
+.tabs button:focus {
+  outline: none;
+}
+
+/* General styles for the form sections */
+.contact-card, .cases, .interaction-history {
+  background-color: #f9f9f9;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  margin-bottom: 20px;
+}
+
+h2 {
+  margin-bottom: 16px;
+  font-size: 24px;
+}
+
+/* Styles for the fields */
+.field-row, .case-section, .interaction-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+input[type="text"],
+input[type="date"],
+input[type="time"],
+textarea {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+textarea {
+  resize: vertical;
+}
+
+button {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background-color: #28a745;
+  color: #fff;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #218838;
+}
+
+button:focus {
+  outline: none;
+}
+
+/* Specific styles for case sections */
+.attachments, .linked, .case-comments {
+  margin-top: 16px;
+}
+
+h4 {
+  margin-bottom: 10px;
+  font-size: 18px;
+}
+
+/* Styles for individual input boxes */
+.attachments input,
+.linked input,
+.case-comments .comment-row input,
+.case-comments .comment-row textarea {
+  margin-bottom: 10px;
+}
+
+.case-comments .comment-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.remove-button {
+  background-color: #dc3545;
+}
+
+.remove-button:hover {
+  background-color: #c82333;
+}
