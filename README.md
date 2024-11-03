@@ -25,7 +25,7 @@ function FileUpload({ setTranscript, message, setMessage }) {
           setMessage(reviewJson.msg);
           setTimeout(() => {
             setMessage('');
-          }, [8000]);
+          }, 8000);
         } else {
           jsonData.forEach((obj) => {
             if (obj.eventData.Context && !Array.isArray(obj.eventData.Context)) {
@@ -38,7 +38,7 @@ function FileUpload({ setTranscript, message, setMessage }) {
         setMessage('Not a valid JSON or format');
         setTimeout(() => {
           setMessage('');
-        }, [8000]);
+        }, 8000);
         console.error(err);
       }
     };
@@ -58,7 +58,6 @@ export default function Customize({ audio, setAudio }) {
   const isEditDemo = demoState?.editDemo;
   const [transcript, setTranscript] = useState(demoState?.getDemoData?.transcript || []);
   const [message, setMessage] = useState(undefined);
-  const [index, setIndex] = useState(0);
   const [selectedNudge, setSelectedNudge] = useState('cc'); // Default to Call Context
   const [fields, setFields] = useState({
     cc: [],
@@ -116,14 +115,12 @@ export default function Customize({ audio, setAudio }) {
       {transcript?.length &&
         <div style={{ display: 'flex' }}>
           <div className='transcript-body'>
-            <Body transcript={transcript} setTranscript={setTranscript} setIndex={setIndex} index={index} />
+            <Body transcript={transcript} setTranscript={setTranscript} />
           </div>
           <div className='transcript-preview'>
             <TranscriptPreview
               transcript={transcript}
               setTranscript={setTranscript}
-              setIndex={setIndex}
-              index={index}
             />
 
             {/* Nudge Fields Section */}
@@ -234,8 +231,7 @@ export default function Customize({ audio, setAudio }) {
               }
             </div>
           </div>
-        </div>
-      }
+        </div>}
     </div>
   );
 }
