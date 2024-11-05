@@ -1,114 +1,127 @@
-/* General styles for the transcript container */
+/* General container styling */
 .transcript-div {
   display: flex;
   flex-direction: column;
-  border: 1px solid #ddd;
-  border-radius: 5px;
-  padding: 16px;
-  margin-bottom: 16px;
-  background-color: #fff;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 20px;
+  background-color: #fafafa;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
 }
 
+/* Child element styling for proper spacing */
 .transcript-div-child {
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
-/* Input styles */
+/* Input field styling */
 .transcript-div-recommendation-input {
   width: 100%;
-  padding: 8px;
-  margin-bottom: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 10px;
+  border: 1px solid #bdbdbd;
+  border-radius: 6px;
+  font-size: 15px;
+  margin-bottom: 12px;
+  box-sizing: border-box;
 }
 
 .transcript-div-textarea {
   width: 100%;
-  min-height: 100px;
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  font-size: 14px;
+  min-height: 120px;
+  padding: 10px;
+  border: 1px solid #bdbdbd;
+  border-radius: 6px;
+  font-size: 15px;
   resize: vertical;
+  box-sizing: border-box;
 }
 
-/* Button styles */
+/* Button styling with defined colors */
 .transcript-div-button {
-  padding: 8px 16px;
-  margin-right: 8px;
-  margin-top: 8px;
-  background-color: #007bff;
-  color: #fff;
+  padding: 10px 20px;
+  margin-top: 10px;
+  background-color: #28a745;
+  color: #ffffff;
   border: none;
-  border-radius: 4px;
-  font-size: 14px;
+  border-radius: 6px;
+  font-size: 15px;
   cursor: pointer;
   transition: background-color 0.3s ease;
 }
 
 .transcript-div-button:hover {
-  background-color: #0056b3;
+  background-color: #218838;
 }
 
+/* Button group alignment */
 .customize-btns {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
+  justify-content: flex-start;
+  align-items: center;
 }
 
-/* Slider arrow styles */
-.slick-prev, .slick-next {
+/* Slider arrow styling for better visibility */
+.slick-prev,
+.slick-next {
   z-index: 1;
-  color: #000;
+  color: #6c757d;
   font-size: 24px;
 }
 
-/* Headings and other text elements */
+/* Heading styling for a polished look */
 h2, h3 {
-  margin: 16px 0;
-  font-weight: 600;
-  color: #333;
+  margin: 20px 0 12px;
+  font-weight: 700;
+  color: #343a40;
 }
 
-/* Additional context and guidance styles */
-.context-item, .guidance-item {
-  padding: 8px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-bottom: 8px;
-  background-color: #f9f9f9;
+/* Additional styles for context and guidance items */
+.context-item,
+.guidance-item {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  margin-bottom: 10px;
+  background-color: #ffffff;
 }
 
 .context-item input,
 .guidance-item input {
-  width: calc(100% - 16px);
-  padding: 4px;
-  border: 1px solid #ddd;
+  width: calc(100% - 20px);
+  padding: 6px;
+  border: 1px solid #ced4da;
   border-radius: 4px;
+  font-size: 14px;
 }
 
-/* Styles for section headers */
+/* Section header styling */
 .section-header {
   font-size: 16px;
   font-weight: bold;
-  margin-bottom: 8px;
-  color: #444;
+  margin-bottom: 10px;
+  color: #495057;
 }
 
-/* Improved spacing for form elements */
+/* Improved form group spacing */
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-direction: column;
 }
 
-/* Better display for sentiment and other elements */
+/* Sentiment score display styling */
 .sentiment-score {
   display: flex;
-  gap: 12px;
+  align-items: center;
+  gap: 14px;
 }
 
 .sentiment-score span {
   font-size: 14px;
-  color: #555;
+  color: #6c757d;
 }
