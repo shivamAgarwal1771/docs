@@ -1,128 +1,113 @@
-import React, { useState } from 'react';
+/* Styles for the tabs */
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
 
-const DynamicForm = () => {
-  const [contactFields, setContactFields] = useState([]);
-  const [cases, setCases] = useState([]);
-  const [interactions, setInteractions] = useState([]);
-  const [selectedTab, setSelectedTab] = useState('Contact Card');
+.tab-button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 16px;
+}
 
-  const handleAddContactField = () => {
-    setContactFields([...contactFields, { field: '', value: '' }]);
-  };
+.tab-button:hover {
+    background-color: #0056b3;
+}
 
-  const handleRemoveContactField = (index) => {
-    const updatedFields = contactFields.filter((_, i) => i !== index);
-    setContactFields(updatedFields);
-  };
+.tab-button:focus {
+    outline: none;
+}
 
-  const handleAddCase = () => {
-    setCases([...cases, {
-      caseId: '',
-      creationDate: '',
-      subject: '',
-      priority: '',
-      description: '',
-      attachments: ['', ''],
-      linked: ['', '', ''],
-      caseComments: [{ date: '', message: '' }]
-    }]);
-  };
+/* General styles for the form sections */
+.contact-card, .cases, .interaction-history {
+    background-color: #f9f9f9;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
 
-  const handleRemoveCase = (index) => {
-    const updatedCases = cases.filter((_, i) => i !== index);
-    setCases(updatedCases);
-  };
+h2 {
+    margin-bottom: 20px;
+    font-size: 24px;
+}
 
-  const handleAddInteraction = () => {
-    setInteractions([...interactions, { title: '', date: '', time: '', description: '' }]);
-  };
+/* Styles for the fields */
+.field-row, .case-section, .interaction-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 20px;
+}
 
-  const handleRemoveInteraction = (index) => {
-    const updatedInteractions = interactions.filter((_, i) => i !== index);
-    setInteractions(updatedInteractions);
-  };
+.input-field {
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    width: 100%;
+    box-sizing: border-box;
+    font-size: 14px;
+}
 
-  return (
-    <div>
-      <div className="tabs">
-        <button className="tab-button" onClick={() => setSelectedTab('Contact Card')}>Contact Card</button>
-        <button className="tab-button" onClick={() => setSelectedTab('Cases')}>Cases</button>
-        <button className="tab-button" onClick={() => setSelectedTab('Interaction History')}>Interaction History</button>
-      </div>
+textarea {
+    resize: vertical;
+}
 
-      {selectedTab === 'Contact Card' && (
-        <div className="contact-card">
-          <h2>Contact Card</h2>
-          <button className="btn" onClick={handleAddContactField}>Add Customer Field</button>
-          {contactFields.map((_, index) => (
-            <div key={index} className="field-row">
-              <input className="input-field" type="text" placeholder="Field" />
-              <input className="input-field" type="text" placeholder="Value" />
-              <button className="remove-button" onClick={() => handleRemoveContactField(index)}>Remove</button>
-            </div>
-          ))}
-        </div>
-      )}
+/* Button styles */
+.btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #28a745;
+    color: #fff;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 16px;
+}
 
-      {selectedTab === 'Cases' && (
-        <div className="cases">
-          <h2>Cases</h2>
-          <button className="btn" onClick={handleAddCase}>Add Case</button>
-          {cases.map((caseItem, index) => (
-            <div key={index} className="case-section">
-              <input className="input-field" type="text" placeholder="Case ID" />
-              <input className="input-field" type="date" placeholder="Creation Date" />
-              <input className="input-field" type="text" placeholder="Subject" />
-              <input className="input-field" type="text" placeholder="Priority" />
-              <textarea className="input-field" placeholder="Description"></textarea>
+.btn:hover {
+    background-color: #218838;
+}
 
-              <div className="attachments">
-                <h4>Attachments</h4>
-                {caseItem.attachments.map((_, i) => (
-                  <input key={i} className="input-field" type="text" placeholder={`Attachment ${i + 1}`} />
-                ))}
-              </div>
+.btn:focus {
+    outline: none;
+}
 
-              <div className="linked">
-                <h4>Linked</h4>
-                {caseItem.linked.map((_, i) => (
-                  <input key={i} className="input-field" type="text" placeholder={`Linked ${i + 1}`} />
-                ))}
-              </div>
+.remove-button {
+    background-color: #dc3545;
+    padding: 10px 20px;
+}
 
-              <div className="case-comments">
-                <h4>Case Comments</h4>
-                {caseItem.caseComments.map((comment, i) => (
-                  <div key={i} className="comment-row">
-                    <input className="input-field" type="date" placeholder="Date" />
-                    <textarea className="input-field" placeholder="Message"></textarea>
-                  </div>
-                ))}
-              </div>
+.remove-button:hover {
+    background-color: #c82333;
+}
 
-              <button className="remove-button" onClick={() => handleRemoveCase(index)}>Remove Case</button>
-            </div>
-          ))}
-        </div>
-      )}
+/* Specific styles for case sections */
+.attachments, .linked, .case-comments {
+    margin-top: 16px;
+}
 
-      {selectedTab === 'Interaction History' && (
-        <div className="interaction-history">
-          <h2>Interaction History</h2>
-          <button className="btn" onClick={handleAddInteraction}>Add Interaction</button>
-          {interactions.map((interaction, index) => (
-            <div key={index} className="interaction-section">
-              <input className="input-field" type="text" placeholder="Title" />
-              <input className="input-field" type="date" placeholder="Date" />
-              <input className="input-field" type="time" placeholder="Time" />
-              <textarea className="input-field" placeholder="Description"></textarea>
-              <button className="remove-button" onClick={() => handleRemoveInteraction(index)}>Remove Interaction</button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-};
+h4 {
+    margin-bottom: 10px;
+    font-size: 18px;
+}
 
-export default DynamicForm;
+/* Styles for individual input boxes */
+.attachments input,
+.linked input,
+.case-comments .comment-row input,
+.case-comments .comment-row textarea {
+    margin-bottom: 10px;
+}
+
+.case-comments .comment-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
