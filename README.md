@@ -1,80 +1,93 @@
-import React, { useState } from 'react';
-import AgentDetails from '../../components/demoCreationComponents/upload-demo/AgentDetails';
-import MediaSelection from '../../components/demoCreationComponents/upload-demo/MediaSelection';
-import Customize from "../../components/demoCreationComponents/customise/customisejson";
-import CallSummaryDetails from "../../components/demoCreationComponents/upload-demo/CallSummaryDetails";
-import CallSummaryTabs from "../../components/demoCreationComponents/upload-demo/callSummaryinfo";
-import CustomizeWiki from "../../components/demoCreationComponents/customise/Aiwiki";
-import CustomizeAutoAudit from "../../components/demoCreationComponents/customise/AutoAuditjson";
-import CustomiseActionWorkflow from "../../components/demoCreationComponents/customise/ActionWorkflowjson";
+.progress-bar-container {
+    font-family: Arial, sans-serif;
+    padding: 20px;
+    margin-left: 14px;
+}
 
-const steps = [
-  { number: 1, label: "Demo Details", component: <AgentDetails handleInput={() => { }} metadata={"text"} /> },
-  { number: 2, label: "Demo Resources", component: <MediaSelection /> },
-  { number: 3, label: "Nudges & Utterances", component: <Customize audio={""} setAudio={""} /> },
-  { number: 4, label: "Agent Wiki", component: <CustomizeWiki /> },
-  { number: 5, label: "Auto-Audit", component: <CustomizeAutoAudit /> },
-  { number: 6, label: "Action Workflow", component: <CustomiseActionWorkflow /> },
-  { number: 7, label: "Customer Info", component: <CallSummaryDetails /> },
-  { number: 8, label: "Call Summary", component: <CallSummaryTabs /> }
-];
+.progress-bar {
+    display: flex;
+    align-items: center;
+}
 
-const ProgressBar = () => {
-  const [activeStep, setActiveStep] = useState(1);
-  const [completedSteps, setCompletedSteps] = useState([]);
+.progress-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-right: 10px;
+    position: relative;
+}
 
-  const handlePrevious = () => {
-    if (activeStep > 1) setActiveStep(prev => prev - 1);
-  };
+.step-shape {
+    width: 125px;
+    height: 57px;
+    margin-left: 38px;
+    clip-path: polygon(0% 0%, 85% 0%, 100% 50%, 85% 100%, 0% 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+    margin-bottom: 5px;
+    border: none;
+    transition: background-color 0.3s ease;
+}
 
-  const handleNext = () => {
-    if (activeStep < steps.length) {
-      setActiveStep(prev => prev + 1);
-      // Mark the current step as completed if not already
-      if (!completedSteps.includes(activeStep)) {
-        setCompletedSteps(prev => [...prev, activeStep]);
-      }
-    }
-  };
+.circle-number {
+    width: 63px;
+    height: 63px;
+    background-color: white;
+    color: black;
+    border-radius: 50%;
+    position: absolute;
+    top: -3px;
+    left: -19px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    border: 3px solid white;
+}
 
-  return (
-    <div className="progress-bar-container">
-      <div style={{ marginLeft: "110px", display: "flex" }}>
-        {steps.map((step, index) => {
-          const isCompleted = completedSteps.includes(step.number);
-          const isActive = step.number === activeStep;
+.step-number {
+    font-size: 14px;
+}
 
-          return (
-            <div key={index} onClick={() => setActiveStep(step.number)}>
-              <div
-                className="step-shape"
-                style={{
-                  backgroundColor: isActive ? "#FF0000" : isCompleted ? "#4CC11D" : "#D3D3D3"
-                }}
-              >
-                <div className="circle-number">
-                  <span className="step-number">{step.number}</span>
-                </div>
-                <div className="step-label">{step.label}</div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-      <div className="step-content">
-        {steps.find(step => step.number === activeStep)?.component}
-      </div>
+.step-label {
+    padding: 2px;
+    color: white;
+    font-size: 14px;
+    max-width: 80px;
+    margin-left: 42px;
+}
 
-      <div className="navigation-buttons">
-        <button onClick={handlePrevious} className="enabled" style={{ backgroundColor: activeStep === 1 ? "#ccc" : "" }} disabled={activeStep === 1}>
-          Previous
-        </button>
-        <button onClick={handleNext} className="enabled" style={{ backgroundColor: activeStep === steps.length ? "#ccc" : "" }} disabled={activeStep === steps.length}>
-          Next
-        </button>
-      </div>
-    </div>
-  );
-};
+.step-content {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 20px;
+    margin-left: 60px;
+}
 
-export default ProgressBar;
+.navigation-buttons {
+    position: fixed;
+    margin-top: 20px;
+    display: flex;
+    align-items: end;
+    justify-content: end;
+    width: 100%;
+    bottom: 1rem;
+    right: 2rem;
+}
+
+.enabled {
+    margin-right: 35px;
+    padding: 8px 16px;
+    font-size: 16px;
+    background-color: #773D87;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+}
