@@ -1,141 +1,191 @@
-/* Tabs container and button styles */
-.CallSummary-tabs {
-    display: flex;
-    gap: 12px;
-    margin-bottom: 20px;
-}
+import React, { useState } from 'react';
 
-.CallSummary-tab-button {
-    padding: 8px 18px;
-    background-color: #f0f0f0;
-    color: #444;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 16px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s, color 0.3s;
-}
+const CallSummaryTabs = () => {
+  const [selectedTab, setSelectedTab] = useState('Call Info');
+  const [callInfos, setCallInfos] = useState([]);
+  const [callNotes, setCallNotes] = useState([]);
+  const [resolutions, setResolutions] = useState([]);
 
-.CallSummary-tab-button:hover,
-.CallSummary-tab-button:focus {
-    background-color: #773D87;
-    color: #fff;
-}
+  const handleAddCallInfo = () => {
+    setCallInfos([...callInfos, { intent: '', repeatCall: '', incomingTime: '', duration: '' }]);
+  };
 
-/* General form container styling */
-.contact-card, .CallSummary-cases, .CallSummary-interaction-history {
-    background-color: #ffffff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-    margin-bottom: 24px;
-}
+  const handleRemoveCallInfo = (index) => {
+    const updatedInfos = callInfos.filter((_, i) => i !== index);
+    setCallInfos(updatedInfos);
+  };
 
-/* Section heading styles */
-h2 {
-    margin-bottom: 16px;
-    font-size: 22px;
-    color: #773D87;
-}
+  const handleAddCallNote = () => {
+    setCallNotes([...callNotes, { note: '' }]);
+  };
 
-/* Field container alignment */
-.field-row, .case-section, .interaction-section {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    margin-bottom: 20px;
-}
+  const handleRemoveCallNote = (index) => {
+    const updatedNotes = callNotes.filter((_, i) => i !== index);
+    setCallNotes(updatedNotes);
+  };
 
-/* Input fields styling */
-.CallSummary-input-field {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-    width: 100%;
-    box-sizing: border-box;
-    transition: border-color 0.2s;
-}
+  const handleAddResolution = () => {
+    setResolutions([...resolutions, { question: '', options: [] }]);
+  };
 
-textarea {
-    resize: vertical;
-}
+  const handleAddOption = (index) => {
+    const updatedResolutions = [...resolutions];
+    updatedResolutions[index].options.push('');
+    setResolutions(updatedResolutions);
+  };
 
-.CallSummary-input-field:focus {
-    border-color: #773D87;
-}
+  const handleRemoveResolution = (index) => {
+    const updatedResolutions = resolutions.filter((_, i) => i !== index);
+    setResolutions(updatedResolutions);
+  };
 
-/* Add button styles */
-.CallSummary-btn {
-    padding: 8px 16px;
-    background-color: #4CAF50;
-    color: #ffffff;
-    border: none;
-    border-radius: 5px;
-    font-size: 18px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: background-color 0.3s, transform 0.2s;
-}
+  const handleRemoveOption = (resIndex, optIndex) => {
+    const updatedResolutions = [...resolutions];
+    updatedResolutions[resIndex].options = updatedResolutions[resIndex].options.filter((_, i) => i !== optIndex);
+    setResolutions(updatedResolutions);
+  };
 
-.CallSummary-btn:hover {
-    background-color: #45a049;
-}
+  return (
+    <>
+      <div className="call-summary-tabs">
+        <div className="tabs">
+          <span className="tab-button">Call Info</span>
+          <button className="btn" onClick={handleAddCallInfo}>+</button>
+          {/* <button className="tab-button" onClick={() => setSelectedTab('Call Notes')}>Call Notes</button>
+        <button className="tab-button" onClick={() => setSelectedTab('Resolution')}>Resolution</button> */}
+        </div>
+        <div className="call-info">
+          {/* <button className="btn" onClick={handleAddCallInfo}>+</button> */}
+          {callInfos.map((info, index) => (
+            <div className="call-summary-subcontainer">
+              <div key={index} className="call-info-section">
+                <input className="input-field" type="text" placeholder="Intent Captured" />
+                <select className="input-field" value={info.repeatCall} onChange={(e) => {
+                  const updatedInfos = [...callInfos];
+                  updatedInfos[index].repeatCall = e.target.value;
+                  setCallInfos(updatedInfos);
+                }}>
+                  <option value="">Repeat Call</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                <input className="input-field" type="time" placeholder="Incoming Time" />
+                <input className="input-field" type="text" placeholder="Call Duration" />
+              </div>
+              <div>
+                <button className="summary-remove-button" onClick={() => handleRemoveCallInfo(index)}>
+                  <span>R<br />E<br />M<br />O<br />V<br />E</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
 
-.CallSummary-btn:active {
-    transform: scale(0.98);
-}
+        {/* {selectedTab === 'Call Info' && (
+          <div className="call-info">
+            <button className="btn" onClick={handleAddCallInfo}>Add Call Info</button>
+            {callInfos.map((info, index) => (
+              <div key={index} className="call-info-section">
+                <input className="input-field" type="text" placeholder="Intent Captured" />
+                <select className="input-field" value={info.repeatCall} onChange={(e) => {
+                  const updatedInfos = [...callInfos];
+                  updatedInfos[index].repeatCall = e.target.value;
+                  setCallInfos(updatedInfos);
+                }}>
+                  <option value="">Repeat Call</option>
+                  <option value="Yes">Yes</option>
+                  <option value="No">No</option>
+                </select>
+                <input className="input-field" type="time" placeholder="Incoming Time" />
+                <input className="input-field" type="text" placeholder="Call Duration" />
+                <button className="remove-button" onClick={() => handleRemoveCallInfo(index)}>Remove</button>
+              </div>
+            ))}
+          </div>
+        )}
 
-/* Remove button styling */
-.CallSummary-remove-button {
-    padding: 8px 16px;
-    background-color: #e74c3c;
-    color: #ffffff;
-    border: none;
-    border-radius: 5px;
-    font-size: 16px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    align-self: center;
-    width: auto;
-}
+        {selectedTab === 'Call Notes' && (
+          <div className="call-notes">
+            <button className="btn" onClick={handleAddCallNote}>Add Call Note</button>
+            {callNotes.map((note, index) => (
+              <div key={index} className="call-note-section">
+                <textarea className="input-field" placeholder="Call Note"></textarea>
+                <button className="remove-button" onClick={() => handleRemoveCallNote(index)}>Remove</button>
+              </div>
+            ))}
+          </div>
+        )}
 
-.CallSummary-remove-button:hover {
-    background-color: #c0392b;
-}
+        {selectedTab === 'Resolution' && (
+          <div className="resolution">
+            <button className="btn" onClick={handleAddResolution}>Add Resolution</button>
+            {resolutions.map((resolution, resIndex) => (
+              <div key={resIndex} className="resolution-section">
+                <input className="input-field" type="text" placeholder="Question" />
+                <button className="btn" onClick={() => handleAddOption(resIndex)}>Add Option</button>
+                {resolution.options.map((option, optIndex) => (
+                  <div key={optIndex} className="option-section">
+                    <input className="input-field" type="text" placeholder="Option" />
+                    <button className="remove-button" onClick={() => handleRemoveOption(resIndex, optIndex)}>Remove Option</button>
+                  </div>
+                ))}
+                <button className="remove-button" onClick={() => handleRemoveResolution(resIndex)}>Remove Resolution</button>
+              </div>
+            ))}
+          </div>
+        )} */}
+      </div>
+      <div className="call-summary-tabs">
+        <div className="tabs">
+          <span className="tab-button">Call Note</span>
+          <button className="btn" onClick={handleAddCallNote}>+</button>
+        </div>
+        <div className="call-notes">
+          {callNotes.map((note, index) => (
+            <div className="call-summary-subcontainer">
+              <div key={index} className="call-note-section">
+                <textarea className="input-field" placeholder="Call Note"></textarea>
+              </div>
+              <div>
+                <button className="summary-remove-button" onClick={() => handleRemoveCallNote(index)}>
+                  <span>R<br />E<br />M<br />O<br />V<br />E</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="call-summary-tabs">
+        <div className="tabs">
+          <span className="tab-button">Resolution</span>
+          <button className="btn" onClick={handleAddResolution}>+</button>
+        </div>
+        <div className="resolution">
+          {resolutions.map((resolution, resIndex) => (
+            <div className="call-summary-subcontainer">
+              <div key={resIndex} className="resolution-section">
+                <input className="input-field" type="text" placeholder="Question" />
+                <button className="btn" onClick={() => handleAddOption(resIndex)}>Add Option</button>
+                <div className="option-container">
+                  {resolution.options.map((option, optIndex) => (
+                    <div key={optIndex} className="option-section">
+                      <input className="input-field" type="text" placeholder="Option" />
+                      <button className="cancel-option" onClick={() => handleRemoveOption(resIndex, optIndex)}>X</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <button className="summary-remove-button" onClick={() => handleRemoveResolution(resIndex)}>
+                  <span>R<br />E<br />M<br />O<br />V<br />E</span>
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </>
+  );
+};
 
-/* Specific styles for case sections */
-.CallSummary-attachments, .CallSummary-linked, .case-comments {
-    margin-top: 20px;
-}
-
-h4 {
-    font-size: 18px;
-    color: #333;
-}
-
-/* Case and interaction section inner styling */
-.CallSummary-attachments input,
-.CallSummary-linked input,
-.case-comments .comment-row input,
-.case-comments .comment-row textarea {
-    margin-bottom: 10px;
-    padding: 10px;
-    font-size: 14px;
-}
-
-/* Comments styling */
-.case-comments .comment-row {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-}
-
-/* Overall form styling for alignment and spacing */
-.CallSummary-form {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
+export default CallSummaryTabs;
