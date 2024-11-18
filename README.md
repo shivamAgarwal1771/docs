@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 const CallSummaryDetailsForm = () => {
   const [contactFields, setContactFields] = useState([]);
@@ -12,6 +12,14 @@ const CallSummaryDetailsForm = () => {
 
   const handleRemoveContactField = (index) => {
     const updatedFields = contactFields.filter((_, i) => i !== index);
+    setContactFields(updatedFields);
+  };
+
+  const handleFieldChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedFields = contactFields.map((field, i) =>
+      i === index ? { ...field, [name]: value } : field
+    );
     setContactFields(updatedFields);
   };
 
@@ -55,15 +63,31 @@ const CallSummaryDetailsForm = () => {
         <div className="contact-card">
           <h2>Contact Card</h2>
           <button className="CallSummary-btn" onClick={handleAddContactField}>Add Customer Field</button>
-          {contactFields.map((_, index) => (
+          {contactFields.map((field, index) => (
             <div key={index} className="field-row">
-              <input className="CallSummary-input-field" type="text" placeholder="Field" />
-              <input className="CallSummary-input-field" type="text" placeholder="Value" />
+              <input
+                className="CallSummary-input-field"
+                type="text"
+                placeholder="Field"
+                name="field"
+                value={field.field}
+                onChange={(e) => handleFieldChange(index, e)}
+              />
+              <input
+                className="CallSummary-input-field"
+                type="text"
+                placeholder="Value"
+                name="value"
+                value={field.value}
+                onChange={(e) => handleFieldChange(index, e)}
+              />
               <button className="CallSummary-remove-button" onClick={() => handleRemoveContactField(index)}>Remove</button>
             </div>
           ))}
         </div>
       )}
+
+      {/* Code for Cases and Interaction History can be updated similarly */}
 
       {selectedTab === 'Cases' && (
         <div className="CallSummary-cases">
@@ -124,37 +148,7 @@ const CallSummaryDetailsForm = () => {
       )}
       {selectedTab === 'Customer 360' && (
         <div className="customer-360-app">
-          <h1>C360 View</h1>
-          <Panel
-            title="Risk Assessment"
-            initialFields={[{ id: 1, name: "", value: "" }]}
-            addFieldLabel="Add Field"
-            fieldType="field"
-          />
-          <Panel
-            title="Account Info"
-            initialFields={[{ id: 2, name: "", value: "" }]}
-            addFieldLabel="Add Sub Header"
-            fieldType="field"
-          />
-          <Panel
-            title="Next Best Action"
-            initialFields={[{ id: 3, name: "Data Point 1", value: "" }]}
-            addFieldLabel="Add Data Point"
-            fieldType="data"
-          />
-          <Panel
-            title="Life Events"
-            initialFields={[{ id: 4, name: "Date", value: "" }]}
-            addFieldLabel="Add Field"
-            fieldType="field"
-          />
-          <Panel
-            title="Marketing Analysis"
-            initialFields={[{ id: 5, name: "", value: "" }]}
-            addFieldLabel="Add Field"
-            fieldType="field"
-          />
+          {/* Customer 360 Panel content here */}
         </div>
       )}
 
@@ -163,44 +157,3 @@ const CallSummaryDetailsForm = () => {
 };
 
 export default CallSummaryDetailsForm;
-
-
-const Panel = ({ title, initialFields, addFieldLabel, fieldType }) => {
-  const [fields, setFields] = useState(initialFields);
-
-  const addField = () => {
-    setFields([...fields, { id: Date.now(), name: "", value: "" }]);
-  };
-
-  const removeField = (id) => {
-    setFields(fields.filter((field) => field.id !== id));
-  };
-
-  return <div className="customer-360-panel">
-    <h3>{title}</h3>
-    {fields.map((field) => (
-    <div>
-    <input
-      type="text"
-      placeholder={fieldType === "data" ? "Data Point" : "Field"}
-      className="customer-360-field-input"
-    />
-    <input
-      type="text"
-      placeholder="Value"
-      className="customer-360-value-input"
-    />
-    <button
-      className="customer-360-remove-btn"
-      onClick={() => removeField(field.id)}
-    >
-      ×
-    </button>
-    <button className="customer-360-add-btn" onClick={addField}>
-      {addFieldLabel}
-    </button>
-    </div>))}
-  </div>
-};
-
-
