@@ -1,177 +1,128 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
-const CallSummaryTabs = ({ onDataChange }) => {
-  const [callInfos, setCallInfos] = useState([]);
-  const [callNotes, setCallNotes] = useState([]);
-  const [resolutions, setResolutions] = useState([]);
+const CallSummaryDetailsForm = () => {
+  const [contactFields, setContactFields] = useState([]);
+  const [cases, setCases] = useState([]);
+  const [interactions, setInteractions] = useState([]);
+  const [selectedTab, setSelectedTab] = useState('Contact Card');
 
-  useEffect(() => {
-    onDataChange({ callInfos, callNotes, resolutions });
-  }, [callInfos, callNotes, resolutions, onDataChange]);
-
-  const handleFieldChange = (setter, index, field, value) => {
-    setter((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-    );
+  const handleAddContactField = () => {
+    setContactFields([...contactFields, { field: '', value: '' }]);
   };
 
-  const handleAddCallInfo = () => {
-    setCallInfos([...callInfos, { intent: '', repeatCall: '', incomingTime: '', duration: '' }]);
+  const handleRemoveContactField = (index) => {
+    const updatedFields = contactFields.filter((_, i) => i !== index);
+    setContactFields(updatedFields);
   };
 
-  const handleRemoveCallInfo = (index) => {
-    setCallInfos(callInfos.filter((_, i) => i !== index));
+  const handleAddCase = () => {
+    setCases([...cases, {
+      caseId: '',
+      creationDate: '',
+      subject: '',
+      priority: '',
+      description: '',
+      attachments: ['', ''],
+      linked: ['', '', ''],
+      caseComments: [{ date: '', message: '' }]
+    }]);
   };
 
-  const handleAddCallNote = () => {
-    setCallNotes([...callNotes, { note: '' }]);
+  const handleRemoveCase = (index) => {
+    const updatedCases = cases.filter((_, i) => i !== index);
+    setCases(updatedCases);
   };
 
-  const handleRemoveCallNote = (index) => {
-    setCallNotes(callNotes.filter((_, i) => i !== index));
+  const handleAddInteraction = () => {
+    setInteractions([...interactions, { title: '', date: '', time: '', description: '' }]);
   };
 
-  const handleAddResolution = () => {
-    setResolutions([...resolutions, { question: '', options: [] }]);
-  };
-
-  const handleAddOption = (resIndex) => {
-    setResolutions((prev) => {
-      const updated = [...prev];
-      updated[resIndex].options.push('');
-      return updated;
-    });
-  };
-
-  const handleRemoveResolution = (index) => {
-    setResolutions(resolutions.filter((_, i) => i !== index));
-  };
-
-  const handleRemoveOption = (resIndex, optIndex) => {
-    setResolutions((prev) => {
-      const updated = [...prev];
-      updated[resIndex].options = updated[resIndex].options.filter((_, i) => i !== optIndex);
-      return updated;
-    });
+  const handleRemoveInteraction = (index) => {
+    const updatedInteractions = interactions.filter((_, i) => i !== index);
+    setInteractions(updatedInteractions);
   };
 
   return (
-    <>
-      {/* Call Info Section */}
-      <div className="call-summary-tabs">
-        <div className="tabs">
-          <span className="tab-button">Call Info</span>
-          <button className="btn" onClick={handleAddCallInfo}>+</button>
+    <div>
+      <div className="CallSummary-tabs">
+        <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Contact Card')}>Contact Card</button>
+        <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Cases')}>Cases</button>
+        <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Interaction History')}>Interaction History</button>
+      </div>
+
+      {selectedTab === 'Contact Card' && (
+        <div className="contact-card">
+          <h2>Contact Card</h2>
+          <button className="CallSummary-btn" onClick={handleAddContactField}>Add Customer Field</button>
+          {contactFields.map((_, index) => (
+            <div key={index} className="field-row">
+              <input className="CallSummary-input-field" type="text" placeholder="Field" />
+              <input className="CallSummary-input-field" type="text" placeholder="Value" />
+              <button className="CallSummary-remove-button" onClick={() => handleRemoveContactField(index)}>Remove</button>
+            </div>
+          ))}
         </div>
-        <div className="call-info">
-          {callInfos.map((info, index) => (
-            <div className="call-summary-subcontainer" key={index}>
-              <div className="call-info-section">
-                <input
-                  className="input-field"
-                  type="text"
-                  placeholder="Intent Captured"
-                  value={info.intent}
-                  onChange={(e) => handleFieldChange(setCallInfos, index, 'intent', e.target.value)}
-                />
-                <select
-                  className="input-field"
-                  value={info.repeatCall}
-                  onChange={(e) => handleFieldChange(setCallInfos, index, 'repeatCall', e.target.value)}
-                >
-                  <option value="">Repeat Call</option>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                </select>
-                <input
-                  className="input-field"
-                  type="time"
-                  value={info.incomingTime}
-                  onChange={(e) => handleFieldChange(setCallInfos, index, 'incomingTime', e.target.value)}
-                />
-                <input
-                  className="input-field"
-                  type="text"
-                  placeholder="Call Duration"
-                  value={info.duration}
-                  onChange={(e) => handleFieldChange(setCallInfos, index, 'duration', e.target.value)}
-                />
+      )}
+
+      {selectedTab === 'Cases' && (
+        <div className="CallSummary-cases">
+          <h2>Cases</h2>
+          <button className="CallSummary-btn" onClick={handleAddCase}>Add Case</button>
+          {cases.map((caseItem, index) => (
+            <div key={index} className="case-section">
+              <input className="CallSummary-input-field" type="text" placeholder="Case ID" />
+              <input className="CallSummary-input-field" type="date" placeholder="Creation Date" />
+              <input className="CallSummary-input-field" type="text" placeholder="Subject" />
+              <input className="CallSummary-input-field" type="text" placeholder="Priority" />
+              <textarea className="CallSummary-input-field" placeholder="Description"></textarea>
+
+              <div className="CallSummary-attachments">
+                <h4>Attachments</h4>
+                {caseItem.attachments.map((_, i) => (
+                  <input key={i} className="CallSummary-input-field" type="text" placeholder={`Attachment ${i + 1}`} />
+                ))}
               </div>
-              <button className="summary-remove-button" onClick={() => handleRemoveCallInfo(index)}>
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* Call Notes Section */}
-      <div className="call-summary-tabs">
-        <div className="tabs">
-          <span className="tab-button">Call Notes</span>
-          <button className="btn" onClick={handleAddCallNote}>+</button>
-        </div>
-        <div className="call-notes">
-          {callNotes.map((note, index) => (
-            <div className="call-summary-subcontainer" key={index}>
-              <textarea
-                className="input-field"
-                placeholder="Call Note"
-                value={note.note}
-                onChange={(e) => handleFieldChange(setCallNotes, index, 'note', e.target.value)}
-              ></textarea>
-              <button className="summary-remove-button" onClick={() => handleRemoveCallNote(index)}>
-                Remove
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
+              <div className="CallSummary-linked">
+                <h4>Linked</h4>
+                {caseItem.linked.map((_, i) => (
+                  <input key={i} className="CallSummary-input-field" type="text" placeholder={`Linked ${i + 1}`} />
+                ))}
+              </div>
 
-      {/* Resolution Section */}
-      <div className="call-summary-tabs">
-        <div className="tabs">
-          <span className="tab-button">Resolution</span>
-          <button className="btn" onClick={handleAddResolution}>+</button>
-        </div>
-        <div className="resolution">
-          {resolutions.map((resolution, resIndex) => (
-            <div className="call-summary-subcontainer" key={resIndex}>
-              <input
-                className="input-field"
-                type="text"
-                placeholder="Question"
-                value={resolution.question}
-                onChange={(e) => handleFieldChange(setResolutions, resIndex, 'question', e.target.value)}
-              />
-              <button className="btn" onClick={() => handleAddOption(resIndex)}>Add Option</button>
-              <div className="option-container">
-                {resolution.options.map((option, optIndex) => (
-                  <div className="option-section" key={optIndex}>
-                    <input
-                      className="input-field"
-                      type="text"
-                      placeholder="Option"
-                      value={option}
-                      onChange={(e) => {
-                        const updatedResolutions = [...resolutions];
-                        updatedResolutions[resIndex].options[optIndex] = e.target.value;
-                        setResolutions(updatedResolutions);
-                      }}
-                    />
-                    <button className="cancel-option" onClick={() => handleRemoveOption(resIndex, optIndex)}>X</button>
+              <div className="case-comments">
+                <h4>Case Comments</h4>
+                {caseItem.caseComments.map((comment, i) => (
+                  <div key={i} className="comment-row">
+                    <input className="CallSummary-input-field" type="date" placeholder="Date" />
+                    <textarea className="CallSummary-input-field" placeholder="Message"></textarea>
                   </div>
                 ))}
               </div>
-              <button className="summary-remove-button" onClick={() => handleRemoveResolution(resIndex)}>
-                Remove
-              </button>
+
+              <button className="CallSummary-remove-button" onClick={() => handleRemoveCase(index)}>Remove Case</button>
             </div>
           ))}
         </div>
-      </div>
-    </>
+      )}
+
+      {selectedTab === 'Interaction History' && (
+        <div className="CallSummary-interaction-history">
+          <h2>Interaction History</h2>
+          <button className="CallSummary-btn" onClick={handleAddInteraction}>Add Interaction</button>
+          {interactions.map((interaction, index) => (
+            <div key={index} className="CallSummary-interaction-section">
+              <input className="CallSummary-input-field" type="text" placeholder="Title" />
+              <input className="CallSummary-input-field" type="date" placeholder="Date" />
+              <input className="CallSummary-input-field" type="time" placeholder="Time" />
+              <textarea className="CallSummary-input-field" placeholder="Description"></textarea>
+              <button className="CallSummary-remove-button" onClick={() => handleRemoveInteraction(index)}>Remove Interaction</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 };
 
-export default CallSummaryTabs;
+export default CallSummaryDetailsForm;
