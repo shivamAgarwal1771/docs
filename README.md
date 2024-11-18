@@ -1,10 +1,23 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const CallSummaryDetailsForm = () => {
+const CallSummaryDetailsForm = ({handleInput}) => {
   const [contactFields, setContactFields] = useState([]);
   const [cases, setCases] = useState([]);
   const [interactions, setInteractions] = useState([]);
   const [selectedTab, setSelectedTab] = useState('Contact Card');
+
+
+  useEffect(()=>{
+    handleInput("contact",contactFields)
+  },[contactFields])
+
+  useEffect(()=>{
+    handleInput("cases",cases)
+  },[cases])
+
+  useEffect(()=>{
+    handleInput("interactions",interactions)
+  },[interactions])
 
   const handleAddContactField = () => {
     setContactFields([...contactFields, { field: '', value: '' }]);
@@ -103,21 +116,21 @@ const CallSummaryDetailsForm = () => {
 
               <div className="CallSummary-attachments">
                 <h4>Attachments</h4>
-                {caseItem.attachments.map((_, i) => (
+                {caseItem?.attachments?.map((_, i) => (
                   <input key={i} className="CallSummary-input-field" type="text" placeholder={`Attachment ${i + 1}`} />
                 ))}
               </div>
 
               <div className="CallSummary-linked">
                 <h4>Linked</h4>
-                {caseItem.linked.map((_, i) => (
+                {caseItem?.linked?.map((_, i) => (
                   <input key={i} className="CallSummary-input-field" type="text" placeholder={`Linked ${i + 1}`} />
                 ))}
               </div>
 
               <div className="case-comments">
                 <h4>Case Comments</h4>
-                {caseItem.caseComments.map((comment, i) => (
+                {caseItem?.caseComments?.map((comment, i) => (
                   <div key={i} className="comment-row">
                     <input className="CallSummary-input-field" type="date" placeholder="Date" />
                     <textarea className="CallSummary-input-field" placeholder="Message"></textarea>
