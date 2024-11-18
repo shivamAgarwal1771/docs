@@ -43,7 +43,23 @@ const CallSummaryDetailsForm = ({ onFieldChange }) => {
   };
 
   const handleFieldChange = (tab, index, fieldName, value) => {
-    // Constructing the updated data object and passing it to the parent component
+    // Update the state directly when a field value changes
+    if (tab === 'Contact Card') {
+      const updatedFields = [...contactFields];
+      updatedFields[index][fieldName] = value;
+      setContactFields(updatedFields);
+    }
+    if (tab === 'Cases') {
+      const updatedCases = [...cases];
+      updatedCases[index][fieldName] = value;
+      setCases(updatedCases);
+    }
+    if (tab === 'Interaction History') {
+      const updatedInteractions = [...interactions];
+      updatedInteractions[index][fieldName] = value;
+      setInteractions(updatedInteractions);
+    }
+    // Call the parent method to pass the changes up
     onFieldChange(tab, index, { field: fieldName, value });
   };
 
@@ -60,21 +76,21 @@ const CallSummaryDetailsForm = ({ onFieldChange }) => {
         <div className="contact-card">
           <h2>Contact Card</h2>
           <button className="CallSummary-btn" onClick={handleAddContactField}>Add Customer Field</button>
-          {contactFields.map((_, index) => (
+          {contactFields.map((field, index) => (
             <div key={index} className="field-row">
               <input
                 className="CallSummary-input-field"
                 type="text"
                 placeholder="Field"
-                value={_.field}
-                onChange={(e) => handleFieldChange('Contact Card', index, 'field', e.target.value)}
+                value={field.field} // Bind value to state
+                onChange={(e) => handleFieldChange('Contact Card', index, 'field', e.target.value)} // Handle field change
               />
               <input
                 className="CallSummary-input-field"
                 type="text"
                 placeholder="Value"
-                value={_.value}
-                onChange={(e) => handleFieldChange('Contact Card', index, 'value', e.target.value)}
+                value={field.value} // Bind value to state
+                onChange={(e) => handleFieldChange('Contact Card', index, 'value', e.target.value)} // Handle value change
               />
               <button className="CallSummary-remove-button" onClick={() => handleRemoveContactField(index)}>Remove</button>
             </div>
@@ -82,6 +98,7 @@ const CallSummaryDetailsForm = ({ onFieldChange }) => {
         </div>
       )}
 
+      {/* Cases Tab */}
       {selectedTab === 'Cases' && (
         <div className="CallSummary-cases">
           <h2>Cases</h2>
@@ -122,58 +139,13 @@ const CallSummaryDetailsForm = ({ onFieldChange }) => {
                 value={caseItem.description}
                 onChange={(e) => handleFieldChange('Cases', index, 'description', e.target.value)}
               ></textarea>
-              <div className="CallSummary-attachments">
-                <h4>Attachments</h4>
-                {caseItem.attachments.map((_, i) => (
-                  <input
-                    key={i}
-                    className="CallSummary-input-field"
-                    type="text"
-                    placeholder={`Attachment ${i + 1}`}
-                    value={caseItem.attachments[i]}
-                    onChange={(e) => handleFieldChange('Cases', index, `attachment_${i}`, e.target.value)}
-                  />
-                ))}
-              </div>
-              <div className="CallSummary-linked">
-                <h4>Linked</h4>
-                {caseItem.linked.map((_, i) => (
-                  <input
-                    key={i}
-                    className="CallSummary-input-field"
-                    type="text"
-                    placeholder={`Linked ${i + 1}`}
-                    value={caseItem.linked[i]}
-                    onChange={(e) => handleFieldChange('Cases', index, `linked_${i}`, e.target.value)}
-                  />
-                ))}
-              </div>
-              <div className="case-comments">
-                <h4>Case Comments</h4>
-                {caseItem.caseComments.map((comment, i) => (
-                  <div key={i} className="comment-row">
-                    <input
-                      className="CallSummary-input-field"
-                      type="date"
-                      placeholder="Date"
-                      value={comment.date}
-                      onChange={(e) => handleFieldChange('Cases', index, `comment_${i}_date`, e.target.value)}
-                    />
-                    <textarea
-                      className="CallSummary-input-field"
-                      placeholder="Message"
-                      value={comment.message}
-                      onChange={(e) => handleFieldChange('Cases', index, `comment_${i}_message`, e.target.value)}
-                    />
-                  </div>
-                ))}
-              </div>
               <button className="CallSummary-remove-button" onClick={() => handleRemoveCase(index)}>Remove Case</button>
             </div>
           ))}
         </div>
       )}
 
+      {/* Interaction History Tab */}
       {selectedTab === 'Interaction History' && (
         <div className="CallSummary-interaction-history">
           <h2>Interaction History</h2>
@@ -213,44 +185,11 @@ const CallSummaryDetailsForm = ({ onFieldChange }) => {
         </div>
       )}
 
+      {/* Customer 360 Tab */}
       {selectedTab === 'Customer 360' && (
         <div className="customer-360-app">
           <h1>C360 View</h1>
-          <Panel
-            title="Risk Assessment"
-            initialFields={[{ id: 1, name: "", value: "" }]}
-            addFieldLabel="Add Field"
-            fieldType="field"
-            onFieldChange={onFieldChange}
-          />
-          <Panel
-            title="Account Info"
-            initialFields={[{ id: 2, name: "", value: "" }]}
-            addFieldLabel="Add Sub Header"
-            fieldType="field"
-            onFieldChange={onFieldChange}
-          />
-          <Panel
-            title="Next Best Action"
-            initialFields={[{ id: 3, name: "Data Point 1", value: "" }]}
-            addFieldLabel="Add Data Point"
-            fieldType="data"
-            onFieldChange={onFieldChange}
-          />
-          <Panel
-            title="Life Events"
-            initialFields={[{ id: 4, name: "Date", value: "" }]}
-            addFieldLabel="Add Field"
-            fieldType="field"
-            onFieldChange={onFieldChange}
-          />
-          <Panel
-            title="Marketing Analysis"
-            initialFields={[{ id: 5, name: "", value: "" }]}
-            addFieldLabel="Add Field"
-            fieldType="field"
-            onFieldChange={onFieldChange}
-          />
+          {/* Custom Panels go here */}
         </div>
       )}
     </div>
@@ -258,60 +197,3 @@ const CallSummaryDetailsForm = ({ onFieldChange }) => {
 };
 
 export default CallSummaryDetailsForm;
-
-const Panel = ({ title, initialFields, addFieldLabel, fieldType, onFieldChange }) => {
-  const [fields, setFields] = useState(initialFields);
-
-  const addField = () => {
-    const newField = { id: Date.now(), name: "", value: "" };
-    setFields([...fields, newField]);
-    onFieldChange(title, newField.id, newField);
-  };
-
-  const removeField = (id) => {
-    const updatedFields = fields.filter((field) => field.id !== id);
-    setFields(updatedFields);
-    onFieldChange(title, id, null);
-  };
-
-  const handleFieldChange = (id, fieldName, value) => {
-    const updatedFields = fields.map(field => 
-      field.id === id ? { ...field, [fieldName]: value } : field
-    );
-    setFields(updatedFields);
-    onFieldChange(title, id, { field: fieldName, value });
-  };
-
-  return (
-    <div className="customer-360-panel">
-      <h3>{title}</h3>
-      {fields.map((field) => (
-        <div key={field.id}>
-          <input
-            type="text"
-            placeholder={fieldType === "data" ? "Data Point" : "Field"}
-            className="customer-360-field-input"
-            value={field.name}
-            onChange={(e) => handleFieldChange(field.id, 'name', e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Value"
-            className="customer-360-value-input"
-            value={field.value}
-            onChange={(e) => handleFieldChange(field.id, 'value', e.target.value)}
-          />
-          <button
-            className="customer-360-remove-btn"
-            onClick={() => removeField(field.id)}
-          >
-            ×
-          </button>
-          <button className="customer-360-add-btn" onClick={addField}>
-            {addFieldLabel}
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-};
