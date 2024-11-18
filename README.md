@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-const CallSummaryDetailsForm = ({ onFieldChange }) => {
+const CallSummaryDetailsForm = () => {
   const [contactFields, setContactFields] = useState([]);
   const [cases, setCases] = useState([]);
   const [interactions, setInteractions] = useState([]);
@@ -42,27 +42,6 @@ const CallSummaryDetailsForm = ({ onFieldChange }) => {
     setInteractions(updatedInteractions);
   };
 
-  const handleFieldChange = (tab, index, fieldName, value) => {
-    // Update the state directly when a field value changes
-    if (tab === 'Contact Card') {
-      const updatedFields = [...contactFields];
-      updatedFields[index][fieldName] = value;
-      setContactFields(updatedFields);
-    }
-    if (tab === 'Cases') {
-      const updatedCases = [...cases];
-      updatedCases[index][fieldName] = value;
-      setCases(updatedCases);
-    }
-    if (tab === 'Interaction History') {
-      const updatedInteractions = [...interactions];
-      updatedInteractions[index][fieldName] = value;
-      setInteractions(updatedInteractions);
-    }
-    // Call the parent method to pass the changes up
-    onFieldChange(tab, index, { field: fieldName, value });
-  };
-
   return (
     <div>
       <div className="CallSummary-tabs">
@@ -76,124 +55,152 @@ const CallSummaryDetailsForm = ({ onFieldChange }) => {
         <div className="contact-card">
           <h2>Contact Card</h2>
           <button className="CallSummary-btn" onClick={handleAddContactField}>Add Customer Field</button>
-          {contactFields.map((field, index) => (
+          {contactFields.map((_, index) => (
             <div key={index} className="field-row">
-              <input
-                className="CallSummary-input-field"
-                type="text"
-                placeholder="Field"
-                value={field.field} // Bind value to state
-                onChange={(e) => handleFieldChange('Contact Card', index, 'field', e.target.value)} // Handle field change
-              />
-              <input
-                className="CallSummary-input-field"
-                type="text"
-                placeholder="Value"
-                value={field.value} // Bind value to state
-                onChange={(e) => handleFieldChange('Contact Card', index, 'value', e.target.value)} // Handle value change
-              />
+              <input className="CallSummary-input-field" type="text" placeholder="Field" />
+              <input className="CallSummary-input-field" type="text" placeholder="Value" />
               <button className="CallSummary-remove-button" onClick={() => handleRemoveContactField(index)}>Remove</button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Cases Tab */}
       {selectedTab === 'Cases' && (
         <div className="CallSummary-cases">
           <h2>Cases</h2>
           <button className="CallSummary-btn" onClick={handleAddCase}>Add Case</button>
           {cases.map((caseItem, index) => (
             <div key={index} className="case-section">
-              <input
-                className="CallSummary-input-field"
-                type="text"
-                placeholder="Case ID"
-                value={caseItem.caseId}
-                onChange={(e) => handleFieldChange('Cases', index, 'caseId', e.target.value)}
-              />
-              <input
-                className="CallSummary-input-field"
-                type="date"
-                placeholder="Creation Date"
-                value={caseItem.creationDate}
-                onChange={(e) => handleFieldChange('Cases', index, 'creationDate', e.target.value)}
-              />
-              <input
-                className="CallSummary-input-field"
-                type="text"
-                placeholder="Subject"
-                value={caseItem.subject}
-                onChange={(e) => handleFieldChange('Cases', index, 'subject', e.target.value)}
-              />
-              <input
-                className="CallSummary-input-field"
-                type="text"
-                placeholder="Priority"
-                value={caseItem.priority}
-                onChange={(e) => handleFieldChange('Cases', index, 'priority', e.target.value)}
-              />
-              <textarea
-                className="CallSummary-input-field"
-                placeholder="Description"
-                value={caseItem.description}
-                onChange={(e) => handleFieldChange('Cases', index, 'description', e.target.value)}
-              ></textarea>
+              <input className="CallSummary-input-field" type="text" placeholder="Case ID" />
+              <input className="CallSummary-input-field" type="date" placeholder="Creation Date" />
+              <input className="CallSummary-input-field" type="text" placeholder="Subject" />
+              <input className="CallSummary-input-field" type="text" placeholder="Priority" />
+              <textarea className="CallSummary-input-field" placeholder="Description"></textarea>
+
+              <div className="CallSummary-attachments">
+                <h4>Attachments</h4>
+                {caseItem.attachments.map((_, i) => (
+                  <input key={i} className="CallSummary-input-field" type="text" placeholder={`Attachment ${i + 1}`} />
+                ))}
+              </div>
+
+              <div className="CallSummary-linked">
+                <h4>Linked</h4>
+                {caseItem.linked.map((_, i) => (
+                  <input key={i} className="CallSummary-input-field" type="text" placeholder={`Linked ${i + 1}`} />
+                ))}
+              </div>
+
+              <div className="case-comments">
+                <h4>Case Comments</h4>
+                {caseItem.caseComments.map((comment, i) => (
+                  <div key={i} className="comment-row">
+                    <input className="CallSummary-input-field" type="date" placeholder="Date" />
+                    <textarea className="CallSummary-input-field" placeholder="Message"></textarea>
+                  </div>
+                ))}
+              </div>
+
               <button className="CallSummary-remove-button" onClick={() => handleRemoveCase(index)}>Remove Case</button>
             </div>
           ))}
         </div>
       )}
 
-      {/* Interaction History Tab */}
       {selectedTab === 'Interaction History' && (
         <div className="CallSummary-interaction-history">
           <h2>Interaction History</h2>
           <button className="CallSummary-btn" onClick={handleAddInteraction}>Add Interaction</button>
           {interactions.map((interaction, index) => (
             <div key={index} className="CallSummary-interaction-section">
-              <input
-                className="CallSummary-input-field"
-                type="text"
-                placeholder="Title"
-                value={interaction.title}
-                onChange={(e) => handleFieldChange('Interaction History', index, 'title', e.target.value)}
-              />
-              <input
-                className="CallSummary-input-field"
-                type="date"
-                placeholder="Date"
-                value={interaction.date}
-                onChange={(e) => handleFieldChange('Interaction History', index, 'date', e.target.value)}
-              />
-              <input
-                className="CallSummary-input-field"
-                type="time"
-                placeholder="Time"
-                value={interaction.time}
-                onChange={(e) => handleFieldChange('Interaction History', index, 'time', e.target.value)}
-              />
-              <textarea
-                className="CallSummary-input-field"
-                placeholder="Description"
-                value={interaction.description}
-                onChange={(e) => handleFieldChange('Interaction History', index, 'description', e.target.value)}
-              ></textarea>
+              <input className="CallSummary-input-field" type="text" placeholder="Title" />
+              <input className="CallSummary-input-field" type="date" placeholder="Date" />
+              <input className="CallSummary-input-field" type="time" placeholder="Time" />
+              <textarea className="CallSummary-input-field" placeholder="Description"></textarea>
               <button className="CallSummary-remove-button" onClick={() => handleRemoveInteraction(index)}>Remove Interaction</button>
             </div>
           ))}
         </div>
       )}
-
-      {/* Customer 360 Tab */}
       {selectedTab === 'Customer 360' && (
         <div className="customer-360-app">
           <h1>C360 View</h1>
-          {/* Custom Panels go here */}
+          <Panel
+            title="Risk Assessment"
+            initialFields={[{ id: 1, name: "", value: "" }]}
+            addFieldLabel="Add Field"
+            fieldType="field"
+          />
+          <Panel
+            title="Account Info"
+            initialFields={[{ id: 2, name: "", value: "" }]}
+            addFieldLabel="Add Sub Header"
+            fieldType="field"
+          />
+          <Panel
+            title="Next Best Action"
+            initialFields={[{ id: 3, name: "Data Point 1", value: "" }]}
+            addFieldLabel="Add Data Point"
+            fieldType="data"
+          />
+          <Panel
+            title="Life Events"
+            initialFields={[{ id: 4, name: "Date", value: "" }]}
+            addFieldLabel="Add Field"
+            fieldType="field"
+          />
+          <Panel
+            title="Marketing Analysis"
+            initialFields={[{ id: 5, name: "", value: "" }]}
+            addFieldLabel="Add Field"
+            fieldType="field"
+          />
         </div>
       )}
+
     </div>
   );
 };
 
 export default CallSummaryDetailsForm;
+
+
+const Panel = ({ title, initialFields, addFieldLabel, fieldType }) => {
+  const [fields, setFields] = useState(initialFields);
+
+  const addField = () => {
+    setFields([...fields, { id: Date.now(), name: "", value: "" }]);
+  };
+
+  const removeField = (id) => {
+    setFields(fields.filter((field) => field.id !== id));
+  };
+
+  return <div className="customer-360-panel">
+    <h3>{title}</h3>
+    {fields.map((field) => (
+    <div>
+    <input
+      type="text"
+      placeholder={fieldType === "data" ? "Data Point" : "Field"}
+      className="customer-360-field-input"
+    />
+    <input
+      type="text"
+      placeholder="Value"
+      className="customer-360-value-input"
+    />
+    <button
+      className="customer-360-remove-btn"
+      onClick={() => removeField(field.id)}
+    >
+      ×
+    </button>
+    <button className="customer-360-add-btn" onClick={addField}>
+      {addFieldLabel}
+    </button>
+    </div>))}
+  </div>
+};
+
+
