@@ -1,53 +1,44 @@
-{cases.map((caseItem, index) => (
-  <div key={index} className="case-section">
+const handleInteractionChange = (index, e) => {
+  const { name, value } = e.target;
+  const updatedInteractions = interactions.map((interaction, i) =>
+    i === index ? { ...interaction, [name]: value } : interaction
+  );
+  setInteractions(updatedInteractions);
+};
+
+{interactions.map((interaction, index) => (
+  <div key={index} className="CallSummary-interaction-section">
     <input
       className="CallSummary-input-field"
       type="text"
-      placeholder="Case ID"
-      name="caseId"
-      value={caseItem.caseId}
-      onChange={(e) => handleCaseChange(index, e)}
+      placeholder="Title"
+      name="title"
+      value={interaction.title}
+      onChange={(e) => handleInteractionChange(index, e)}
     />
     <input
       className="CallSummary-input-field"
       type="date"
-      placeholder="Creation Date"
-      name="creationDate"
-      value={caseItem.creationDate}
-      onChange={(e) => handleCaseChange(index, e)}
+      placeholder="Date"
+      name="date"
+      value={interaction.date}
+      onChange={(e) => handleInteractionChange(index, e)}
     />
     <input
       className="CallSummary-input-field"
-      type="text"
-      placeholder="Subject"
-      name="subject"
-      value={caseItem.subject}
-      onChange={(e) => handleCaseChange(index, e)}
-    />
-    <input
-      className="CallSummary-input-field"
-      type="text"
-      placeholder="Priority"
-      name="priority"
-      value={caseItem.priority}
-      onChange={(e) => handleCaseChange(index, e)}
+      type="time"
+      placeholder="Time"
+      name="time"
+      value={interaction.time}
+      onChange={(e) => handleInteractionChange(index, e)}
     />
     <textarea
       className="CallSummary-input-field"
       placeholder="Description"
       name="description"
-      value={caseItem.description}
-      onChange={(e) => handleCaseChange(index, e)}
+      value={interaction.description}
+      onChange={(e) => handleInteractionChange(index, e)}
     />
-    <button className="CallSummary-remove-button" onClick={() => handleRemoveCase(index)}>Remove Case</button>
+    <button className="CallSummary-remove-button" onClick={() => handleRemoveInteraction(index)}>Remove Interaction</button>
   </div>
 ))}
-
-
-const handleCaseChange = (index, e) => {
-  const { name, value } = e.target;
-  const updatedCases = cases.map((caseItem, i) =>
-    i === index ? { ...caseItem, [name]: value } : caseItem
-  );
-  setCases(updatedCases);
-};
