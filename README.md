@@ -48,6 +48,7 @@ const CallSummaryDetailsForm = () => {
         <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Contact Card')}>Contact Card</button>
         <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Cases')}>Cases</button>
         <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Interaction History')}>Interaction History</button>
+        <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Customer 360')}>Customer 360</button>
       </div>
 
       {selectedTab === 'Contact Card' && (
@@ -121,8 +122,85 @@ const CallSummaryDetailsForm = () => {
           ))}
         </div>
       )}
+      {selectedTab === 'Customer 360' && (
+        <div className="customer-360-app">
+          <h1>C360 View</h1>
+          <Panel
+            title="Risk Assessment"
+            initialFields={[{ id: 1, name: "", value: "" }]}
+            addFieldLabel="Add Field"
+            fieldType="field"
+          />
+          <Panel
+            title="Account Info"
+            initialFields={[{ id: 2, name: "", value: "" }]}
+            addFieldLabel="Add Sub Header"
+            fieldType="field"
+          />
+          <Panel
+            title="Next Best Action"
+            initialFields={[{ id: 3, name: "Data Point 1", value: "" }]}
+            addFieldLabel="Add Data Point"
+            fieldType="data"
+          />
+          <Panel
+            title="Life Events"
+            initialFields={[{ id: 4, name: "Date", value: "" }]}
+            addFieldLabel="Add Field"
+            fieldType="field"
+          />
+          <Panel
+            title="Marketing Analysis"
+            initialFields={[{ id: 5, name: "", value: "" }]}
+            addFieldLabel="Add Field"
+            fieldType="field"
+          />
+        </div>
+      )}
+
     </div>
   );
 };
 
 export default CallSummaryDetailsForm;
+
+
+const Panel = ({ title, initialFields, addFieldLabel, fieldType }) => {
+  const [fields, setFields] = useState(initialFields);
+
+  const addField = () => {
+    setFields([...fields, { id: Date.now(), name: "", value: "" }]);
+  };
+
+  const removeField = (id) => {
+    setFields(fields.filter((field) => field.id !== id));
+  };
+
+  return <div className="customer-360-panel">
+    <h3>{title}</h3>
+    {fields.map((field) => (
+    <div>
+    <input
+      type="text"
+      placeholder={fieldType === "data" ? "Data Point" : "Field"}
+      className="customer-360-field-input"
+    />
+    <input
+      type="text"
+      placeholder="Value"
+      className="customer-360-value-input"
+    />
+    <button
+      className="customer-360-remove-btn"
+      onClick={() => removeField(field.id)}
+    >
+      ×
+    </button>
+    <button className="customer-360-add-btn" onClick={addField}>
+      {addFieldLabel}
+    </button>
+    </div>))}
+  </div>
+};
+
+
