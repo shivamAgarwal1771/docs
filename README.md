@@ -1,17 +1,26 @@
 import React, { useEffect, useState } from 'react';
 
-const CallSummaryTabs = ({handleSubmit}) => {
+const CallSummaryTabs = ({ handleSubmit, onDataChange }) => {
   const [selectedTab, setSelectedTab] = useState('Call Info');
   const [callInfos, setCallInfos] = useState([]);
   const [callNotes, setCallNotes] = useState([]);
   const [resolutions, setResolutions] = useState([]);
 
+  // Update parent with new data
+  useEffect(() => {
+    onDataChange({ callInfos, callNotes, resolutions });
+  }, [callInfos, callNotes, resolutions, onDataChange]);
+
   const handleAddCallInfo = () => {
     setCallInfos([...callInfos, { intent: '', repeatCall: '', incomingTime: '', duration: '' }]);
   };
- useEffect(()=>{
-console.log(callInfos,"test666")
- },[callInfos])
+
+  const handleUpdateCallInfo = (index, key, value) => {
+    const updatedInfos = [...callInfos];
+    updatedInfos[index][key] = value;
+    setCallInfos(updatedInfos);
+  };
+
   const handleRemoveCallInfo = (index) => {
     const updatedInfos = callInfos.filter((_, i) => i !== index);
     setCallInfos(updatedInfos);
@@ -19,6 +28,12 @@ console.log(callInfos,"test666")
 
   const handleAddCallNote = () => {
     setCallNotes([...callNotes, { note: '' }]);
+  };
+
+  const handleUpdateCallNote = (index, value) => {
+    const updatedNotes = [...callNotes];
+    updatedNotes[index].note = value;
+    setCallNotes(updatedNotes);
   };
 
   const handleRemoveCallNote = (index) => {
@@ -30,9 +45,21 @@ console.log(callInfos,"test666")
     setResolutions([...resolutions, { question: '', options: [] }]);
   };
 
+  const handleUpdateResolution = (index, key, value) => {
+    const updatedResolutions = [...resolutions];
+    updatedResolutions[index][key] = value;
+    setResolutions(updatedResolutions);
+  };
+
   const handleAddOption = (index) => {
     const updatedResolutions = [...resolutions];
     updatedResolutions[index].options.push('');
+    setResolutions(updatedResolutions);
+  };
+
+  const handleUpdateOption = (resIndex, optIndex, value) => {
+    const updatedResolutions = [...resolutions];
+    updatedResolutions[resIndex].options[optIndex] = value;
     setResolutions(updatedResolutions);
   };
 
@@ -53,90 +80,47 @@ console.log(callInfos,"test666")
         <div className="tabs">
           <span className="tab-button">Call Info</span>
           <button className="btn" onClick={handleAddCallInfo}>+</button>
-          {/* <button className="tab-button" onClick={() => setSelectedTab('Call Notes')}>Call Notes</button>
-        <button className="tab-button" onClick={() => setSelectedTab('Resolution')}>Resolution</button> */}
         </div>
         <div className="call-info">
-          {/* <button className="btn" onClick={handleAddCallInfo}>+</button> */}
           {callInfos.map((info, index) => (
-            <div className="call-summary-subcontainer">
-              <div key={index} className="call-info-section">
-                <input className="input-field" type="text" placeholder="Intent Captured" />
-                <select className="input-field" value={info.repeatCall} onChange={(e) => {
-                  const updatedInfos = [...callInfos];
-                  updatedInfos[index].repeatCall = e.target.value;
-                  setCallInfos(updatedInfos);
-                }}>
+            <div className="call-summary-subcontainer" key={index}>
+              <div className="call-info-section">
+                <input
+                  className="input-field"
+                  type="text"
+                  placeholder="Intent Captured"
+                  value={info.intent}
+                  onChange={(e) => handleUpdateCallInfo(index, 'intent', e.target.value)}
+                />
+                <select
+                  className="input-field"
+                  value={info.repeatCall}
+                  onChange={(e) => handleUpdateCallInfo(index, 'repeatCall', e.target.value)}
+                >
                   <option value="">Repeat Call</option>
                   <option value="Yes">Yes</option>
                   <option value="No">No</option>
                 </select>
-                <input className="input-field" type="time" placeholder="Incoming Time" />
-                <input className="input-field" type="text" placeholder="Call Duration" />
+                <input
+                  className="input-field"
+                  type="time"
+                  value={info.incomingTime}
+                  onChange={(e) => handleUpdateCallInfo(index, 'incomingTime', e.target.value)}
+                />
+                <input
+                  className="input-field"
+                  type="text"
+                  placeholder="Call Duration"
+                  value={info.duration}
+                  onChange={(e) => handleUpdateCallInfo(index, 'duration', e.target.value)}
+                />
               </div>
-              <div>
-                <button className="summary-remove-button" onClick={() => handleRemoveCallInfo(index)}>
-                  <span>R<br />E<br />M<br />O<br />V<br />E</span>
-                </button>
-              </div>
+              <button className="summary-remove-button" onClick={() => handleRemoveCallInfo(index)}>Remove</button>
             </div>
           ))}
         </div>
-
-        {/* {selectedTab === 'Call Info' && (
-          <div className="call-info">
-            <button className="btn" onClick={handleAddCallInfo}>Add Call Info</button>
-            {callInfos.map((info, index) => (
-              <div key={index} className="call-info-section">
-                <input className="input-field" type="text" placeholder="Intent Captured" />
-                <select className="input-field" value={info.repeatCall} onChange={(e) => {
-                  const updatedInfos = [...callInfos];
-                  updatedInfos[index].repeatCall = e.target.value;
-                  setCallInfos(updatedInfos);
-                }}>
-                  <option value="">Repeat Call</option>
-                  <option value="Yes">Yes</option>
-                  <option value="No">No</option>
-                </select>
-                <input className="input-field" type="time" placeholder="Incoming Time" />
-                <input className="input-field" type="text" placeholder="Call Duration" />
-                <button className="remove-button" onClick={() => handleRemoveCallInfo(index)}>Remove</button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {selectedTab === 'Call Notes' && (
-          <div className="call-notes">
-            <button className="btn" onClick={handleAddCallNote}>Add Call Note</button>
-            {callNotes.map((note, index) => (
-              <div key={index} className="call-note-section">
-                <textarea className="input-field" placeholder="Call Note"></textarea>
-                <button className="remove-button" onClick={() => handleRemoveCallNote(index)}>Remove</button>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {selectedTab === 'Resolution' && (
-          <div className="resolution">
-            <button className="btn" onClick={handleAddResolution}>Add Resolution</button>
-            {resolutions.map((resolution, resIndex) => (
-              <div key={resIndex} className="resolution-section">
-                <input className="input-field" type="text" placeholder="Question" />
-                <button className="btn" onClick={() => handleAddOption(resIndex)}>Add Option</button>
-                {resolution.options.map((option, optIndex) => (
-                  <div key={optIndex} className="option-section">
-                    <input className="input-field" type="text" placeholder="Option" />
-                    <button className="remove-button" onClick={() => handleRemoveOption(resIndex, optIndex)}>Remove Option</button>
-                  </div>
-                ))}
-                <button className="remove-button" onClick={() => handleRemoveResolution(resIndex)}>Remove Resolution</button>
-              </div>
-            ))}
-          </div>
-        )} */}
       </div>
+
       <div className="call-summary-tabs">
         <div className="tabs">
           <span className="tab-button">Call Note</span>
@@ -144,19 +128,19 @@ console.log(callInfos,"test666")
         </div>
         <div className="call-notes">
           {callNotes.map((note, index) => (
-            <div className="call-summary-subcontainer">
-              <div key={index} className="call-note-section">
-                <textarea className="input-field" placeholder="Call Note"></textarea>
-              </div>
-              <div>
-                <button className="summary-remove-button" onClick={() => handleRemoveCallNote(index)}>
-                  <span>R<br />E<br />M<br />O<br />V<br />E</span>
-                </button>
-              </div>
+            <div className="call-summary-subcontainer" key={index}>
+              <textarea
+                className="input-field"
+                placeholder="Call Note"
+                value={note.note}
+                onChange={(e) => handleUpdateCallNote(index, e.target.value)}
+              />
+              <button className="summary-remove-button" onClick={() => handleRemoveCallNote(index)}>Remove</button>
             </div>
           ))}
         </div>
       </div>
+
       <div className="call-summary-tabs">
         <div className="tabs">
           <span className="tab-button">Resolution</span>
@@ -164,29 +148,36 @@ console.log(callInfos,"test666")
         </div>
         <div className="resolution">
           {resolutions.map((resolution, resIndex) => (
-            <div className="call-summary-subcontainer">
-              <div key={resIndex} className="resolution-section">
-                <input className="input-field" type="text" placeholder="Question" />
-                <button className="btn" onClick={() => handleAddOption(resIndex)}>Add Option</button>
-                <div className="option-container">
-                  {resolution.options.map((option, optIndex) => (
-                    <div key={optIndex} className="option-section">
-                      <input className="input-field" type="text" placeholder="Option" />
-                      <button className="cancel-option" onClick={() => handleRemoveOption(resIndex, optIndex)}>X</button>
-                    </div>
-                  ))}
-                </div>
+            <div className="call-summary-subcontainer" key={resIndex}>
+              <input
+                className="input-field"
+                type="text"
+                placeholder="Question"
+                value={resolution.question}
+                onChange={(e) => handleUpdateResolution(resIndex, 'question', e.target.value)}
+              />
+              <button className="btn" onClick={() => handleAddOption(resIndex)}>Add Option</button>
+              <div className="option-container">
+                {resolution.options.map((option, optIndex) => (
+                  <div className="option-section" key={optIndex}>
+                    <input
+                      className="input-field"
+                      type="text"
+                      placeholder="Option"
+                      value={option}
+                      onChange={(e) => handleUpdateOption(resIndex, optIndex, e.target.value)}
+                    />
+                    <button className="cancel-option" onClick={() => handleRemoveOption(resIndex, optIndex)}>X</button>
+                  </div>
+                ))}
               </div>
-              <div>
-                <button className="summary-remove-button" onClick={() => handleRemoveResolution(resIndex)}>
-                  <span>R<br />E<br />M<br />O<br />V<br />E</span>
-                </button>
-              </div>
+              <button className="summary-remove-button" onClick={() => handleRemoveResolution(resIndex)}>Remove</button>
             </div>
           ))}
         </div>
-        <button type='submit' onClick={()=>handleSubmit()}>Submit</button>
       </div>
+
+      <button type="submit" onClick={handleSubmit}>Submit</button>
     </>
   );
 };
