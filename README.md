@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-const MediaSelection = ({ setAudio, audio}) => {
+
+const MediaSelection = ({ setAudio, audio }) => {
   const [selectedMedia, setSelectedMedia] = useState('demoScript'); // Default selection
   const [audioFile, setAudioFile] = useState(null);
   const [trimmedAudioFile, setTrimmedAudioFile] = useState(null); // For storing trimmed audio
@@ -10,11 +11,10 @@ const MediaSelection = ({ setAudio, audio}) => {
 
   // Handle file upload for audio
   const handleFileUpload = (event) => {
-    setAudio(event.target.files[0])
+    setAudio(event.target.files[0]);
     const file = event.target.files[0];
     if (file && file.type.includes('audio')) {
       setAudioFile(URL.createObjectURL(file));
-      // handleInput('audio', URL.createObjectURL(file))
       setTrimmedAudioFile(null); // Reset trimmed audio on new upload
     } else {
       alert('Please upload a valid audio file.');
@@ -131,16 +131,31 @@ const MediaSelection = ({ setAudio, audio}) => {
         >
           Demo Recording
         </button>
+        <button
+          className={selectedMedia === 'audio' ? 'active' : ''}
+          onClick={() => setSelectedMedia('audio')}
+        >
+          Audio
+        </button>
+        <button
+          className={selectedMedia === 'video' ? 'active' : ''}
+          onClick={() => setSelectedMedia('video')}
+        >
+          Video
+        </button>
+        <button
+          className={selectedMedia === 'text' ? 'active' : ''}
+          onClick={() => setSelectedMedia('text')}
+        >
+          Text
+        </button>
       </div>
 
-      {selectedMedia === 'demoRecording' && (
+      {/* Conditional Content Rendering */}
+      {selectedMedia === 'audio' && (
         <div className="media-selection-content">
           <h3>Upload Audio Recording</h3>
-          <input type="file" accept="audio/*" onChange={(e)=>handleFileUpload(e)} />
-            {/* <label className="demo-btn" htmlFor='audio-file'>+ Upload Audio</label>
-            <span className="file-name">{`${audio ? (audio?.name ? audio.name : ` audio available`) : `audio unavailable`}`}</span>
-            <input style={{ visibility: 'hidden' }} id='audio-file' type='file' accept='audio/*' onChange={(e) => {handleFileUpload(e); }} /> */}
-          
+          <input type="file" accept="audio/*" onChange={handleFileUpload} />
 
           {/* Preview uploaded audio */}
           {audio && (
@@ -190,6 +205,22 @@ const MediaSelection = ({ setAudio, audio}) => {
         </div>
       )}
 
+      {selectedMedia === 'video' && (
+        <div className="media-selection-content">
+          <h3>Upload Video</h3>
+          <input type="file" accept="video/*" />
+          {/* Add video-related functionality here */}
+        </div>
+      )}
+
+      {selectedMedia === 'text' && (
+        <div className="media-selection-content">
+          <h3>Text Content</h3>
+          <textarea placeholder="Enter your text here"></textarea>
+          <button>Create Text Resource</button>
+        </div>
+      )}
+
       {selectedMedia === 'demoScript' && (
         <div className="media-selection-content">
           <h3>Select Voice</h3>
@@ -201,9 +232,9 @@ const MediaSelection = ({ setAudio, audio}) => {
                 <option>Matthew (Male)</option>
                 <option>Kimberly (Female)</option>
                 <option>Kendra (Female)</option>
-                <option>Justin (male)</option>
-                <option>Joey(male)</option>
-                <option>Lvy(Female)</option>
+                <option>Justin (Male)</option>
+                <option>Joey (Male)</option>
+                <option>Lvy (Female)</option>
               </select>
             </label>
             <label>
@@ -213,17 +244,19 @@ const MediaSelection = ({ setAudio, audio}) => {
                 <option>Matthew (Male)</option>
                 <option>Kimberly (Female)</option>
                 <option>Kendra (Female)</option>
-                <option>Justin (male)</option>
-                <option>Joey(male)</option>
-                <option>Lvy(Female)</option>
+                <option>Justin (Male)</option>
+                <option>Joey (Male)</option>
+                <option>Lvy (Female)</option>
               </select>
             </label>
           </div>
           <h3>Upload Script File</h3>
           <div className="script-upload">
-            <a href='../../../public/sample/sample.pdf' download='../../../public/sample/sample.pdf'> Sample script</a>
-            <textarea placeholder='Write your text area'></textarea>
-            <input style={{ paddingBottom: "6px", paddingTop: "6px" }} type="file" accept=".txt" />
+            <a href="../../../public/sample/sample.pdf" download>
+              Sample script
+            </a>
+            <textarea placeholder="Write your text here"></textarea>
+            <input type="file" accept=".txt" />
           </div>
           <button className="create-resource-btn">Create Resource</button>
         </div>
