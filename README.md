@@ -1,231 +1,235 @@
-import { useEffect } from "react";
-import { useDispatch } from "react-redux";
-import { updateDemoData } from "../../../store/demo-slice";
+import React, { useState, useRef } from 'react';
+const MediaSelection = ({ setAudio, audio}) => {
+  const [selectedMedia, setSelectedMedia] = useState('demoScript'); // Default selection
+  const [audioFile, setAudioFile] = useState(null);
+  const [trimmedAudioFile, setTrimmedAudioFile] = useState(null); // For storing trimmed audio
+  const [startTime, setStartTime] = useState(0);
+  const [endTime, setEndTime] = useState(0);
+  const audioRef = useRef(null);
+  const trimmedAudioRef = useRef(null);
 
-export default function CallSummary({ metadata, handleInput , handleSubmit }) {
-    const dispatch = useDispatch()
-    const validateRequiredSummaryFields = () => {
-        if (metadata.summary) {
-            const summary = Object.keys(metadata?.summary);
-            const requiredFields = new Set(['callSummary', 'callNotes', 'resolution']);
-            if (summary.length !== 3) {
-                requiredFields.forEach((obj, ind) => {
-                    if (!(summary[obj])) {
-                        metadata.summary[obj] = []
-                    }
-                })
+  // Handle file upload for audio
+  const handleFileUpload = (event) => {
+    setAudio(event.target.files[0])
+    const file = event.target.files[0];
+    if (file && file.type.includes('audio')) {
+      setAudioFile(URL.createObjectURL(file));
+      // handleInput('audio', URL.createObjectURL(file))
+      setTrimmedAudioFile(null); // Reset trimmed audio on new upload
+    } else {
+      alert('Please upload a valid audio file.');
+    }
+  };
+
+  // Handle trimming and playing trimmed audio
+  const handleTrim = () => {
+    if (!audioFile) {
+      alert('Please upload an audio file first.');
+      return;
+    }
+
+    const audio = audioRef.current;
+    if (audio) {
+      const start = parseFloat(startTime);
+      const end = parseFloat(endTime);
+
+      if (start >= 0 && end > start && end <= audio.duration) {
+        const audioContext = new AudioContext();
+        fetch(audioFile)
+          .then((response) => response.arrayBuffer())
+          .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
+          .then((audioBuffer) => {
+            const trimmedBuffer = audioContext.createBuffer(
+              audioBuffer.numberOfChannels,
+              (end - start) * audioBuffer.sampleRate,
+              audioBuffer.sampleRate
+            );
+
+            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+              const oldData = audioBuffer.getChannelData(channel);
+              const newData = trimmedBuffer.getChannelData(channel);
+              newData.set(oldData.slice(
+                start * audioBuffer.sampleRate,
+                end * audioBuffer.sampleRate
+              ));
             }
-        }
-        return metadata.summary;
-    };
 
-    let summarydata = metadata?.summary ? true : false
+            const audioBlob = bufferToWave(trimmedBuffer, trimmedBuffer.length);
+            const trimmedAudioUrl = URL.createObjectURL(audioBlob);
+            setTrimmedAudioFile(trimmedAudioUrl);
+          })
+          .catch((error) => {
+            console.error('Error decoding audio', error);
+          });
+      } else {
+        alert('Invalid trim times. Please ensure they are within the audio duration.');
+      }
+    }
+  };
 
-    metadata['summary'] = metadata?.summary ? validateRequiredSummaryFields() : {
-        'callSummary': [
-            { key: "Intent Captured", value: "" },
-            { key: "Repeat Call", value: "No" },
-            { key: "Incoming Time", value: "03:15 PM, 13-07-2024" },
-            { key: "Call Duration", value: "1:18 mins" }
-        ],
-        'callNotes': [],
-        'resolution': [
-            {
-                QUESTION: "Was the captured intent correct?",
-                OPTIONS: [
-                    {
-                        value: "Yes",
-                        selected: true
-                    },
-                    {
-                        value: "No",
-                        selected: false
-                    }
-                ]
-            },
-            {
-                QUESTION: "Was the issue resolved?",
-                OPTIONS: [
-                    {
-                        value: "Yes",
-                        selected: true
-                    },
-                    {
-                        value: "No",
-                        selected: false
-                    }
-                ]
-            },
-            {
-                QUESTION: "Is any follow-up needed?",
-                OPTIONS: [
-                    {
-                        value: "Yes",
-                        selected: false
-                    },
-                    {
-                        value: "No",
-                        selected: true
-                    }
-                ]
-            }
-        ]
-    };
+  const bufferToWave = (abuffer, len) => {
+    const numOfChan = abuffer.numberOfChannels;
+    const length = len * numOfChan * 2 + 44;
+    const buffer = new ArrayBuffer(length);
+    const view = new DataView(buffer);
+    const channels = [];
+    let pos = 0;
 
-    useEffect(() => {
-        if (!summarydata) { 
-            dispatch(updateDemoData({ type: "metadata", data: metadata })) 
-        };
-    }, [summarydata])
-
-    function handleAdd(e, type) {
-        e.preventDefault()
-        let newSummary = metadata.summary
-
-        if (type === 'callSummary') {
-            newSummary[type].push({ key: "", value: "" })
-        }
-
-        if (type === 'callNotes') {
-            newSummary[type].push({ description: '' })
-        }
-
-        if (type === 'resolution') {
-            newSummary[type].push({
-                'QUESTION': '',
-                'OPTIONS': []
-            })
-        }
-
-        handleInput('summary', newSummary)
+    // Write WAV container metadata
+    function setUint16(data) {
+      view.setUint16(pos, data, true);
+      pos += 2;
     }
 
-    function handleAddOption(e, index) {
-        e.preventDefault()
-        let newSummary = metadata.summary
-        newSummary?.resolution[index]?.OPTIONS?.push({
-            value: '',
-            selected: false
-        })
-        handleInput('summary', newSummary)
+    function setUint32(data) {
+      view.setUint32(pos, data, true);
+      pos += 4;
     }
 
-    function handleCallInfoChange(index, type, value) {
-        let newSummary = metadata.summary
-        newSummary.callSummary[index][type] = value
-        handleInput('summary', newSummary)
+    setUint32(0x46464952); // "RIFF" marker
+    setUint32(length - 8); // RIFF chunk length
+    setUint32(0x45564157); // "WAVE" marker
+    setUint32(0x20746d66); // "fmt " chunk
+    setUint32(16); // Length of format chunk
+    setUint16(1); // Type of format (1 is PCM)
+    setUint16(numOfChan);
+    setUint32(abuffer.sampleRate);
+    setUint32(abuffer.sampleRate * 2 * numOfChan);
+    setUint16(numOfChan * 2);
+    setUint16(16); // 16-bit samples
+    setUint32(0x61746164); // "data" marker
+    setUint32(length - pos - 4); // Data chunk length
+
+    for (let i = 0; i < abuffer.numberOfChannels; i++) {
+      channels.push(abuffer.getChannelData(i));
     }
 
-    function handleCallNotesChange(index, value) {
-        let newSummary = metadata.summary
-        newSummary.callNotes[index].description = value
-        handleInput('summary', newSummary)
+    for (let i = 0; i < len; i++) {
+      for (let c = 0; c < numOfChan; c++) {
+        const sample = Math.max(-1, Math.min(1, channels[c][i]));
+        view.setInt16(pos, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
+        pos += 2;
+      }
     }
 
-    function handleResolutionChange(index, type, value, optInd = undefined, optType = undefined) {
-        let newSummary = metadata.summary
+    return new Blob([buffer], { type: 'audio/wav' });
+  };
 
-        console.log(newSummary, index, type, optInd, optType, value)
+  return (
+    <div className="media-selection-container">
+      <div className="button-group">
+        <h2>Select Media:</h2>
+        <button
+          className={selectedMedia === 'demoScript' ? 'active' : ''}
+          onClick={() => setSelectedMedia('demoScript')}
+        >
+          Demo Script
+        </button>
+        <button
+          className={selectedMedia === 'demoRecording' ? 'active' : ''}
+          onClick={() => setSelectedMedia('demoRecording')}
+        >
+          Demo Recording
+        </button>
+      </div>
 
-        if (optInd === undefined) {
-            newSummary.resolution[index][type] = value
-        } else {
-            newSummary.resolution[index][type][optInd][optType] = value
-        }
+      {selectedMedia === 'demoRecording' && (
+        <div className="media-selection-content">
+          <h3>Upload Audio Recording</h3>
+          <input type="file" accept="audio/*" onChange={(e)=>handleFileUpload(e)} />
+            {/* <label className="demo-btn" htmlFor='audio-file'>+ Upload Audio</label>
+            <span className="file-name">{`${audio ? (audio?.name ? audio.name : ` audio available`) : `audio unavailable`}`}</span>
+            <input style={{ visibility: 'hidden' }} id='audio-file' type='file' accept='audio/*' onChange={(e) => {handleFileUpload(e); }} /> */}
+          
 
-        handleInput('summary', newSummary)
-    }
+          {/* Preview uploaded audio */}
+          {audio && (
+            <div className='media-selection-audio-trimmer'>
+              <h3>Uploaded Audio Preview</h3>
+              <audio controls src={audioFile} ref={audioRef}>
+                Your browser does not support the audio element.
+              </audio>
 
-    function handleRemove(e, type, index) {
-        e.preventDefault()
-        let newSummary = metadata.summary
+              <h3>Trim Audio</h3>
+              <div className="media-trimmer">
+                <label>
+                  Start Time (seconds):
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                  />
+                </label>
+                <label>
+                  End Time (seconds):
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                  />
+                </label>
+              </div>
 
-        newSummary[type].splice(index, 1)
+              <button style={{ background: "#af8cf6", color: "white", padding: "4px" }} onClick={handleTrim}>Trim Audio</button>
+            </div>
+          )}
 
-        handleInput('summary', newSummary)
-    }
+          {/* Preview trimmed audio */}
+          {trimmedAudioFile && (
+            <div>
+              <h3>Trimmed Audio Preview</h3>
+              <audio controls src={trimmedAudioFile} ref={trimmedAudioRef}>
+                Your browser does not support the audio element.
+              </audio>
+            </div>
+          )}
+        </div>
+      )}
 
-    function handleRemoveOption(e, index, optIndex) {
-        e.preventDefault()
-        let newSummary = metadata.summary
+      {selectedMedia === 'demoScript' && (
+        <div className="media-selection-content">
+          <h3>Select Voice</h3>
+          <div className="dropdown-group">
+            <label>
+              Customer:
+              <select>
+                <option>Salli (Female)</option>
+                <option>Matthew (Male)</option>
+                <option>Kimberly (Female)</option>
+                <option>Kendra (Female)</option>
+                <option>Justin (male)</option>
+                <option>Joey(male)</option>
+                <option>Lvy(Female)</option>
+              </select>
+            </label>
+            <label>
+              Agent:
+              <select>
+                <option>Salli (Female)</option>
+                <option>Matthew (Male)</option>
+                <option>Kimberly (Female)</option>
+                <option>Kendra (Female)</option>
+                <option>Justin (male)</option>
+                <option>Joey(male)</option>
+                <option>Lvy(Female)</option>
+              </select>
+            </label>
+          </div>
+          <h3>Upload Script File</h3>
+          <div className="script-upload">
+            <a href='../../../public/sample/sample.pdf' download='../../../public/sample/sample.pdf'> Sample script</a>
+            <textarea placeholder='Write your text area'></textarea>
+            <input style={{ paddingBottom: "6px", paddingTop: "6px" }} type="file" accept=".txt" />
+          </div>
+          <button className="create-resource-btn">Create Resource</button>
+        </div>
+      )}
+    </div>
+  );
+};
 
-        newSummary.resolution[index].OPTIONS.splice(optIndex, 1)
-
-        handleInput('summary', newSummary)
-    }
-
-    return (
-        <>
-            <div className="demo-section"><span className="demo-section-child">Call Info:</span><button className="demo-section-child demo-btn" onClick={e => handleAdd(e, 'callSummary')}>Add </button></div>
-            {metadata?.summary?.callSummary?.map((item, index) => (
-                <div className="section-child">
-                    <input
-                        className="upload-demo-input"
-                        placeholder="Field"
-                        value={item.key}
-                        onChange={e => handleCallInfoChange(index, 'key', e.target.value)}
-                    />
-                    <input
-                        className="upload-demo-input"
-                        placeholder="Value"
-                        value={item.value}
-                        onChange={e => handleCallInfoChange(index, 'value', e.target.value)}
-                    />
-                    <button className="section-btn section-remove-btn" onClick={e => handleRemove(e, 'callSummary', index)}>Remove</button>
-                </div>
-            ))}
-            <div className="demo-section"><span className="demo-section-child">Call Notes:</span><button className="demo-section-child demo-btn" onClick={e => handleAdd(e, 'callNotes')}>Add</button></div>
-            {metadata?.summary?.callNotes?.map((item, index) => (
-                <div>
-                    <input
-                        className="upload-demo-input"
-                        placeholder="Add Notes"
-                        value={item?.description}
-                        onChange={e => handleCallNotesChange(index, e.target.value)}
-                    />
-                    <button className="demo-btn remove-btn" onClick={e => handleRemove(e, 'callNotes', index)}>Remove</button>
-                </div>
-            ))}
-            <div className="demo-section"><span className="demo-section-child">Resolution:</span><button className="demo-section-child demo-btn" onClick={e => handleAdd(e, 'resolution')}>Add</button></div>
-            {metadata?.summary?.resolution?.map((item, index) => (
-                <>
-                    <div className="demo-section">
-                        <span>Question</span>
-                        <input
-                            className="upload-demo-subject-description"
-                            placeholder="Question"
-                            value={item.QUESTION}
-                            onChange={e => handleResolutionChange(index, 'QUESTION', e.target.value)}
-                        />
-                        <button className="demo-btn remove-btn" onClick={e => handleRemove(e, 'resolution', index)}>Remove</button>
-                    </div>
-                    <button className="demo-btn" onClick={e => handleAddOption(e, index)}>Add Option</button>
-                    {item?.OPTIONS?.map((opt, ind) => (
-                        <div className="demo-section">
-                            <span>
-                                Option
-                                <input
-                                    className="upload-demo-input"
-                                    placeholder="Option"
-                                    value={opt.value}
-                                    onChange={e => handleResolutionChange(index, 'OPTIONS', e.target.value, ind, 'value')}
-                                />
-                            </span>
-                            <span>
-                                Selected Option
-                                <input
-                                    type="checkbox"
-                                    value={opt.selected}
-                                    checked={opt.selected}
-                                    onChange={e => handleResolutionChange(index, 'OPTIONS', e.target.checked, ind, 'selected')}
-                                />
-                            </span>
-                            <button className="demo-btn remove-btn" onClick={e => handleRemoveOption(e, index, ind)}>Remove</button>
-                        </div>
-                    ))}
-                </>
-            ))}
-            <button type="submit" onClick={handleSubmit}>Submit</button>
-        </>
-    )
-}
+export default MediaSelection;
