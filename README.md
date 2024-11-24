@@ -1,540 +1,215 @@
-import React, { useEffect, useRef, useState } from 'react'
-import Slider from 'react-slick'
-import 'slick-carousel/slick/slick.css'
-import 'slick-carousel/slick/slick-theme.css'
-import { GrCaretPrevious, GrCaretNext } from "react-icons/gr"
-import { DisplayAudits, DisplaySentiment, DisplayAIWiki, DisplayCallContext, DisplayButton, DisplayChannelTime, DisplayWorkflow } from './Display'
-import { AI_ASSISTANT_TYPE } from '../../../utility/constants'
-import { v4 as uuidv4 } from 'uuid';
+uploadDemo.jsx:144 
+ Error Uploading data TypeError: transcript.text is not a function
+    at eval (uploadDemo.jsx:138:77)
+eval	@	uploadDemo.jsx:144
 
-export const handleRemove = (index, transcript, setTranscript) => {
-  const newTranscript = [...transcript]
-  newTranscript.splice(index, 1)
-  setTranscript(newTranscript)
-}
+getting this error when handlesumbit function fun in below code please reolve
 
-export const handleAddRecommendation = (index, prevEndTime, nextStartTime, transcript, setTranscript, setIndex, type) => {
-  const newTranscript = [...transcript]
-  let newStartTime = (Number(prevEndTime) + Number(nextStartTime)) / 2
-  let recommendation = {
-    "StartTime": newStartTime.toFixed(3),
-    "EndTime": (newStartTime + 1).toFixed(3),
-    "eventData": {
-      "Transcript": {
-        "Transcript": '{"Title":"","subTitle":"","message":""}',
-        "ChannelId": "AGENT_ASSISTANT",
-        "StartTime": newStartTime.toFixed(3),
-        "EndTime": (newStartTime + 1).toFixed(3),
-        "IsPartial": false,
-        "ResultId": uuidv4(),
-        "Sentiment": "Neutral",
-        "SentimentScore": {
-          "Positive": 0.1,
-          "Negative": 0.1,
-          "Neutral": 0.8,
-          "Mixed": 0
+import React, { useEffect, useMemo, useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { setIsEditDemo, setDemoCode, setSuccessMsg, undoSuccessCount, setDemoData, setDemoTranscriptSubmitted, updateDemoData, setIsCreateDemo, setUnsavedChanges } from '../../../store/demo-slice'
+import { manipulateCallSummary, manipulateCustomerDetails } from '../../../utility/upload-demo/manipulate';
+import UploadBody from './UploadBody';
+import getCredentials from '../../../utility/authentication/get-credentials';
+import uploadDemoToS3 from '../../../utility/upload-demo/uploadToS3';
+import { checkAudioFormat, checkCodeAvailability, checkJsonFormat } from '../../../utility/upload-demo/check';
+import { useCallback } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
+import { PLATFORM_NAME, UPLOAD_DEMO_MSG } from "../../../utility/constants";
+import { getFolderFromS3 } from '../../../utility/upload-demo/getfolderfroms3';
+import Loading from "../../../components/common/Loading";
+import { setScreen } from '../../../store/userSlice';
+import { formHelperTextClasses } from '@mui/material';
+import ProgressBar from '../../../pages/progressLeader/progressBar';
+
+export default function UploadDemo({ audio, setAudio }) {
+    const dispatch = useDispatch();
+    const demoState = useSelector((state) => state?.demostate);
+    const appCallData = useSelector((state)=>state?.call)
+    const transcriptData = appCallData.progressBarTranscript
+    const fileCode = demoState?.getDemoCode;
+    const demoData = demoState?.getDemoData;
+    const isCreateDemo = demoState?.createDemo;
+    const isEditDemo = demoState?.editDemo;
+    let errorMsg = useSelector(state => state?.demostate?.errorMsg)
+    let successMsg = useSelector(state => state?.demostate?.successMsg)
+    let successCount = useSelector(state => state?.demostate?.successCount)
+    const [isValid, setIsValid] = useState(false);
+    const [loader, setLoader] = useState(false);
+    const [finalTranscript,setFinalTranscript] =useState(null)
+    const [transcript, setTranscript] = useState(null);
+    const [metadata, setMetadata] = useState(demoData?.metadata);
+
+    function changeObjType(requiredData) {
+        let newArray = [];
+        Object.keys(requiredData).map((item) => {
+            newArray.push({ key: item, value: requiredData[item] });
+        });
+        requiredData = newArray;
+        return requiredData;
+    }
+
+    useEffect(() => {
+        if (isEditDemo && !(Object.keys(demoData).length)) {
+            const getData = async () => {
+                try {
+                    const credentials = await getCredentials();
+                    const fetchedData = await getFolderFromS3(credentials, fileCode);
+                    fetchedData.metadata.summary.callSummary = changeObjType(fetchedData?.metadata?.summary?.callSummary);
+                    fetchedData.metadata.personalInformation = changeObjType(fetchedData?.metadata?.personalInformation);
+                    fetchedData?.transcript?.forEach((obj) => {
+                        if (obj.eventData.Context && !Array.isArray(obj.eventData.Context)) {
+                            obj.eventData.Context = Array(obj?.eventData?.Context)
+                        }
+                    });
+                    if (fetchedData?.audio) {
+                        setAudio(fetchedData?.audio);
+                        delete fetchedData?.audio
+                    }
+                    dispatch(setDemoData(fetchedData));
+                } catch (err) {
+                    console.error("Error fetching data from s3", err);
+                }
+            };
+            getData().then(() => setLoader(false));
         }
-      },
-      "Audits": []
-    }
-  }
-  if (type === 'before') {
-    newTranscript.splice(index, 0, recommendation)
-    setIndex(index)
-  } else {
-    newTranscript.splice(index + 1, 0, recommendation)
-    setIndex(index + 1)
-  }
-  setTranscript(newTranscript)
-}
+    }, []);
 
-function Body({ tabs, transcript, setTranscript, setIndex, index, selectNudge }) {
-  console.log(transcript,setTranscript,"test11")
-  let sliderRef = useRef(null)
-  useEffect(() => {
-    sliderRef.slickGoTo(index)
-  }, [index])
-
-  const handleEdit = (index, field, newValue) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].eventData.Transcript[field] = newValue
-    setTranscript(newTranscript)
-  }
-
-  const handleEditTime = (index, type, newValue) => {
-    const newTranscript = [...transcript]
-    newTranscript[index][type] = newValue
-    newTranscript[index].eventData.Transcript[type] = newValue
-    setTranscript(newTranscript)
-  }
-
-  const handleEditInsightsAuditsWiki = (index, type, newValue) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].eventData[type] = newValue
-    setTranscript(newTranscript)
-  }
-
-  const handleEditKnowledgeArticle = (objIndex, type, value) => {
-    const newTranscript = [...transcript]
-    newTranscript[objIndex].eventData[type] = value
-    setTranscript(newTranscript)
-  }
-
-
-  const handleEditRecomendation = (index, field, newValue) => {
-    const newTranscript = [...transcript]
-    const newRecommendation = JSON.parse(newTranscript[index].eventData.Transcript.Transcript)
-    newRecommendation[field] = newValue
-    newTranscript[index].eventData.Transcript.Transcript = JSON.stringify(newRecommendation)
-    setTranscript(newTranscript)
-  }
-
-  const handleEditWorkflow = (objIndex, index, type, value) => {
-    const newTranscript = [...transcript]
-    newTranscript[objIndex].eventData.Guidance[index][type] = value
-    if (value !== 'running') {
-      newTranscript[objIndex].eventData.Guidance[index]["steps"] = []
-    }
-    setTranscript(newTranscript)
-  }
-
-  const handleEditSpeech = (objIndex, index, value) => {
-    const newTranscript = [...transcript]
-    newTranscript[objIndex].eventData.Guidance[index].value = value
-    setTranscript(newTranscript)
-  }
-
-  const handleEditWorkflowStep = (objIndex, guidInd, index, type, value) => {
-    const newTranscript = [...transcript]
-    let step = newTranscript[objIndex].eventData.Guidance[guidInd].steps[index]
-    if (type === 'stepName' || type === 'state') {
-      step[type] = value
-    }
-    if (type === 'type') {
-      step.card.type = value
-    }
-    if (type === 'text') {
-      step.card.messages[0].text = value
-    }
-    newTranscript[objIndex].eventData.Guidance[guidInd].steps[index] = step
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveAudit = (index, auditIndex) => {
-    const newTranscript = [...transcript]
-    newTranscript[index]?.eventData?.Audits.splice(auditIndex, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveWiki = (index, wikiIndex) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].eventData.AIWikiChat.splice(wikiIndex, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveGuidance = (index, guidInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].eventData.Guidance.splice(guidInd, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveWorkflowStep = (index, guidInd, stepInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index].eventData.Guidance[guidInd].steps.splice(stepInd, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveKnowledgeArticle = (index, guidInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index]?.eventData?.Guidance.splice(guidInd, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveCallContext = (index, guidInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index]?.eventData?.Context?.splice(guidInd, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleRemoveButton = (index, guidInd) => {
-    const newTranscript = [...transcript]
-    newTranscript[index]?.eventData?.Button?.splice(guidInd, 1)
-    setTranscript(newTranscript)
-  }
-
-  const handleAddAudit = (index, newAudit) => {
-    const newTranscript = [...transcript]
-
-    let audit = newTranscript[index].eventData?.Audits ?
-      newTranscript[index].eventData.Audits :
-      []
-    audit.push(newAudit)
-    newTranscript[index].eventData.Audits = audit
-    setTranscript(newTranscript)
-  }
-
-  const handleAddContext = (index, newContext) => {
-    const newTranscript = [...transcript]
-    let context = newTranscript[index].eventData?.Context ?
-      newTranscript[index].eventData.Context :
-      []
-    context.push(newContext)
-    newTranscript[index].eventData.Context = context
-    setTranscript(newTranscript)
-  }
-
-  const handleAddButton = (index, newButton) => {
-    const newTranscript = [...transcript]
-    let button = newTranscript[index].eventData?.Button ?
-      newTranscript[index].eventData.Button :
-      []
-    button.push(newButton)
-    newTranscript[index].eventData.Button = button
-    setTranscript(newTranscript)
-  }
-
-  const handleAddWiki = (index, newWiki) => {
-    const newTranscript = [...transcript]
-    let chats = newTranscript[index].eventData?.AIWikiChat ?
-      newTranscript[index].eventData.AIWikiChat :
-      []
-    chats.push(newWiki)
-    newTranscript[index].eventData.AIWikiChat = chats
-    setTranscript(newTranscript)
-  }
-
-  const handleAdjustSentiment = (index) => {
-    const newTranscript = [...transcript]
-    let pos = newTranscript[index].eventData.Transcript.SentimentScore.Positive
-    let neg = newTranscript[index].eventData.Transcript.SentimentScore.Negative
-    let neu = newTranscript[index].eventData.Transcript.SentimentScore.Neutral
-
-    let sen = Math.max(pos, neg, neu) === pos ? "Positive" : Math.max(pos, neg, neu) === neg ? "Negative" : "Neutral"
-
-    newTranscript[index].eventData.Transcript.Sentiment = sen
-    setTranscript(newTranscript)
-  }
-
-  const handleAddSpeechSuggestion = (index, value) => {
-    const newTranscript = [...transcript]
-    let guidance = {
-      "type": AI_ASSISTANT_TYPE.SPEECH_SUGGESTION,
-      "name": "Speech Suggestion",
-      "value": value
-    }
-    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
-    Gui.push(guidance)
-    newTranscript[index].eventData.Guidance = Gui
-    setTranscript(newTranscript)
-  }
-
-  const handleAddActionWorkflow = (index, type, intent, name) => {
-    const newTranscript = [...transcript]
-    let guidance = {
-      "type": AI_ASSISTANT_TYPE.ACTION_WORKFLOW,
-      "cardShown": true,
-      "workflowType": type,
-      "intent": intent,
-      "name": name,
-      "steps": []
-    }
-    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
-    Gui.push(guidance)
-    newTranscript[index].eventData.Guidance = Gui
-    setTranscript(newTranscript)
-  }
-
-  const handleAddWorkflowStep = (index, guidInd, name, state, type, text) => {
-    const newTranscript = [...transcript]
-    let runningFlow = newTranscript[index].eventData.Guidance[guidInd]
-    if (runningFlow.workflowType !== 'running') {
-      return
-    }
-
-    let step = {
-      "stepName": name,
-      "state": state,
-      "card": {
-        "type": type,
-        "isEditable": false,
-        "messages": [
-          {
-            "text": text
-          }
-        ]
-      }
-    }
-
-    runningFlow.steps.push(step)
-
-    newTranscript[index].eventData.Guidance[guidInd] = runningFlow
-    setTranscript(newTranscript)
-  }
-
-  const handleStartActionWorkflow = (index, intent) => {
-    const newTranscript = [...transcript]
-    let guidance = {
-      "type": AI_ASSISTANT_TYPE.ACTION_WORKFLOW,
-      "cardShown": false,
-      "intent": intent,
-    }
-    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
-    Gui.push(guidance)
-    newTranscript[index].eventData.Guidance = Gui
-    setTranscript(newTranscript)
-  }
-
-  const handleClick = (index) => {
-    let falseworkflow = true
-
-    transcript.forEach(element => {
-      element?.eventData?.Guidance?.forEach(el => {
-        if (el?.cardShown === false) {
-          falseworkflow = false
+    useEffect(() => {
+        isEditDemo && !(Object.keys(demoData).length) && setLoader(true);
+        if (demoData && isEditDemo) {
+            setTranscript(demoData?.transcript);
+            console.log(demoData?.metadata,"test2")
+            setMetadata(demoData?.metadata);
         }
-      })
-    })
+    }, [demoData]);
 
-    if (falseworkflow) {
-      handleStartActionWorkflow(index, '')
+    useEffect(() => {
+        dispatch(undoSuccessCount())
+    }, [])
+
+    const requiredFields = useMemo(() => ['agent', 'selectedLanguage', 'useCase', 'industry', 'channel', 'interactionDate', 'aht', 'code'], [])
+
+    const validateMetadata = useCallback((metadata) => {
+        return requiredFields.every(field => metadata[field] && metadata[field].trim() !== '')
+    }, []);
+
+    useEffect(() => {
+        metadata && setIsValid(validateMetadata(metadata))
+        metadata && dispatch(updateDemoData({ type: "metadata", data: metadata }))
+        isEditDemo && dispatch(setUnsavedChanges(true));
+    }, [metadata, requiredFields])
+
+
+    useEffect(()=>{
+        
+        setTranscript(finalTranscript)
+    },[finalTranscript])
+
+    function handleInput(field, value) {
+        console.log(field,value,"test99")
+        let newMetadata = { ...metadata }
+        newMetadata = { ...newMetadata, [field]: value }
+        console.log(newMetadata,"test77")
+        setMetadata(newMetadata)
     }
-  }
 
-  const handleAddKnowledgeArticle = (index) => {
-    const newTranscript = [...transcript]
-    let guidance = {
-      "type": AI_ASSISTANT_TYPE.KNOWLEDGE_ARTICLE,
-      "name": '',
-      "value": []
+    async function handleSubmit() {
+        if (isValid && audio && transcript && metadata) {
+            console.log(audio,metadata,transcript,"test11")
+            setLoader(true);
+            dispatch(setUnsavedChanges(false));
+            let audioFormat, audioType;
+            if (audio) {
+                audioFormat = audio.type ? audio.type : 'audio/mpeg';
+                audioType = audioFormat.split('/')[1]
+            }
+
+            let check_audio = checkAudioFormat(audioFormat.split('/')[0], dispatch)
+            let jsonFormat = transcript.type ? transcript.type : 'application/json'
+            let check_json = checkJsonFormat(jsonFormat.split('/')[1], dispatch)
+
+            let manipulateMetadata = manipulateCallSummary(metadata)
+            let manipulatepersonalInformationData = manipulateCustomerDetails(manipulateMetadata)
+            try {
+                if (!isEditDemo) {
+                    let codeAvailibility = await checkCodeAvailability(manipulatepersonalInformationData.code)
+                    if (!codeAvailibility) {
+                        toast.error(UPLOAD_DEMO_MSG.CODE_FAILURE_MSG)
+                        return null;
+                    }
+
+                    toast.success(UPLOAD_DEMO_MSG.CODE_SUCCESS_MSG)
+                }
+                if (check_audio && check_json) {
+                    const audioBuffer = !isEditDemo ? await audio.arrayBuffer() : audio;
+                    const transcriptString = !isEditDemo ? await transcript.text() : JSON.stringify(transcript);
+
+                    let credentials = await getCredentials()
+                    await uploadDemoToS3(audioBuffer, audioType, transcriptString, manipulatepersonalInformationData, dispatch, credentials, metadata?.code,demoState)
+                }
+            } catch(err) {
+                console.error("Error Uploading data",err);
+            }
+        } else {
+            const missingFields = requiredFields.filter(field => !metadata[field] || metadata[field].trim() === '')
+  
+            if (missingFields.length > 0) {
+                toast.error(`Missing fields: ${missingFields.join(', ')}`)
+            return false;
+            }
+        }
     }
-    let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
-    Gui.push(guidance)
-    newTranscript[index].eventData.Guidance = Gui
-    setTranscript(newTranscript)
-  }
 
-  return (
-    <Slider
-      dots={false}
-      infinite={false}
-      speed={250}
-      slidesToShow={1}
-      slidesToScroll={1}
-      draggable={false}
-      prevArrow={<GrCaretPrevious color='black' className='backward-arrow'/>}
-      nextArrow={<GrCaretNext color='black' className='forward-arrow'/>}
-      afterChange={(current) => { setIndex(current) }}
-      ref={slider => { sliderRef = slider }}
-    >
-      {transcript.map((obj, index) => {
-        let text = obj.eventData.Transcript.Transcript
-        let channelId = obj.eventData.Transcript.ChannelId
+    useEffect(() => {
+        if (errorMsg !== '') {
+            dispatch(undoSuccessCount())
+            toast.error(errorMsg)
+        }
+    }, [errorMsg])
 
-        let isRecommendation = text && text.includes('"Title"') && channelId === 'AGENT_ASSISTANT' ? JSON.parse(text) : null
+    useEffect(() => {
+        if (successCount === 3) {
+            dispatch(undoSuccessCount())
+            dispatch(setSuccessMsg('Successfully uploaded'))
+            setTimeout(() => {
+                dispatch(setSuccessMsg(''))
+            }, 5000)
+        }
+    }, [successCount])
 
-        return (
-          <div key={index} className='transcript-div'>
+    useEffect(() => {
+        if (successMsg) {
+            toast.success(successMsg)
+            setTimeout(() => {
+                dispatch(setIsCreateDemo(false));
+                dispatch(setScreen(PLATFORM_NAME.SMART_AGENT));
+                dispatch(setIsEditDemo(false));
+                dispatch(setDemoCode(null));
+                dispatch(setDemoTranscriptSubmitted(false));
+                dispatch(setDemoData({}))
+                setLoader(false)
+            }, 1000)
+        }
+    }, [successMsg])
 
-            <button className='transcript-div-close-button' onClick={() => handleRemove(index, transcript, setTranscript)}>
-              X
-            </button>
+    function handleStep(value){
+        if(value==8)
+        {
+            handleSubmit()
+        }
+    }
 
-            {<DisplayChannelTime obj={obj} index={index} handleEdit={handleEdit} handleEditTime={handleEditTime} />}
 
-            <div className='transcript-div-child'>
-              {isRecommendation ?
-                <div className='transcript-div-recommendation' >
-                  <input
-                    className='transcript-div-recommendation-input'
-                    type="text"
-                    placeholder='Title'
-                    value={isRecommendation.Title}
-                    onChange={(e) => { handleEditRecomendation(index, 'Title', e.target.value) }}
-                    required
-                  />
-                  <input
-                    className='transcript-div-recommendation-input'
-                    type="text"
-                    placeholder='subTitle'
-                    value={isRecommendation.subTitle}
-                    onChange={(e) => { handleEditRecomendation(index, 'subTitle', e.target.value) }}
-                    required
-                  />
-                  <textarea
-                    className='transcript-div-textarea'
-                    type="text"
-                    placeholder='message'
-                    value={isRecommendation.message}
-                    onChange={(e) => { handleEditRecomendation(index, 'message', e.target.value) }}
-                    required
-                  />
-                </div> :
-                <textarea
-                  className='transcript-div-textarea-only'
-                  placeholder='Add recommendation / transcript here'
-                  value={text}
-                  onChange={(e) => handleEdit(index, 'Transcript', e.target.value)}
-                  required
-                />}
-            </div>
-            {<DisplaySentiment objIndex={index} sentimentScore={obj.eventData.Transcript.SentimentScore} handleEdit={handleEdit} handleAdjustSentiment={handleAdjustSentiment} />}
-
-            <div className='transcript-div-child'>
-              <div className="customize-btns">
-                {/* <button
-                  className='transcript-div-button'
-                  onClick={() => handleAddAudit(index, { section: "", auditStatus: "FAIL", questions: [] })}
-                >
-                  Add Audit
-                </button> */}
-
-                {selectNudge === 'cc' && <button
-                  className='transcript-div-button'
-                  onClick={() => handleAddContext(index, { Title: '', Content: '' })}
-                >
-                  Add Call Context
-                </button>}
-
-                {/* <button
-                  className='transcript-div-button'
-                  onClick={() => handleAddWiki(index, { user: '', utterance: '' })}
-                >
-                  Add AI Wiki
-                </button> */}
-
-                {selectNudge === 'ss' && <button
-                  className='transcript-div-button'
-                  onClick={() => handleAddSpeechSuggestion(index, '')}
-                >
-                  Add Speech Suggestion
-                </button>}
-              </div>
-            </div>
-            <div className='customize-btns'>
-              {/* <button
-                  className='transcript-div-button'
-                  onClick={() => handleAddActionWorkflow(index, 'detected', '', '')}
-                >
-                  Add Action Workflow
-                </button> */}
-
-              {/* <button
-                  className='transcript-div-button'
-                  onClick={() => handleClick(index, '')}
-                >
-                  Start Action Workflow
-                </button> */}
-
-              {selectNudge === 'ka' && <button
-                className='transcript-div-button'
-                onClick={() => handleAddKnowledgeArticle(index)}
-              >
-                Add Knowledge Article
-              </button>}
-            </div>
-            <div className='customize-btns'>
-              {/* <button
-                  className="transcript-div-button"
-                  onClick={() => { handleAddRecommendation(index, (index !== 0 ? transcript[index - 1].EndTime : 0), obj.StartTime, transcript, setTranscript, setIndex, 'before') }}
-                >
-                  Add Guidance Before
-                </button> */}
-
-              {selectNudge === 'ai' && <button
-                className="transcript-div-button"
-                onClick={() => { handleAddRecommendation(index, obj.EndTime, (index !== transcript.length - 1 ? transcript[index + 1].StartTime : obj.EndTime), transcript, setTranscript, setIndex) }}
-              >
-                Add Guidance
-              </button>}
-
-              {/* <button className='transcript-div-button' onClick={() => handleRemove(index, transcript, setTranscript)}>
-                Remove Event
-              </button> */}
-
-              <button
-                className='transcript-div-add-button'
-                onClick={() => { handleAddRecommendation(index, obj.EndTime, (index !== transcript.length - 1 ? transcript[index + 1].StartTime : obj.EndTime), transcript, setTranscript, setIndex) }}
-              >
-                Add Button
-              </button>
-
-            </div>
-
-            {/* {<DisplayAudits objIndex={index} audits={obj.eventData.Audits ? obj.eventData.Audits : []} handleRemoveAudit={handleRemoveAudit} handleEditInsightsAuditsWiki={handleEditInsightsAuditsWiki} />} */}
-            
-            {selectNudge ==='cc' &&<DisplayCallContext objIndex={index} callContext={obj.eventData.Context ? obj.eventData.Context : []} handleEditInsightsAuditsWiki={handleEditInsightsAuditsWiki} handleRemoveCallContext={handleRemoveCallContext} />}
-
-            {/* {<DisplayButton objIndex={index} button={obj.eventData.Button ? obj.eventData.Button : []} handleEditInsightsAuditsWiki={handleEditInsightsAuditsWiki} handleRemoveButton={handleRemoveButton} />}
-
-            {<DisplayAIWiki objIndex={index} wikiChats={obj.eventData.AIWikiChat ? obj.eventData.AIWikiChat : []} handleEditInsightsAuditsWiki={handleEditInsightsAuditsWiki} handleRemoveWiki={handleRemoveWiki} />*/}
-
-            {<DisplayWorkflow selectedNudges ={selectNudge} objIndex={index} guidance={obj.eventData.Guidance ? obj.eventData.Guidance : []} handleEditWorkflow={handleEditWorkflow} handleEditWorkflowStep={handleEditWorkflowStep} handleAddWorkflowStep={handleAddWorkflowStep} handleEditKnowledgeArticle={handleEditKnowledgeArticle} handleRemoveKnowledgeArticle={handleRemoveKnowledgeArticle} handleRemoveGuidance={handleRemoveGuidance} handleRemoveWorkflowStep={handleRemoveWorkflowStep} handleEditSpeech={handleEditSpeech} />}
-          </div>
-        )
-      })}
-    </Slider>
-  )
+    return (
+        <div className="upload-demo-container">
+            {/* <ProgressBar handleInput={handleInput}/> */}
+            <UploadBody finalTranscript={finalTranscript} setFinalTranscript= {setFinalTranscript} handleStep={handleStep} audio={audio} transcript={transcript} setAudio={setAudio} setTranscript={setTranscript} metadata={metadata ? JSON.parse(JSON.stringify(metadata)) : {}} handleInput={handleInput} handleSubmit={handleSubmit} />
+            {loader && <Loading isLoading={loader} />}
+            <Toaster
+                position="top-right"
+                reverseOrder={false}
+            />
+        </div>
+    )
 }
-
-export default Body;
-
-in this code getting all these errors
-
-TypeError: Cannot add property Context, object is not extensible
-
-Source
-components\demoCreationComponents\customise\Body.jsx (182:42) @ handleAddContext
-
-  180 |     []
-  181 |   context.push(newContext)
-> 182 |   newTranscript[index].eventData.Context = context
-      |                                        ^
-  183 |   setTranscript(newTranscript)
-  184 | }
-
-TypeError: Cannot assign to read only property 'Transcript' of object '#<Object>'
-
-Source
-components\demoCreationComponents\customise\Body.jsx (88:56) @ handleEditRecomendation
-
-  86 |   const newRecommendation = JSON.parse(newTranscript[index].eventData.Transcript.Transcript)
-  87 |   newRecommendation[field] = newValue
-> 88 |   newTranscript[index].eventData.Transcript.Transcript = JSON.stringify(newRecommendation)
-     |                                                      ^
-  89 |   setTranscript(newTranscript)
-  90 | }
-  91 | 
-
-TypeError: Cannot add property Guidance, object is not extensible
-
-Source
-components\demoCreationComponents\customise\Body.jsx (227:43) @ handleAddSpeechSuggestion
-
-  225 |   let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
-  226 |   Gui.push(guidance)
-> 227 |   newTranscript[index].eventData.Guidance = Gui
-      |                                         ^
-  228 |   setTranscript(newTranscript)
-  229 | }
-
-components\demoCreationComponents\customise\Body.jsx (312:43) @ handleAddKnowledgeArticle
-
-  310 |   let Gui = newTranscript[index].eventData.Guidance ? newTranscript[index].eventData.Guidance : []
-  311 |   Gui.push(guidance)
-> 312 |   newTranscript[index].eventData.Guidance = Gui
-      |                                         ^
-  313 |   setTranscript(newTranscript)
-  314 | }
-
-TypeError: Cannot assign to read only property 'Transcript' of object '#<Object>'
-
-Source
-components\demoCreationComponents\customise\Body.jsx (88:56) @ handleEditRecomendation
-
-  86 |   const newRecommendation = JSON.parse(newTranscript[index].eventData.Transcript.Transcript)
-  87 |   newRecommendation[field] = newValue
-> 88 |   newTranscript[index].eventData.Transcript.Transcript = JSON.stringify(newRecommendation)
-     |                                                      ^
-  89 |   setTranscript(newTranscript)
-  90 | }
-  91 | 
