@@ -1,268 +1,304 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState } from 'react';
+import Body from './Body';
+import { useDispatch, useSelector } from 'react-redux';
+import json from "../../../assets/resource/andydemo.json"
+import { MdDownload } from "react-icons/md";
+import TranscriptPreview from './Preview';
+import { FaPlus, FaMinus } from "react-icons/fa6";
+import { checkJson } from '../../../utility/customise/checkJson';
+import AgentWikiBody from "./agentWikiBody"
+import AutoAuditBody from "./AutoAuditBody"
+import ActionWorkflow from "./actionWorkflow"
+import {setProgressBarTranscript} from "../../../store/callSlice"
+import { setDemoTranscriptSubmitted, setEditDemoTranscript, updateDemoData } from '../../../store/demo-slice';
 
-const MediaSelection = ({ setAudio, audio }) => {
-  const [selectedMedia, setSelectedMedia] = useState('demoScript'); // Default selection
-  const [audioFile, setAudioFile] = useState(null);
-  const [trimmedAudioFile, setTrimmedAudioFile] = useState(null); // For storing trimmed audio
-  const [startTime, setStartTime] = useState(0);
-  const [endTime, setEndTime] = useState(0);
-  const audioRef = useRef(null);
-  const trimmedAudioRef = useRef(null);
 
-  // Handle file upload for audio
-  const handleFileUpload = (event) => {
-    setAudio(event.target.files[0]);
-    const file = event.target.files[0];
-    if (file && file.type.includes('audio')) {
-      setAudioFile(URL.createObjectURL(file));
-      setTrimmedAudioFile(null); // Reset trimmed audio on new upload
-    } else {
-      alert('Please upload a valid audio file.');
-    }
-  };
+function FileUpload({ setTranscript, message, setMessage }) {
+  const dispatch = useDispatch()
+  const onUpload = (e) => {
+    const file = e.target.files[0];
+    dispatch(setProgressBarTranscript(file))
+    if (!file) return;
 
-  // Handle trimming and playing trimmed audio
-  const handleTrim = () => {
-    if (!audioFile) {
-      alert('Please upload an audio file first.');
-      return;
-    }
+    const filereader = new FileReader();
+    filereader.readAsText(file, 'UTF-8');
 
-    const audio = audioRef.current;
-    if (audio) {
-      const start = parseFloat(startTime);
-      const end = parseFloat(endTime);
+    filereader.onload = (e) => {
+      let content = e.target.result;
 
-      if (start >= 0 && end > start && end <= audio.duration) {
-        const audioContext = new AudioContext();
-        fetch(audioFile)
-          .then((response) => response.arrayBuffer())
-          .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer))
-          .then((audioBuffer) => {
-            const trimmedBuffer = audioContext.createBuffer(
-              audioBuffer.numberOfChannels,
-              (end - start) * audioBuffer.sampleRate,
-              audioBuffer.sampleRate
-            );
-
-            for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-              const oldData = audioBuffer.getChannelData(channel);
-              const newData = trimmedBuffer.getChannelData(channel);
-              newData.set(oldData.slice(
-                start * audioBuffer.sampleRate,
-                end * audioBuffer.sampleRate
-              ));
+      try {
+        let jsonData = JSON.parse(content);
+        let reviewJson = checkJson(jsonData);
+        if (!reviewJson.value) {
+          setMessage(reviewJson.msg);
+          setTimeout(() => {
+            setMessage('');
+          }, 8000);
+        } else {
+          jsonData.forEach((obj) => {
+            if (obj.eventData.Context && !Array.isArray(obj.eventData.Context)) {
+              obj.eventData.Context = Array(obj.eventData.Context);
             }
-
-            const audioBlob = bufferToWave(trimmedBuffer, trimmedBuffer.length);
-            const trimmedAudioUrl = URL.createObjectURL(audioBlob);
-            setTrimmedAudioFile(trimmedAudioUrl);
-          })
-          .catch((error) => {
-            console.error('Error decoding audio', error);
           });
-      } else {
-        alert('Invalid trim times. Please ensure they are within the audio duration.');
+          setTranscript(jsonData);
+        }
+      } catch (err) {
+        setMessage('Not a valid JSON or format');
+        setTimeout(() => {
+          setMessage('');
+        }, 8000);
+        console.error(err);
       }
-    }
-  };
-
-  const bufferToWave = (abuffer, len) => {
-    const numOfChan = abuffer.numberOfChannels;
-    const length = len * numOfChan * 2 + 44;
-    const buffer = new ArrayBuffer(length);
-    const view = new DataView(buffer);
-    const channels = [];
-    let pos = 0;
-
-    // Write WAV container metadata
-    function setUint16(data) {
-      view.setUint16(pos, data, true);
-      pos += 2;
-    }
-
-    function setUint32(data) {
-      view.setUint32(pos, data, true);
-      pos += 4;
-    }
-
-    setUint32(0x46464952); // "RIFF" marker
-    setUint32(length - 8); // RIFF chunk length
-    setUint32(0x45564157); // "WAVE" marker
-    setUint32(0x20746d66); // "fmt " chunk
-    setUint32(16); // Length of format chunk
-    setUint16(1); // Type of format (1 is PCM)
-    setUint16(numOfChan);
-    setUint32(abuffer.sampleRate);
-    setUint32(abuffer.sampleRate * 2 * numOfChan);
-    setUint16(numOfChan * 2);
-    setUint16(16); // 16-bit samples
-    setUint32(0x61746164); // "data" marker
-    setUint32(length - pos - 4); // Data chunk length
-
-    for (let i = 0; i < abuffer.numberOfChannels; i++) {
-      channels.push(abuffer.getChannelData(i));
-    }
-
-    for (let i = 0; i < len; i++) {
-      for (let c = 0; c < numOfChan; c++) {
-        const sample = Math.max(-1, Math.min(1, channels[c][i]));
-        view.setInt16(pos, sample < 0 ? sample * 0x8000 : sample * 0x7fff, true);
-        pos += 2;
-      }
-    }
-
-    return new Blob([buffer], { type: 'audio/wav' });
-  };
+    };
+  }
 
   return (
-    <div className="media-selection-container">
-      <div className="button-group">
-        <h2>Select Media:</h2>
-        <button
-          className={selectedMedia === 'demoScript' ? 'active' : ''}
-          onClick={() => setSelectedMedia('demoScript')}
-        >
-          Demo Script
-        </button>
-        <button
-          className={selectedMedia === 'demoRecording' ? 'active' : ''}
-          onClick={() => setSelectedMedia('demoRecording')}
-        >
-          Demo Recording
-        </button>
-        <button
-          className={selectedMedia === 'audio' ? 'active' : ''}
-          onClick={() => setSelectedMedia('audio')}
-        >
-          Audio
-        </button>
-        <button
-          className={selectedMedia === 'video' ? 'active' : ''}
-          onClick={() => setSelectedMedia('video')}
-        >
-          Video
-        </button>
-        <button
-          className={selectedMedia === 'text' ? 'active' : ''}
-          onClick={() => setSelectedMedia('text')}
-        >
-          Text
-        </button>
-      </div>
+    <form className='body-container'>
+      <label htmlFor='json-file' className='upload-btn tab btn-active'>+ Upload</label>
+      <input style={{ visibility: 'hidden' }} id='json-file' type='file' accept='application/JSON' onChange={onUpload} />
+      {message && <p style={{ color: 'red' }}>{message}</p>}
+    </form>
+  );
+}
 
-      {/* Conditional Content Rendering */}
-      {selectedMedia === 'audio' && (
-        <div className="media-selection-content">
-          <h3>Upload Audio Recording</h3>
-          <input type="file" accept="audio/*" onChange={handleFileUpload} />
+export default function Customize({transcript, setTranscript,handleInput, audio, setAudio, tab }) {
+  const demoState = useSelector((state) => state?.demostate);
+  const appCallData = useSelector((state) => state?.call)
+  const isEditDemo = demoState?.editDemo;
+  const [transcript, setTranscript] = useState(demoState?.getDemoData?.transcript || []);
+  const [message, setMessage] = useState(undefined);
+  const [selectedNudge, setSelectedNudge] = useState('cc'); // Default to Call Context
+  const [index, setIndex] = useState(0);
+  // useEffect(()=>{
+  //   transcripts = transcript;
+  //   setTranscripts = setTranscript
+  // },[transcript])
+  const [fields, setFields] = useState({
+    cc: [],
+    ai: [],
+    ss: [],
+    ka: [],
+    utterance: [],
+  });
+  const dispatch = useDispatch();
 
-          {/* Preview uploaded audio */}
-          {audio && (
-            <div className='media-selection-audio-trimmer'>
-              <h3>Uploaded Audio Preview</h3>
-              <audio controls src={audioFile} ref={audioRef}>
-                Your browser does not support the audio element.
-              </audio>
+  audio && setAudio(audio);
 
-              <h3>Trim Audio</h3>
-              <div className="media-trimmer">
-                <label>
-                  Start Time (seconds):
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={startTime}
-                    onChange={(e) => setStartTime(e.target.value)}
-                  />
-                </label>
-                <label>
-                  End Time (seconds):
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.1"
-                    value={endTime}
-                    onChange={(e) => setEndTime(e.target.value)}
-                  />
-                </label>
-              </div>
+  const sendTranscriptData = () => {
+    if (isEditDemo && transcript?.length) {
+      dispatch(updateDemoData({ type: "transcript", data: transcript }));
+    }
+    dispatch(setEditDemoTranscript(false));
+    dispatch(setDemoTranscriptSubmitted(true));
+  };
 
-              <button style={{ background: "#af8cf6", color: "white", padding: "4px" }} onClick={handleTrim}>Trim Audio</button>
+  const downloadTranscript = () => {
+    if (transcript) {
+        // dispatch(setProgressBarTranscript(transcript))
+      const transcriptURL = URL.createObjectURL(new Blob([JSON.stringify(transcript)], { type: 'application/json' }))
+
+      const a = document.createElement('a')
+      a.href = transcriptURL
+
+      a.download = "transcription.json"
+      a.style.display = "none"
+      document.body.appendChild(a)
+
+      a.click()
+
+      document.body.removeChild(a)
+      URL.revokeObjectURL(transcriptURL)
+    }
+  }
+
+  const handleNudgeType = (type) => {
+    setSelectedNudge(type);
+  };
+
+  const addField = (type) => {
+    setFields((prev) => ({
+      ...prev,
+      [type]: [...prev[type], prev[type].length + 1],
+    }));
+  };
+
+  const removeField = (type, index) => {
+    setFields((prev) => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index),
+    }));
+  };
+
+  // useEffect(()=>{
+  //   dispatch(setProgressBarTranscript(transcript))
+  // },[transcript])
+
+  return (
+    <div className='transcript-container'>
+      {/* Nudge Types Section */}
+      {tab==1&&<div className="nudge-types">
+        <div className="options-types">NUDGE TYPE AND UTTERANCES</div>
+        <div className="nudge-options">
+          {['cc', 'ai', 'ss', 'ka', 'utterance'].map(type => (
+            <div key={type} 
+              className={`nudge-option ${type === 'cc' ? "first-nudge" : (type === 'utterance' ? "last-nudge" : "mid-nudge")}`} 
+              onClick={() => handleNudgeType(type)}
+            >
+              <span>{type === 'cc' ? '+ CALL CONTEXT' : type === 'ai' ? '+ AI GUIDANCE' : type === 'ss' ? '+ SPEECH SUGGESTION' : type === 'ka' ? '+ KNOWLEDGE ARTICLE' : '+ UTTERANCES'}</span>
             </div>
-          )}
+          ))}
+        </div>
+      </div>}
+       
+      {/* File Upload Section */}
+      {!transcript?.length && <FileUpload setTranscript={setTranscript} message={message} setMessage={setMessage} />}
+      {transcript?.length &&
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div className='transcript-body'>
+            {tab==1&&<Body tabs={1} transcript={transcript} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
+            {tab==2&&<AgentWikiBody tabs={2} transcript={transcript} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
+            {tab==3&&<AutoAuditBody tabs={3} transcript={transcript} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
+            {tab==4&&<ActionWorkflow tabs={4} transcript={transcript} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
+          </div>
+          <div className={`transcript-preview ${tab == 1 ? "transcript-preview" : "transcript-preview-enlarged"}`}>
+            <TranscriptPreview
+              transcript={transcript}
+              setTranscript={setTranscript}
+              setIndex={setIndex}
+              index={index}
+            />
 
-          {/* Preview trimmed audio */}
-          {trimmedAudioFile && (
-            <div>
-              <h3>Trimmed Audio Preview</h3>
-              <audio controls src={trimmedAudioFile} ref={trimmedAudioRef}>
-                Your browser does not support the audio element.
-              </audio>
+            {/* Nudge Fields Section */}
+            <div className="nudge-fields">
+              {selectedNudge === 'cc' && (
+                <div className="field-section">
+                  <h3>Call Context Fields:</h3>
+                  {fields.cc.map((id, index) => (
+                    <div key={`cc-${id}`} className="row">
+                      <div className="label">CC: Call Context Message {id}</div>
+                      <input type="text" placeholder="Call Context Message" />
+                      <button className="styled-button remove-button" onClick={() => removeField('cc', index)}>
+                        <FaMinus /> Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button className="styled-button" onClick={() => addField('cc')}>
+                    <FaPlus /> Add More Call Context Fields
+                  </button>
+                </div>
+              )}
+
+              {selectedNudge === 'ai' && (
+                <div className="field-section">
+                  <h3>AI Guidance Fields:</h3>
+                  {fields.ai.map((id, index) => (
+                    <div key={`ai-${id}`} className="row">
+                      <div className="label">AI: Message {id}</div>
+                      <input type="text" placeholder="Title" />
+                      <input type="text" placeholder="Subtitle" />
+                      <button className="styled-button remove-button" onClick={() => removeField('ai', index)}>
+                        <FaMinus /> Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button className="styled-button" onClick={() => addField('ai')}>
+                    <FaPlus /> Add More AI Guidance Fields
+                  </button>
+                </div>
+              )}
+
+              {selectedNudge === 'ss' && (
+                <div className="field-section">
+                  <h3>Speech Suggestion Fields:</h3>
+                  {fields.ss.map((id, index) => (
+                    <div key={`ss-${id}`} className="row">
+                      <div className="label">SS: Speech Suggestion Message {id}</div>
+                      <input type="text" placeholder="Title" />
+                      <button className="styled-button remove-button" onClick={() => removeField('ss', index)}>
+                        <FaMinus /> Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button className="styled-button" onClick={() => addField('ss')}>
+                    <FaPlus /> Add More Speech Suggestion Fields
+                  </button>
+                </div>
+              )}
+
+              {selectedNudge === 'ka' && (
+                <div className="field-section">
+                  <h3>Knowledge Article Fields:</h3>
+                  {fields.ka.map((id, index) => (
+                    <div key={`ka-${id}`} className="row">
+                      <div className="label">KA: Knowledge Article {id}</div>
+                      <input type="text" placeholder="Pointer" />
+                      <button className="styled-button remove-button" onClick={() => removeField('ka', index)}>
+                        <FaMinus /> Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button className="styled-button" onClick={() => addField('ka')}>
+                    <FaPlus /> Add More Knowledge Article Fields
+                  </button>
+                </div>
+              )}
+
+              {selectedNudge === 'utterance' && (
+                <div className="field-section">
+                  <h3>Utterance Fields:</h3>
+                  {fields.utterance.map((id, index) => (
+                    <div key={`utterance-${id}`} className="row">
+                      <div className="label">Utterance Message {id}</div>
+                      <input type="text" placeholder="Start Time" />
+                      <input type="text" placeholder="End Time" />
+                      <button className="styled-button remove-button" onClick={() => removeField('utterance', index)}>
+                        <FaMinus /> Remove
+                      </button>
+                    </div>
+                  ))}
+                  <button className="styled-button" onClick={() => addField('utterance')}>
+                    <FaPlus /> Add More Utterance Fields
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-      )}
 
-      {selectedMedia === 'video' && (
-        <div className="media-selection-content">
-          <h3>Upload Video</h3>
-          <input type="file" accept="video/*" />
-          {/* Add video-related functionality here */}
-        </div>
-      )}
-
-      {selectedMedia === 'text' && (
-        <div className="media-selection-content">
-          <h3>Text Content</h3>
-          <textarea placeholder="Enter your text here"></textarea>
-          <button>Create Text Resource</button>
-        </div>
-      )}
-
-      {selectedMedia === 'demoScript' && (
-        <div className="media-selection-content">
-          <h3>Select Voice</h3>
-          <div className="dropdown-group">
-            <label>
-              Customer:
-              <select>
-                <option>Salli (Female)</option>
-                <option>Matthew (Male)</option>
-                <option>Kimberly (Female)</option>
-                <option>Kendra (Female)</option>
-                <option>Justin (Male)</option>
-                <option>Joey (Male)</option>
-                <option>Lvy (Female)</option>
-              </select>
-            </label>
-            <label>
-              Agent:
-              <select>
-                <option>Salli (Female)</option>
-                <option>Matthew (Male)</option>
-                <option>Kimberly (Female)</option>
-                <option>Kendra (Female)</option>
-                <option>Justin (Male)</option>
-                <option>Joey (Male)</option>
-                <option>Lvy (Female)</option>
-              </select>
-            </label>
+            <div style={{ display: 'flex' }}>
+              {isEditDemo &&
+                <>
+                  <button className='transcript-download-btn' onClick={sendTranscriptData}>
+                    Save Changes
+                  </button>
+                  <button className='transcript-download-btn back-btn-right-align' onClick={() => dispatch(setEditDemoTranscript(false))}>
+                    Back
+                  </button>
+                </>
+              }
+            </div>
           </div>
-          <h3>Upload Script File</h3>
-          <div className="script-upload">
-            <a href="../../../public/sample/sample.pdf" download>
-              Sample script
-            </a>
-            <textarea placeholder="Write your text here"></textarea>
-            <input type="file" accept=".txt" />
-          </div>
-          <button className="create-resource-btn">Create Resource</button>
-        </div>
-      )}
+        </div>}
     </div>
   );
-};
+}
 
-export default MediaSelection;
+
+
+
+./components/demoCreationComponents/customise/customisejson.jsx
+Error: 
+  x cannot reassign to a variable declared with `const`
+    ,-[64:1]
+ 64 | export default function Customize({transcript, setTranscript,handleInput, audio, setAudio, tab }) {
+    :                                    ^^^^^|^^^^
+    :                                         `-- cannot reassign
+ 65 |   const demoState = useSelector((state) => state?.demostate);
+ 66 |   const appCallData = useSelector((state) => state?.call)
+ 67 |   const isEditDemo = demoState?.editDemo;
+ 68 |   const [transcript, setTranscript] = useState(demoState?.getDemoData?.transcript || []);
+    :          ^^^^^|^^^^
+    :               `-- const variable was declared here
+    `----
+
+  x cannot reassign to a variable declared with `const`
+    ,-[64:1]
+ 64 | export default function Customize({transcript, setTranscript,handleInput
