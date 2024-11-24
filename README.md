@@ -1,23 +1,22 @@
 import React, { useEffect, useState } from 'react';
 import Body from './Body';
 import { useDispatch, useSelector } from 'react-redux';
-import json from "../../../assets/resource/andydemo.json"
+import json from "../../../assets/resource/andydemo.json";
 import { MdDownload } from "react-icons/md";
 import TranscriptPreview from './Preview';
 import { FaPlus, FaMinus } from "react-icons/fa6";
 import { checkJson } from '../../../utility/customise/checkJson';
-import AgentWikiBody from "./agentWikiBody"
-import AutoAuditBody from "./AutoAuditBody"
-import ActionWorkflow from "./actionWorkflow"
-import {setProgressBarTranscript} from "../../../store/callSlice"
+import AgentWikiBody from "./agentWikiBody";
+import AutoAuditBody from "./AutoAuditBody";
+import ActionWorkflow from "./actionWorkflow";
+import { setProgressBarTranscript } from "../../../store/callSlice";
 import { setDemoTranscriptSubmitted, setEditDemoTranscript, updateDemoData } from '../../../store/demo-slice';
 
-
 function FileUpload({ setTranscript, message, setMessage }) {
-  const dispatch = useDispatch()
+  const dispatch = useDispatch();
   const onUpload = (e) => {
     const file = e.target.files[0];
-    dispatch(setProgressBarTranscript(file))
+    dispatch(setProgressBarTranscript(file));
     if (!file) return;
 
     const filereader = new FileReader();
@@ -61,18 +60,17 @@ function FileUpload({ setTranscript, message, setMessage }) {
   );
 }
 
-export default function Customize({transcript, setTranscript,handleInput, audio, setAudio, tab }) {
+export default function Customize({ transcript: propTranscript, setTranscript: setPropTranscript, handleInput, audio, setAudio, tab }) {
   const demoState = useSelector((state) => state?.demostate);
-  const appCallData = useSelector((state) => state?.call)
+  const appCallData = useSelector((state) => state?.call);
   const isEditDemo = demoState?.editDemo;
-  const [transcript, setTranscript] = useState(demoState?.getDemoData?.transcript || []);
+
+  // Renaming `transcript` and `setTranscript` to avoid conflicts with props, so it works without removing code.
+  const [transcriptState, setTranscriptState] = useState(propTranscript || []);
   const [message, setMessage] = useState(undefined);
   const [selectedNudge, setSelectedNudge] = useState('cc'); // Default to Call Context
   const [index, setIndex] = useState(0);
-  // useEffect(()=>{
-  //   transcripts = transcript;
-  //   setTranscripts = setTranscript
-  // },[transcript])
+
   const [fields, setFields] = useState({
     cc: [],
     ai: [],
@@ -80,36 +78,36 @@ export default function Customize({transcript, setTranscript,handleInput, audio,
     ka: [],
     utterance: [],
   });
+
   const dispatch = useDispatch();
 
   audio && setAudio(audio);
 
   const sendTranscriptData = () => {
-    if (isEditDemo && transcript?.length) {
-      dispatch(updateDemoData({ type: "transcript", data: transcript }));
+    if (isEditDemo && transcriptState?.length) {
+      dispatch(updateDemoData({ type: "transcript", data: transcriptState }));
     }
     dispatch(setEditDemoTranscript(false));
     dispatch(setDemoTranscriptSubmitted(true));
   };
 
   const downloadTranscript = () => {
-    if (transcript) {
-        // dispatch(setProgressBarTranscript(transcript))
-      const transcriptURL = URL.createObjectURL(new Blob([JSON.stringify(transcript)], { type: 'application/json' }))
+    if (transcriptState) {
+      const transcriptURL = URL.createObjectURL(new Blob([JSON.stringify(transcriptState)], { type: 'application/json' }));
 
-      const a = document.createElement('a')
-      a.href = transcriptURL
+      const a = document.createElement('a');
+      a.href = transcriptURL;
 
-      a.download = "transcription.json"
-      a.style.display = "none"
-      document.body.appendChild(a)
+      a.download = "transcription.json";
+      a.style.display = "none";
+      document.body.appendChild(a);
 
-      a.click()
+      a.click();
 
-      document.body.removeChild(a)
-      URL.revokeObjectURL(transcriptURL)
+      document.body.removeChild(a);
+      URL.revokeObjectURL(transcriptURL);
     }
-  }
+  };
 
   const handleNudgeType = (type) => {
     setSelectedNudge(type);
@@ -129,47 +127,51 @@ export default function Customize({transcript, setTranscript,handleInput, audio,
     }));
   };
 
-  // useEffect(()=>{
-  //   dispatch(setProgressBarTranscript(transcript))
-  // },[transcript])
+  useEffect(() => {
+    setTranscriptState(propTranscript);
+  }, [propTranscript]);
 
   return (
     <div className='transcript-container'>
       {/* Nudge Types Section */}
-      {tab==1&&<div className="nudge-types">
-        <div className="options-types">NUDGE TYPE AND UTTERANCES</div>
-        <div className="nudge-options">
-          {['cc', 'ai', 'ss', 'ka', 'utterance'].map(type => (
-            <div key={type} 
-              className={`nudge-option ${type === 'cc' ? "first-nudge" : (type === 'utterance' ? "last-nudge" : "mid-nudge")}`} 
-              onClick={() => handleNudgeType(type)}
-            >
-              <span>{type === 'cc' ? '+ CALL CONTEXT' : type === 'ai' ? '+ AI GUIDANCE' : type === 'ss' ? '+ SPEECH SUGGESTION' : type === 'ka' ? '+ KNOWLEDGE ARTICLE' : '+ UTTERANCES'}</span>
-            </div>
-          ))}
+      {tab === 1 && (
+        <div className="nudge-types">
+          <div className="options-types">NUDGE TYPE AND UTTERANCES</div>
+          <div className="nudge-options">
+            {['cc', 'ai', 'ss', 'ka', 'utterance'].map((type) => (
+              <div
+                key={type}
+                className={`nudge-option ${type === 'cc' ? "first-nudge" : (type === 'utterance' ? "last-nudge" : "mid-nudge")}`}
+                onClick={() => handleNudgeType(type)}
+              >
+                <span>{type === 'cc' ? '+ CALL CONTEXT' : type === 'ai' ? '+ AI GUIDANCE' : type === 'ss' ? '+ SPEECH SUGGESTION' : type === 'ka' ? '+ KNOWLEDGE ARTICLE' : '+ UTTERANCES'}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>}
-       
+      )}
+
       {/* File Upload Section */}
-      {!transcript?.length && <FileUpload setTranscript={setTranscript} message={message} setMessage={setMessage} />}
-      {transcript?.length &&
+      {!transcriptState?.length && <FileUpload setTranscript={setPropTranscript} message={message} setMessage={setMessage} />}
+      {transcriptState?.length && (
         <div style={{ display: 'flex', justifyContent: 'space-between' }}>
           <div className='transcript-body'>
-            {tab==1&&<Body tabs={1} transcript={transcript} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
-            {tab==2&&<AgentWikiBody tabs={2} transcript={transcript} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
-            {tab==3&&<AutoAuditBody tabs={3} transcript={transcript} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
-            {tab==4&&<ActionWorkflow tabs={4} transcript={transcript} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
+            {tab === 1 && <Body tabs={1} transcript={transcriptState} setTranscript={setPropTranscript} selectNudge={selectedNudge} setIndex={setIndex} index={index} />}
+            {tab === 2 && <AgentWikiBody tabs={2} transcript={transcriptState} setTranscript={setPropTranscript} selectNudge={selectedNudge} setIndex={setIndex} index={index} />}
+            {tab === 3 && <AutoAuditBody tabs={3} transcript={transcriptState} setTranscript={setPropTranscript} selectNudge={selectedNudge} setIndex={setIndex} index={index} />}
+            {tab === 4 && <ActionWorkflow tabs={4} transcript={transcriptState} setTranscript={setPropTranscript} selectNudge={selectedNudge} setIndex={setIndex} index={index} />}
           </div>
-          <div className={`transcript-preview ${tab == 1 ? "transcript-preview" : "transcript-preview-enlarged"}`}>
+          <div className={`transcript-preview ${tab === 1 ? "transcript-preview" : "transcript-preview-enlarged"}`}>
             <TranscriptPreview
-              transcript={transcript}
-              setTranscript={setTranscript}
+              transcript={transcriptState}
+              setTranscript={setPropTranscript}
               setIndex={setIndex}
               index={index}
             />
 
             {/* Nudge Fields Section */}
             <div className="nudge-fields">
+              {/* Call Context Fields */}
               {selectedNudge === 'cc' && (
                 <div className="field-section">
                   <h3>Call Context Fields:</h3>
@@ -188,6 +190,7 @@ export default function Customize({transcript, setTranscript,handleInput, audio,
                 </div>
               )}
 
+              {/* AI Guidance Fields */}
               {selectedNudge === 'ai' && (
                 <div className="field-section">
                   <h3>AI Guidance Fields:</h3>
@@ -207,6 +210,7 @@ export default function Customize({transcript, setTranscript,handleInput, audio,
                 </div>
               )}
 
+              {/* Speech Suggestion Fields */}
               {selectedNudge === 'ss' && (
                 <div className="field-section">
                   <h3>Speech Suggestion Fields:</h3>
@@ -225,6 +229,7 @@ export default function Customize({transcript, setTranscript,handleInput, audio,
                 </div>
               )}
 
+              {/* Knowledge Article Fields */}
               {selectedNudge === 'ka' && (
                 <div className="field-section">
                   <h3>Knowledge Article Fields:</h3>
@@ -243,6 +248,7 @@ export default function Customize({transcript, setTranscript,handleInput, audio,
                 </div>
               )}
 
+              {/* Utterance Fields */}
               {selectedNudge === 'utterance' && (
                 <div className="field-section">
                   <h3>Utterance Fields:</h3>
@@ -264,7 +270,7 @@ export default function Customize({transcript, setTranscript,handleInput, audio,
             </div>
 
             <div style={{ display: 'flex' }}>
-              {isEditDemo &&
+              {isEditDemo && (
                 <>
                   <button className='transcript-download-btn' onClick={sendTranscriptData}>
                     Save Changes
@@ -273,32 +279,11 @@ export default function Customize({transcript, setTranscript,handleInput, audio,
                     Back
                   </button>
                 </>
-              }
+              )}
             </div>
           </div>
-        </div>}
+        </div>
+      )}
     </div>
   );
 }
-
-
-
-
-./components/demoCreationComponents/customise/customisejson.jsx
-Error: 
-  x cannot reassign to a variable declared with `const`
-    ,-[64:1]
- 64 | export default function Customize({transcript, setTranscript,handleInput, audio, setAudio, tab }) {
-    :                                    ^^^^^|^^^^
-    :                                         `-- cannot reassign
- 65 |   const demoState = useSelector((state) => state?.demostate);
- 66 |   const appCallData = useSelector((state) => state?.call)
- 67 |   const isEditDemo = demoState?.editDemo;
- 68 |   const [transcript, setTranscript] = useState(demoState?.getDemoData?.transcript || []);
-    :          ^^^^^|^^^^
-    :               `-- const variable was declared here
-    `----
-
-  x cannot reassign to a variable declared with `const`
-    ,-[64:1]
- 64 | export default function Customize({transcript, setTranscript,handleInput
