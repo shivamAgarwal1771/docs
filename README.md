@@ -1,22 +1,19 @@
-  const handleAddContext = (index, newContext) => {
-    const newTranscript = [...transcript]
-    let context = newTranscript[index].eventData?.Context ?
-      newTranscript[index].eventData.Context :
-      []
-    context.push(newContext)
-    newTranscript[index].eventData.Context = context
-    setTranscript(newTranscript)
-  }
+const handleAddContext = (index, newContext) => {
+    const newTranscript = [...transcript]; // Clone the transcript array
 
+    // Clone the eventData object before modifying it
+    const updatedEventData = { 
+        ...newTranscript[index].eventData, 
+        Context: newTranscript[index].eventData?.Context ? 
+            [...newTranscript[index].eventData.Context, newContext] : 
+            [newContext] 
+    };
 
-  TypeError: Cannot add property Context, object is not extensible
+    // Replace the eventData with the updated version
+    newTranscript[index] = {
+        ...newTranscript[index],
+        eventData: updatedEventData
+    };
 
-Source
-components\demoCreationComponents\customise\Body.jsx (182:42) @ handleAddContext
-
-  180 |     []
-  181 |   context.push(newContext)
-> 182 |   newTranscript[index].eventData.Context = context
-      |                                        ^
-  183 |   setTranscript(newTranscript)
-  184 | }
+    setTranscript(newTranscript);
+}
