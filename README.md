@@ -1,16 +1,22 @@
 import React, { useEffect } from "react";
 
 export default function AgentDetails({ metadata, handleInput }) {
+
     useEffect(() => {
-        // Generate a random 4-digit code on component mount
+        // Generate a random 4-digit code
         const randomCode = Math.floor(1000 + Math.random() * 9000);  // Generates a random 4-digit code
-        
-        // Set the random code to the metadata
-        handleInput('code', randomCode.toString());  // Assuming handleInput handles the state update
-        
-        // Change the 'channel' value, here I'm setting it to "Voice" for example, you can make it dynamic
-        handleInput('channel', 'Mail'); // Or some dynamic value
-    }, [handleInput]); // Run once on mount
+
+        // If handleInput is available, update the metadata with the generated code
+        if (handleInput) {
+            handleInput('code', randomCode.toString()); // Update the 'code' field
+        }
+
+        // Change the 'channel' value if needed (for example, changing to 'Mail')
+        if (handleInput) {
+            handleInput('channel', 'Mail'); // Update the 'channel' field
+        }
+
+    }, [handleInput]); // Empty dependency array means this runs only on mount
 
     return (
         <div className="agent-details-container align-column">
@@ -22,7 +28,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                             id="agent"
                             className="agent-details-input"
                             placeholder="Agent Name"
-                            value={metadata?.agent}
+                            value={metadata?.agent || ""}
                             onChange={e => handleInput('agent', e.target.value)}
                         />
                     </div>
@@ -32,7 +38,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                             id="useCase"
                             className="agent-details-input"
                             placeholder="Use Case"
-                            value={metadata?.useCase}
+                            value={metadata?.useCase || ""}
                             onChange={e => handleInput('useCase', e.target.value)}
                         />
                     </div>
@@ -42,7 +48,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                             id="aht"
                             className="agent-details-input"
                             placeholder="AHT"
-                            value={metadata?.aht}
+                            value={metadata?.aht || ""}
                             onChange={e => handleInput('aht', e.target.value)}
                         />
                     </div>
@@ -51,7 +57,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                         <select
                             id="industry"
                             className="agent-details-input"
-                            value={metadata?.industry}
+                            value={metadata?.industry || ""}
                             onChange={e => handleInput('industry', e.target.value)}
                         >
                             <option value="Insurance">Insurance</option>
@@ -68,7 +74,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                         <select
                             id="header"
                             className="agent-details-input"
-                            value={metadata?.header}
+                            value={metadata?.header || ""}
                             onChange={e => handleInput('header', e.target.value)}
                         >
                             <option value="Agent Assist">Agent Assist</option>
@@ -81,20 +87,19 @@ export default function AgentDetails({ metadata, handleInput }) {
                             id="interaction-date"
                             className="agent-details-input"
                             type="date"
-                            value={metadata?.interactionDate}
+                            value={metadata?.interactionDate || ""}
                             onChange={e => handleInput('interactionDate', e.target.value)}
                         />
                     </div>
                     {/* Hidden Code field */}
-                    {/* <div className="agent-details-field" style={{ display: 'none' }}> */}
                     <div className="agent-details-field" style={{ display: 'none' }}>
                         <label className="agent-details-label">Code</label>
                         <input
                             id="code"
                             className="agent-details-input"
                             type="text"
-                            value={metadata?.code}
-                            onChange={e => handleInput('code', e.target.value)}
+                            value={metadata?.code || ""} // Set the code value from metadata
+                            onChange={e => handleInput('code', e.target.value)} // Update the state if needed
                         />
                     </div>
                     <div className="agent-details-field">
@@ -102,7 +107,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                         <select
                             id="selectedLanguage"
                             className="agent-details-input"
-                            value={metadata?.selectedLanguage}
+                            value={metadata?.selectedLanguage || ""}
                             onChange={e => handleInput('selectedLanguage', e.target.value)}
                         >
                             <option value="Hindi">Hindi</option>
@@ -111,15 +116,15 @@ export default function AgentDetails({ metadata, handleInput }) {
                     </div>
                 </div>
             </div>
+
             {/* Hidden Channel field */}
-            {/* <div className="agent-details-field" style={{ display: 'none' }}> */}
             <div className="agent-details-field" style={{ display: 'none' }}>
                 <label className="agent-details-label">Channel</label>
                 <select
                     id="channel"
                     className="agent-details-input"
-                    value={metadata?.channel}
-                    onChange={e => handleInput('channel', e.target.value)}
+                    value={metadata?.channel || ""}
+                    onChange={e => handleInput('channel', e.target.value)} // Update the channel value when it changes
                 >
                     <option value="Voice">Voice</option>
                     <option value="Mail">Mail</option>
