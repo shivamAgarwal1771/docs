@@ -1,62 +1,37 @@
-// Function to convert video to audio
-const convertVideoToAudio = (videoFile, setAudioUrl) => {
-  // Create an object URL for the video file to load into a video element
-  const videoUrl = URL.createObjectURL(videoFile);
+ function onDownload() {
+        if (videoTrimmedUrl && audioTrimmedUrl) {
+            const videoDownloadLink = document.createElement('a')
+            videoDownloadLink.href = videoTrimmedUrl
+            videoDownloadLink.download = 'video.mp4'
+            videoDownloadLink.click()
 
-  // Create a video element to load the video file
-  const videoElement = document.createElement('video');
-  videoElement.src = videoUrl;
+            const audioDownloadLink = document.createElement('a')
+            audioDownloadLink.href = audioTrimmedUrl
+            audioDownloadLink.download = 'audio.mp3'
+            audioDownloadLink.click()
 
-  // Wait until the video metadata is loaded (needed for capturing the stream)
-  videoElement.onloadedmetadata = () => {
-    // Capture the video stream, including audio tracks
-    const stream = videoElement.captureStream();
-    const audioTracks = stream.getAudioTracks();
+            if (conversation) {
+                const conversationURL = URL.createObjectURL(new Blob([JSON.stringify(conversation)], { type: 'application/json' }))
 
-    if (audioTracks.length > 0) {
-      // Create a new MediaStream with only the audio tracks
-      const audioStream = new MediaStream([audioTracks[0]]);
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-      const mediaSource = audioContext.createMediaStreamSource(audioStream);
+                const a = document.createElement('a')
+                a.href = conversationURL
 
-      // Create a destination for the audio stream
-      const audioDestination = audioContext.createMediaStreamDestination();
-      mediaSource.connect(audioDestination);
+                a.download = "transcription.json"
+                a.style.display = "none"
+                document.body.appendChild(a)
 
-      // Create a MediaRecorder to record the audio
-      const recorder = new MediaRecorder(audioDestination.stream);
-      const chunks = [];
+                a.click()
 
-      // Push audio data when available
-      recorder.ondataavailable = (event) => {
-        chunks.push(event.data);
-      };
-
-      // When recording stops, create a Blob and a URL for the audio file
-      recorder.onstop = () => {
-        const audioBlob = new Blob(chunks, { type: 'audio/mp3' }); // or 'audio/wav'
-        const audioUrl = URL.createObjectURL(audioBlob);
-        setAudioUrl(audioUrl); // Set the audio URL to state (for downloading)
-      };
-
-      // Start recording the audio
-      recorder.start();
-
-      // Stop recording when the video ends
-      videoElement.onended = () => {
-        recorder.stop();
-      };
-
-      // Play the video so that the audio can be captured
-      videoElement.play();
-    } else {
-      alert('No audio tracks found in the video.');
+                document.body.removeChild(a)
+                URL.revokeObjectURL(conversationURL)
+                setMessage("Downloaded all - Trimmed Video, its Audio and the Transcript.")
+                setAllDone(true)
+            } else {
+                setMessage("Downloaded only the trimmed video and its audio.<br>Transcript is still being generated.")
+                setAllDone(false)
+                setTimeout(() => {
+                    setMessage(undefined)
+                }, 5000)
+            }
+        }
     }
-  };
-
-  // Handle video error (e.g., unsupported file format)
-  videoElement.onerror = (err) => {
-    console.error('Error loading video:', err);
-    alert('There was an error processing the video.');
-  };
-};
