@@ -1,59 +1,20 @@
-const handleAddSpeechSuggestion = (index, value) => {
-  // Clone the transcript array immutably
-  const newTranscript = [...transcript];
 
-  // Create the new guidance object
-  const guidance = {
-    type: AI_ASSISTANT_TYPE.SPEECH_SUGGESTION,
-    name: 'Speech Suggestion',
-    value: value,
-  };
+  const handleEditRecomendation = (index, field, newValue) => {
+    const newTranscript = [...transcript]
+    const newRecommendation = JSON.parse(newTranscript[index].eventData.Transcript.Transcript)
+    newRecommendation[field] = newValue
+    newTranscript[index].eventData.Transcript.Transcript = JSON.stringify(newRecommendation)
+    setTranscript(newTranscript)
+  }
 
-  // Clone the eventData and Guidance properties immutably
-  const updatedEventData = {
-    ...newTranscript[index].eventData,
-    Guidance: newTranscript[index].eventData.Guidance ? 
-      [...newTranscript[index].eventData.Guidance, guidance] : 
-      [guidance],
-  };
+  TypeError: Cannot assign to read only property 'Transcript' of object '#<Object>'
 
-  // Replace the eventData at the specified index with the updated one
-  newTranscript[index] = {
-    ...newTranscript[index],
-    eventData: updatedEventData,
-  };
+Source
+components\demoCreationComponents\customise\Body.jsx (87:56) @ handleEditRecomendation
 
-  // Update the state immutably
-  setTranscript(newTranscript);
-};
-
-
-
-const handleAddKnowledgeArticle = (index) => {
-  // Clone the transcript array immutably
-  const newTranscript = [...transcript];
-
-  // Create the new guidance object
-  const guidance = {
-    type: AI_ASSISTANT_TYPE.KNOWLEDGE_ARTICLE,
-    name: '',
-    value: [],
-  };
-
-  // Clone the eventData and Guidance properties immutably
-  const updatedEventData = {
-    ...newTranscript[index].eventData,
-    Guidance: newTranscript[index].eventData.Guidance ? 
-      [...newTranscript[index].eventData.Guidance, guidance] : 
-      [guidance],
-  };
-
-  // Replace the eventData at the specified index with the updated one
-  newTranscript[index] = {
-    ...newTranscript[index],
-    eventData: updatedEventData,
-  };
-
-  // Update the state immutably
-  setTranscript(newTranscript);
-};
+  85 |   const newRecommendation = JSON.parse(newTranscript[index].eventData.Transcript.Transcript)
+  86 |   newRecommendation[field] = newValue
+> 87 |   newTranscript[index].eventData.Transcript.Transcript = JSON.stringify(newRecommendation)
+     |                                                      ^
+  88 |   setTranscript(newTranscript)
+  89 | }
