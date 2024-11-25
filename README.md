@@ -1,24 +1,24 @@
-const handleEditRecommendation = (index, field, newValue) => {
+const handleEditRecomendation = (index, field, newValue) => {
   // Clone the transcript array immutably
   const newTranscript = [...transcript];
 
-  // Create the new Transcript object
-  const updatedTranscript = {
-    Title: "",
-    subTitle: "",
-    message: newValue // Set the new value for message
-  };
-
-  // Clone the eventData and update the Transcript immutably
-  const updatedEventData = {
+  // Clone the eventData and Transcript objects immutably
+  const eventDataClone = { 
     ...newTranscript[index].eventData,
-    Transcript: updatedTranscript // Replace the Transcript with the updated one
+    Transcript: {
+      ...newTranscript[index].eventData.Transcript,
+      // Deep clone the Transcript content and update the field
+      Transcript: {
+        ...JSON.parse(newTranscript[index].eventData.Transcript.Transcript),  // Parse and clone the Transcript
+        [field]: newValue,  // Update the specific field with newValue
+      }
+    }
   };
 
-  // Update the transcript at the specified index with the new eventData
+  // Update the new transcript at the specified index
   newTranscript[index] = {
     ...newTranscript[index],
-    eventData: updatedEventData
+    eventData: eventDataClone,  // Use the updated eventData
   };
 
   // Update the state immutably
