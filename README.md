@@ -1,6 +1,17 @@
-import { useEffect } from "react";
+import React, { useEffect } from "react";
 
 export default function AgentDetails({ metadata, handleInput }) {
+    useEffect(() => {
+        // Generate a random 4-digit code on component mount
+        const randomCode = Math.floor(1000 + Math.random() * 9000);  // Generates a random 4-digit code
+        
+        // Set the random code to the metadata
+        handleInput('code', randomCode.toString());  // Assuming handleInput handles the state update
+        
+        // Change the 'channel' value, here I'm setting it to "Voice" for example, you can make it dynamic
+        handleInput('channel', 'Mail'); // Or some dynamic value
+    }, [handleInput]); // Run once on mount
+
     return (
         <div className="agent-details-container align-column">
             <div className="align-row">
@@ -74,8 +85,10 @@ export default function AgentDetails({ metadata, handleInput }) {
                             onChange={e => handleInput('interactionDate', e.target.value)}
                         />
                     </div>
-                    <div className="agent-details-field">
-                        <label className="agent-details-label">code</label>
+                    {/* Hidden Code field */}
+                    {/* <div className="agent-details-field" style={{ display: 'none' }}> */}
+                    <div className="agent-details-field" style={{ display: 'none' }}>
+                        <label className="agent-details-label">Code</label>
                         <input
                             id="code"
                             className="agent-details-input"
@@ -98,7 +111,9 @@ export default function AgentDetails({ metadata, handleInput }) {
                     </div>
                 </div>
             </div>
-            <div className="agent-details-field">
+            {/* Hidden Channel field */}
+            {/* <div className="agent-details-field" style={{ display: 'none' }}> */}
+            <div className="agent-details-field" style={{ display: 'none' }}>
                 <label className="agent-details-label">Channel</label>
                 <select
                     id="channel"
@@ -111,7 +126,5 @@ export default function AgentDetails({ metadata, handleInput }) {
                 </select>
             </div>
         </div>
-
     );
 }
-
