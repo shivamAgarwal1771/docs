@@ -1,36 +1,36 @@
-function convertBlobToFile(blob, fileName) {
-  // Create a new File object with the desired properties
-  const lastModified = Date.now();  // Use current timestamp or set a custom one
-  const lastModifiedDate = new Date(lastModified);
-  
-  // Create the File object
-  const file = new File([blob], fileName, {
-    type: blob.type,            // audio/mpeg or other MIME type
-    lastModified: lastModified,  // timestamp of last modification
-  });
+const extractAudioFromVideo = async () => {
+    if (!videoFile) return;
 
-  // Optional: Set additional file properties manually if needed
-  file.lastModifiedDate = lastModifiedDate;
+    setIsProcessing(true);
 
-  console.log('Created file:', file);
-  return file;
-}
+    try {
+      // Create a new Blob URL for the video file
+      const videoBlobUrl = URL.createObjectURL(videoFile);
 
-function fetchAudioAndConvertToFile(audioTrimmedUrl, fileName = 'audio.mp3') {
-  // Fetch the Blob from the Blob URL
-  fetch(audioTrimmedUrl)
-    .then(response => response.blob())  // Convert to Blob
-    .then(blob => {
-      // Convert Blob to File with the desired properties
-      const file = convertBlobToFile(blob, fileName);
-      
-      // Now `file` is a File object with properties like `name`, `size`, `type`, `lastModified`
-      // You can use this file in a File input or upload it to a server
-    })
-    .catch(error => {
-      console.error('Error fetching or converting audio:', error);
-    });
-}
+      // Create an HTML5 AudioContext to process the audio
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const videoElement = new Audio(videoBlobUrl);
 
-// Call the function with the Blob URL
-fetchAudioAndConvertToFile(audioTrimmedUrl);  // Pass your Blob URL here
+      videoElement.onloadedmetadata = async () => {
+        // Decode audio from the video file
+        const response = await fetch(videoBlobUrl);
+        const arrayBuffer = await response.arrayBuffer();
+        const decodedAudioData = await audioContext.decodeAudioData(arrayBuffer);
+
+        // Now we have decoded audio data, you can extract it or create a new audio file
+        const audioBlob = await audioBufferToBlob(decodedAudioData);
+        const file = new File([audioBlob], 'audio.mp3', { type: 'audio/mpeg' });
+
+        // Set the audio file in the state
+        setAudioFile(file);
+
+        // Dispatch the audio file to Redux
+        dispatch(setAudioFile(file));
+
+        setIsProcessing(false);
+      };
+    } catch (error) {
+      console.error('Error extracting audio:', error);
+      setIsProcessing(false);
+    }
+  };
