@@ -7,9 +7,8 @@ import { uploadToS3 } from '../../../utility/text2speech/uploadAudioToS3'
 import Loader from '../text2json/Loader';
 import TranscriptionStatus from '../text2json/Status';
 import VideoTrimmer from './VideoTrimmer'
-import {AUDIO_FILE_SPEAKER} from '../../../utility/constants';
-import {setProgressBarTranscript} from "../../../store/callSlice"
-
+import { AUDIO_FILE_SPEAKER } from '../../../utility/constants';
+import { setProgressBarTranscript } from "../../../store/callSlice"
 
 export default function VideotoJson() {
     const [audioBlob, setAudioBlob] = useState(null)
@@ -37,13 +36,29 @@ export default function VideotoJson() {
         setAudioTrimmedUrl(audioUrl)
     }, [audioBlob, videoBlob])
 
+    // Effect to update progress when transcript is ready
+    useEffect(() => {
+        if (status && status.includes('transcript is ready for download')) {
+            // Fetch the transcript JSON file (assuming it's available in `conversation`)
+            if (conversation) {
+                const transcriptJson = JSON.stringify(conversation)
+                
+                // Update the progress bar with the transcript data
+                dispatch(setProgressBarTranscript(transcriptJson));
+                
+                // Optionally, log or perform any additional actions once the transcript is ready
+                console.log("Transcript ready, progress updated!");
+            }
+        }
+    }, [status, conversation, dispatch]);
+
     async function handleSubmit() {
         if (audioBlob) {
             setSubmitted(true)
             try {
-            let buffer = await audioBlob.arrayBuffer()
-            uploadToS3(buffer, dispatch, firstSpeaker)
-            }catch(err){
+                let buffer = await audioBlob.arrayBuffer()
+                uploadToS3(buffer, dispatch, firstSpeaker)
+            } catch (err) {
                 console.error(err)
             }
         }
@@ -89,7 +104,6 @@ export default function VideotoJson() {
 
 
     return (
-        // <div className="upload-demo-container">
         <div className="video-json-container">
             <div className='flex-row'>
                 {!submitted &&
@@ -118,5 +132,3 @@ export default function VideotoJson() {
         </div>
     )
 }
-
-
