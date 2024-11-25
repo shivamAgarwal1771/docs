@@ -1,35 +1,25 @@
-  function onDownload() {
-        if (videoTrimmedUrl && audioTrimmedUrl) {
-            const videoDownloadLink = document.createElement('a')
-            videoDownloadLink.href = videoTrimmedUrl
-            videoDownloadLink.download = 'video.mp4'
-            videoDownloadLink.click()
+fetch(audioTrimmedUrl)
+  .then(response => response.blob())  // Convert the response into a Blob
+  .then(blob => {
+    // Now, you have the Blob, which represents the audio file
+    // You can convert the Blob to other formats, such as ArrayBuffer, or play it directly
+    
+    console.log('Fetched audio Blob:', blob);
 
-            const audioDownloadLink = document.createElement('a')
-            audioDownloadLink.href = audioTrimmedUrl
-            audioDownloadLink.download = 'audio.mp3'
-            audioDownloadLink.click()
-            if (conversation) {
-                const conversationURL = URL.createObjectURL(new Blob([JSON.stringify(conversation)], { type: 'application/json' }))
-
-                const a = document.createElement('a')
-                a.href = conversationURL
-                a.download = "transcription.json"
-                a.style.display = "none"
-                document.body.appendChild(a)
-
-                a.click()
-
-                document.body.removeChild(a)
-                URL.revokeObjectURL(conversationURL)
-                setMessage("Downloaded all - Trimmed Video, its Audio and the Transcript.")
-                setAllDone(true)
-            } else {
-                setMessage("Downloaded only the trimmed video and its audio.<br>Transcript is still being generated.")
-                setAllDone(false)
-                setTimeout(() => {
-                    setMessage(undefined)
-                }, 5000)
-            }
-        }
-    }
+    // Optionally: Convert the Blob to ArrayBuffer for further processing
+    const reader = new FileReader();
+    reader.onloadend = function () {
+      const arrayBuffer = reader.result;
+      console.log('ArrayBuffer containing audio data:', arrayBuffer);
+      // You can now use the arrayBuffer for playback or upload, etc.
+      
+      // Example: Playing the audio using an audio element
+      const audioBlobUrl = URL.createObjectURL(new Blob([arrayBuffer], { type: 'audio/mp3' }));
+      const audioElement = new Audio(audioBlobUrl);
+      audioElement.play();
+    };
+    reader.readAsArrayBuffer(blob);  // Read Blob as an ArrayBuffer
+  })
+  .catch(error => {
+    console.error('Error fetching audio data:', error);
+  });
