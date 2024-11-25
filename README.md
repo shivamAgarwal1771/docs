@@ -1,26 +1,16 @@
-const handleEditRecomendation = (index, field, newValue) => {
-  // Clone the transcript array immutably
-  const newTranscript = [...transcript];
+{"Title":"","subTitle":"","message":""} ={"Title":"","subTitle":"","message":"g"}
 
-  // Clone the eventData and the Transcript properties immutably
-  const eventDataClone = { 
-    ...newTranscript[index].eventData,
-    Transcript: {
-      ...newTranscript[index].eventData.Transcript,
-      // Ensure the Transcript itself is not frozen by cloning it
-      Transcript: {
-        ...JSON.parse(newTranscript[index].eventData.Transcript.Transcript),
-        [field]: newValue, // Update the field
-      }
-    }
-  };
+above is the console of this     newTranscript[index].eventData.Transcript.Transcript = JSON.stringify(newRecommendation)
 
-  // Update the new transcript at the specified index
-  newTranscript[index] = {
-    ...newTranscript[index],
-    eventData: eventDataClone,  // Use the updated eventData
-  };
+getting this error
+TypeError: Cannot assign to read only property 'Transcript' of object '#<Object>'
 
-  // Update the state immutably
-  setTranscript(newTranscript);
-};
+Source
+components\demoCreationComponents\customise\Body.jsx (88:56) @ handleEditRecomendation
+
+  86 |   newRecommendation[field] = newValue
+  87 |   console.log(newTranscript[index].eventData.Transcript.Transcript,JSON.stringify(newRecommendation),"test90")
+> 88 |   newTranscript[index].eventData.Transcript.Transcript = JSON.stringify(newRecommendation)
+     |                                                      ^
+  89 |   setTranscript(newTranscript)
+  90 | }
