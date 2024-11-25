@@ -1,134 +1,62 @@
-import { useEffect, useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { removeStatus } from '../../../store/speech-slice'
+// Function to convert video to audio
+const convertVideoToAudio = (videoFile, setAudioUrl) => {
+  // Create an object URL for the video file to load into a video element
+  const videoUrl = URL.createObjectURL(videoFile);
 
-import { uploadToS3 } from '../../../utility/text2speech/uploadAudioToS3'
+  // Create a video element to load the video file
+  const videoElement = document.createElement('video');
+  videoElement.src = videoUrl;
 
-import Loader from '../text2json/Loader';
-import TranscriptionStatus from '../text2json/Status';
-import VideoTrimmer from './VideoTrimmer'
-import { AUDIO_FILE_SPEAKER } from '../../../utility/constants';
-import { setProgressBarTranscript } from "../../../store/callSlice"
+  // Wait until the video metadata is loaded (needed for capturing the stream)
+  videoElement.onloadedmetadata = () => {
+    // Capture the video stream, including audio tracks
+    const stream = videoElement.captureStream();
+    const audioTracks = stream.getAudioTracks();
 
-export default function VideotoJson() {
-    const [audioBlob, setAudioBlob] = useState(null)
-    const [videoBlob, setVideoBlob] = useState(null)
-    const [videoTrimmedUrl, setVideoTrimmedUrl] = useState(undefined)
-    const [audioTrimmedUrl, setAudioTrimmedUrl] = useState(undefined)
-    const [firstSpeaker, setFirstSpeaker] = useState(AUDIO_FILE_SPEAKER.FIRST_SPEAKER)
-    const [submitted, setSubmitted] = useState(false)
-    const [message, setMessage] = useState(undefined)
-    const [allDone, setAllDone] = useState(false)
+    if (audioTracks.length > 0) {
+      // Create a new MediaStream with only the audio tracks
+      const audioStream = new MediaStream([audioTracks[0]]);
+      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const mediaSource = audioContext.createMediaStreamSource(audioStream);
 
-    const dispatch = useDispatch()
-    const status = useSelector(state => state?.speechstate?.status)
-    const conversation = useSelector(state => state?.speechstate?.conversation)
+      // Create a destination for the audio stream
+      const audioDestination = audioContext.createMediaStreamDestination();
+      mediaSource.connect(audioDestination);
 
-    useEffect(() => {
-        dispatch(removeStatus())
-    }, [])
+      // Create a MediaRecorder to record the audio
+      const recorder = new MediaRecorder(audioDestination.stream);
+      const chunks = [];
 
-    useEffect(() => {
-        const videoUrl = videoBlob ? URL.createObjectURL(videoBlob) : undefined
-        const audioUrl = audioBlob ? URL.createObjectURL(audioBlob) : undefined
+      // Push audio data when available
+      recorder.ondataavailable = (event) => {
+        chunks.push(event.data);
+      };
 
-        setVideoTrimmedUrl(videoUrl)
-        setAudioTrimmedUrl(audioUrl)
-    }, [audioBlob, videoBlob])
+      // When recording stops, create a Blob and a URL for the audio file
+      recorder.onstop = () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/mp3' }); // or 'audio/wav'
+        const audioUrl = URL.createObjectURL(audioBlob);
+        setAudioUrl(audioUrl); // Set the audio URL to state (for downloading)
+      };
 
-    // Effect to update progress when transcript is ready
-    useEffect(() => {
-        if (status && status.includes('transcript is ready for download')) {
-            // Fetch the transcript JSON file (assuming it's available in `conversation`)
-            if (conversation) {
-                const transcriptJson = JSON.stringify(conversation)
-                
-                // Update the progress bar with the transcript data
-                dispatch(setProgressBarTranscript(transcriptJson));
-                
-                // Optionally, log or perform any additional actions once the transcript is ready
-                console.log("Transcript ready, progress updated!");
-            }
-        }
-    }, [status, conversation, dispatch]);
+      // Start recording the audio
+      recorder.start();
 
-    async function handleSubmit() {
-        if (audioBlob) {
-            setSubmitted(true)
-            try {
-                let buffer = await audioBlob.arrayBuffer()
-                uploadToS3(buffer, dispatch, firstSpeaker)
-            } catch (err) {
-                console.error(err)
-            }
-        }
+      // Stop recording when the video ends
+      videoElement.onended = () => {
+        recorder.stop();
+      };
+
+      // Play the video so that the audio can be captured
+      videoElement.play();
+    } else {
+      alert('No audio tracks found in the video.');
     }
+  };
 
-    function onDownload() {
-        if (videoTrimmedUrl && audioTrimmedUrl) {
-            const videoDownloadLink = document.createElement('a')
-            videoDownloadLink.href = videoTrimmedUrl
-            videoDownloadLink.download = 'video.mp4'
-            videoDownloadLink.click()
-
-            const audioDownloadLink = document.createElement('a')
-            audioDownloadLink.href = audioTrimmedUrl
-            audioDownloadLink.download = 'audio.mp3'
-            audioDownloadLink.click()
-
-            if (conversation) {
-                const conversationURL = URL.createObjectURL(new Blob([JSON.stringify(conversation)], { type: 'application/json' }))
-
-                const a = document.createElement('a')
-                a.href = conversationURL
-
-                a.download = "transcription.json"
-                a.style.display = "none"
-                document.body.appendChild(a)
-
-                a.click()
-
-                document.body.removeChild(a)
-                URL.revokeObjectURL(conversationURL)
-                setMessage("Downloaded all - Trimmed Video, its Audio and the Transcript.")
-                setAllDone(true)
-            } else {
-                setMessage("Downloaded only the trimmed video and its audio.<br>Transcript is still being generated.")
-                setAllDone(false)
-                setTimeout(() => {
-                    setMessage(undefined)
-                }, 5000)
-            }
-        }
-    }
-
-
-    return (
-        <div className="video-json-container">
-            <div className='flex-row'>
-                {!submitted &&
-                    <VideoTrimmer
-                        setAudioBlob={setAudioBlob}
-                        setVideoBlob={setVideoBlob}
-                        handleSubmit={handleSubmit}
-                        firstSpeaker={firstSpeaker}
-                        setFirstSpeaker={setFirstSpeaker}
-                    />}
-                {submitted &&
-                    <div className='flex-row space-around status-container'>
-                        <div className='main-body-child'>
-                            {status.length !== 0 ?
-                                <TranscriptionStatus message={message} allDone={allDone} /> :
-                                <Loader />}
-                        </div>
-                        <button
-                            onClick={onDownload}
-                            className="video-btn green-btn"
-                        >
-                            Download
-                        </button>
-                    </div>}
-            </div>
-        </div>
-    )
-}
+  // Handle video error (e.g., unsupported file format)
+  videoElement.onerror = (err) => {
+    console.error('Error loading video:', err);
+    alert('There was an error processing the video.');
+  };
+};
