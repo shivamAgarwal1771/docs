@@ -1,6 +1,28 @@
 import { useEffect } from "react";
 
 export default function AgentDetails({ metadata, handleInput }) {
+    // Helper function to generate a random 4-digit number
+    const generateRandomCode = () => {
+        return Math.floor(1000 + Math.random() * 9000); // Generates a 4-digit number
+    };
+
+    // Helper function to generate a random channel from predefined options
+    const generateRandomChannel = () => {
+        const channels = ["Voice", "Mail"];
+        return channels[Math.floor(Math.random() * channels.length)];
+    };
+
+    useEffect(() => {
+        // Set the random code and random channel whenever metadata changes
+        if (!metadata?.code) {
+            handleInput('code', generateRandomCode());
+        }
+
+        if (!metadata?.channel) {
+            handleInput('channel', generateRandomChannel());
+        }
+    }, [metadata, handleInput]);
+
     return (
         <div className="agent-details-container align-column">
             <div className="align-row">
@@ -74,16 +96,14 @@ export default function AgentDetails({ metadata, handleInput }) {
                             onChange={e => handleInput('interactionDate', e.target.value)}
                         />
                     </div>
-                    <div className="agent-details-field">
-                        <label className="agent-details-label">code</label>
-                        <input
-                            id="code"
-                            className="agent-details-input"
-                            type="text"
-                            value={metadata?.code}
-                            onChange={e => handleInput('code', e.target.value)}
-                        />
-                    </div>
+                    {/* Hide the "code" field, but update the value of "code" */}
+                    <input
+                        id="code"
+                        className="agent-details-input"
+                        type="hidden"
+                        value={metadata?.code}
+                        onChange={e => handleInput('code', e.target.value)} // Ensure code still updates
+                    />
                     <div className="agent-details-field">
                         <label className="agent-details-label">Language</label>
                         <select
@@ -98,20 +118,14 @@ export default function AgentDetails({ metadata, handleInput }) {
                     </div>
                 </div>
             </div>
-            <div className="agent-details-field">
-                <label className="agent-details-label">Channel</label>
-                <select
-                    id="channel"
-                    className="agent-details-input"
-                    value={metadata?.channel}
-                    onChange={e => handleInput('channel', e.target.value)}
-                >
-                    <option value="Voice">Voice</option>
-                    <option value="Mail">Mail</option>
-                </select>
-            </div>
+            {/* Hide the "channel" field */}
+            <input
+                id="channel"
+                className="agent-details-input"
+                type="hidden"
+                value={metadata?.channel}
+                onChange={e => handleInput('channel', e.target.value)} // Ensure channel still updates
+            />
         </div>
-
     );
 }
-
