@@ -1,35 +1,46 @@
-import React, { useEffect, useState, useRef } from 'react'
-import { useDispatch, useSelector } from 'react-redux'
-import { updateActivePage } from '../../../store/userSlice'
-import Header from '../Header';
-import TranscriptionStatus from '../text2json/Status';
-import Download from './Download';
-import { uploadToS3 } from '../../../utility/text2speech/uploadAudioToS3';
-import { FILE_UPLOADED } from '../../../utility/constants';
-import { AUDIO_FILE_SPEAKER } from '../../../utility/constants';
-import { removeStatus } from '../../../store/speech-slice'
-import { setProgressBarAudio } from "../../../store/callSlice"
+import React, { useState, useRef, useEffect } from 'react';
+import AudiotoJson from '../audio2json/audiotoJson';
+import VideotoJson from '../video2json/videotoJson';
+import TexttoSpeech from '../text2json/text2Speech';
+import { useDispatch, useSelector } from 'react-redux';
 
-const AudiotoJson = () => {
-  const [notification, setNotification] = useState('');
-  const [message, setMessage] = useState('');
+
+const MediaSelection = ({ setAudio, audio }) => {
+  const [selectedMedia, setSelectedMedia] = useState('demoRecording'); // Default selection
   const [audioFile, setAudioFile] = useState(null);
-  const status = useSelector(state => state?.speechstate?.status || '')
   const [trimmedAudioFile, setTrimmedAudioFile] = useState(null); // For storing trimmed audio
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
   const audioRef = useRef(null);
   const trimmedAudioRef = useRef(null);
-  const [file, setFile] = useState(undefined)
-  const [selectedFile, setSelectedFile] = useState(false);
-  const [isFileUploaded, setIsFileUploaded] = useState(false);
-  const [firstSpeaker, setFirstSpeaker] = useState(AUDIO_FILE_SPEAKER.FIRST_SPEAKER);
-  const dispatch = useDispatch()
+  const appCallData = useSelector((state) => state?.call);
 
-  useEffect(() => {
-    dispatch(removeStatus())
-  }, [])
+  // Handle file upload for audio
+  const handleFileUpload = (event) => {
+    setAudio(event.target.files[0]);
+    const file = event.target.files[0];
+    if (file && file.type.includes('audio')) {
+      setAudioFile(URL.createObjectURL(file));
+      setTrimmedAudioFile(null); // Reset trimmed audio on new upload
+    } else {
+      alert('Please upload a valid audio file.');
+    }
+  };
 
+  
+  useEffect(()=>{
+    setTrimmedAudioFile(null);
+    if(appCallData?.progressBarAudio?.name){
+      setAudioFile(URL.createObjectURL(appCallData.progressBarAudio));
+      setAudio(URL.createObjectURL(appCallData.progressBarAudio))
+    }else{
+      setAudioFile(appCallData.progressBarAudio);
+      setAudio(appCallData.progressBarAudio)
+    }
+
+  },[appCallData.progressBarAudio])
+
+  // Handle trimming and playing trimmed audio
   const handleTrim = () => {
     if (!audioFile) {
       alert('Please upload an audio file first.');
@@ -123,6 +134,188 @@ const AudiotoJson = () => {
     return new Blob([buffer], { type: 'audio/wav' });
   };
 
+  return (
+    <div className="media-selection-container">
+      <div className="button-group">
+        <h2>Select Media:</h2>
+        {/* <button
+          className={selectedMedia === 'demoScript' ? 'active' : ''}
+          onClick={() => setSelectedMedia('demoScript')}
+        > */}
+          {/* Demo Script
+        </button> */}
+        <button
+          className={selectedMedia === 'demoRecording' ? 'active' : ''}
+          onClick={() => setSelectedMedia('demoRecording')}
+        >
+          Demo Recording
+        </button>
+        <button
+          className={selectedMedia === 'audio' ? 'active' : ''}
+          onClick={() => setSelectedMedia('audio')}
+        >
+          Audio
+        </button>
+        <button
+          className={selectedMedia === 'video' ? 'active' : ''}
+          onClick={() => setSelectedMedia('video')}
+        >
+          Video
+        </button>
+        <button
+          className={selectedMedia === 'text' ? 'active' : ''}
+          onClick={() => setSelectedMedia('text')}
+        >
+          Text
+        </button>
+      </div>
+
+      {/* Conditional Content Rendering */}
+      {selectedMedia === 'audio' && (
+        <AudiotoJson/>
+      )}
+         {selectedMedia === 'demoRecording' && (
+        <div className="media-selection-content">
+          <h3>Upload Audio Recording</h3>
+          <input type="file" accept="audio/*" onChange={e=>handleFileUpload(e)} />
+
+          {/* Preview uploaded audio */}
+          {appCallData?.progressBarAudio && (
+            <div className='media-selection-audio-trimmer'>
+              <h3>Uploaded Audio Preview</h3>
+              <audio controls src={URL.createObjectURL(appCallData?.progressBarAudio)} ref={audioRef}>
+                Your browser does not support the audio element.
+              </audio>
+
+              <h3>Trim Audio</h3>
+              <div className="media-trimmer">
+                <label>
+                  Start Time (seconds):
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                  />
+                </label>
+                <label>
+                  End Time (seconds):
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                  />
+                </label>
+              </div>
+
+              <button style={{ background: "#af8cf6", color: "white", padding: "4px" }} onClick={handleTrim}>Trim Audio</button>
+            </div>
+          )}
+
+          {/* Preview trimmed audio */}
+          {trimmedAudioFile && (
+            <div>
+              <h3>Trimmed Audio Preview</h3>
+              <audio controls src={trimmedAudioFile} ref={trimmedAudioRef}>
+                Your browser does not support the audio element.
+              </audio>
+            </div>
+          )}
+        </div>
+      )}
+
+      {selectedMedia === 'video' && (
+        <div className="media-selection-content">
+        <VideotoJson/>
+        </div>
+      )}
+
+      {selectedMedia === 'text' && (
+        <div className="media-selection-content">
+    <TexttoSpeech/>
+        </div>
+      )}
+
+      {selectedMedia === 'demoScript' && (
+        <div className="media-selection-content">
+          <h3>Select Voice</h3>
+          <div className="dropdown-group">
+            <label>
+              Customer:
+              <select>
+                <option>Salli (Female)</option>
+                <option>Matthew (Male)</option>
+                <option>Kimberly (Female)</option>
+                <option>Kendra (Female)</option>
+                <option>Justin (Male)</option>
+                <option>Joey (Male)</option>
+                <option>Lvy (Female)</option>
+              </select>
+            </label>
+            <label>
+              Agent:
+              <select>
+                <option>Salli (Female)</option>
+                <option>Matthew (Male)</option>
+                <option>Kimberly (Female)</option>
+                <option>Kendra (Female)</option>
+                <option>Justin (Male)</option>
+                <option>Joey (Male)</option>
+                <option>Lvy (Female)</option>
+              </select>
+            </label>
+          </div>
+          <h3>Upload Script File</h3>
+          <div className="script-upload">
+            <a href="../../../public/sample/sample.pdf" download>
+              Sample script
+            </a>
+            <textarea placeholder="Write your text here"></textarea>
+            <input type="file" accept=".txt" />
+          </div>
+          <button className="create-resource-btn">Create Resource</button>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default MediaSelection;
+
+
+
+
+import React, { useEffect, useState } from 'react'
+import { useDispatch, useSelector } from 'react-redux'
+import { updateActivePage } from '../../../store/userSlice'
+import Header from '../Header';
+import TranscriptionStatus from '../text2json/Status';
+import Download from './Download';
+import { uploadToS3 } from '../../../utility/text2speech/uploadAudioToS3';
+import { FILE_UPLOADED } from '../../../utility/constants';
+import {AUDIO_FILE_SPEAKER} from '../../../utility/constants';
+import { removeStatus } from '../../../store/speech-slice'
+import {setProgressBarAudio} from "../../../store/callSlice"
+import MediaSelection from '../upload-demo/MediaSelection';
+
+const AudiotoJson = () => {
+  const [notification, setNotification] = useState('');
+  const appCallData = useSelector((state) => state?.call);
+  const [message, setMessage] = useState('');
+  const status = useSelector(state => state?.speechstate?.status || '')
+  const [file, setFile] = useState(undefined)
+  const [selectedFile, setSelectedFile] = useState(false);
+  const [isFileUploaded, setIsFileUploaded] = useState(false);
+  const [firstSpeaker, setFirstSpeaker] = useState(AUDIO_FILE_SPEAKER.FIRST_SPEAKER);
+  const dispatch = useDispatch()
+
+  useEffect(() => {
+    dispatch(removeStatus())
+  }, [])
+
   useEffect(() => {
     if (!file) {
       setNotification(FILE_UPLOADED.NOT_UPLOADED)
@@ -151,11 +344,11 @@ const AudiotoJson = () => {
       return;
     }
 
-    try {
-      const buffer = await file.arrayBuffer()
-      uploadToS3(buffer, dispatch, firstSpeaker)
-    } catch (err) {
-      console.error("File type is not valid", err)
+    try{
+    const buffer = await file.arrayBuffer()
+    uploadToS3(buffer, dispatch, firstSpeaker)
+    }catch(err){
+      console.error("File type is not valid",err)
     }
     setIsFileUploaded(true);
     setSelectedFile(false);
@@ -178,49 +371,7 @@ const AudiotoJson = () => {
                   </select>
                 </div>
                 <label htmlFor='audio-file' className='upload-btn1 tab btn-active'>+ Upload</label>
-                <input className='file-upload' id='audio-file' type='file' accept='.mp3' onChange={e => { setAudioFile(URL.createObjectURL(e.target.files[0])); setFile(e.target.files[0]); dispatch(setProgressBarAudio(e.target.files[0])) }} />
-                {audioFile && (
-                  <div className='media-selection-audio-trimmer'>
-                    <h3>Uploaded Audio Preview</h3>
-                    <audio controls src={audioFile} ref={audioRef}>
-                      Your browser does not support the audio element.
-                    </audio>
-
-                    <h3>Trim Audio</h3>
-                    <div className="media-trimmer">
-                      <label>
-                        Start Time (seconds):
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          value={startTime}
-                          onChange={(e) => setStartTime(e.target.value)}
-                        />
-                      </label>
-                      <label>
-                        End Time (seconds):
-                        <input
-                          type="number"
-                          min="0"
-                          step="0.1"
-                          value={endTime}
-                          onChange={(e) => setEndTime(e.target.value)}
-                        />
-                      </label>
-                    </div>
-
-                    <button style={{ background: "#af8cf6", color: "white", padding: "4px" }} onClick={handleTrim}>Trim Audio</button>
-                  </div>
-                )}
-                {trimmedAudioFile && (
-                  <div>
-                    <h3>Trimmed Audio Preview</h3>
-                    <audio controls src={trimmedAudioFile} ref={trimmedAudioRef}>
-                      Your browser does not support the audio element.
-                    </audio>
-                  </div>
-                )}
+                <input className='file-upload' id='audio-file' type='file' accept='.mp3' onChange={e => {setFile(e.target.files[0]); dispatch(setProgressBarAudio(e.target.files[0]))}} />
               </>
             )}
             {notification && <p className='file-notification'>{notification}</p>}
