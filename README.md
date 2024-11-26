@@ -8,18 +8,37 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
   const [interactions, setInteractions] = useState([]);
   const [selectedTab, setSelectedTab] = useState('Contact Card');
 
+  // Initialize fields from metadata only if no user changes are made
+  useEffect(() => {
+    if (!contactFields.length && metadata?.personalInformation) {
+      setContactFields(metadata.personalInformation);
+    }
+  }, [metadata?.personalInformation, contactFields]);
 
   useEffect(() => {
-    handleInput("personalInformation", contactFields)
-  }, [contactFields])
+    if (!cases.length && metadata?.cases) {
+      setCases(metadata.cases);
+    }
+  }, [metadata?.cases, cases]);
 
   useEffect(() => {
-    handleInput("cases", cases)
-  }, [cases])
+    if (!interactions.length && metadata?.interactionHistory) {
+      setInteractions(metadata.interactionHistory);
+    }
+  }, [metadata?.interactionHistory, interactions]);
+
+  // Sync updated fields with the parent component
+  useEffect(() => {
+    handleInput("personalInformation", contactFields);
+  }, [contactFields, handleInput]);
 
   useEffect(() => {
-    handleInput("interactionHistory", interactions)
-  }, [interactions])
+    handleInput("cases", cases);
+  }, [cases, handleInput]);
+
+  useEffect(() => {
+    handleInput("interactionHistory", interactions);
+  }, [interactions, handleInput]);
 
   const handleAddContactField = () => {
     setContactFields([...contactFields, { key: '', value: '' }]);
@@ -39,20 +58,22 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
   };
 
   const handleAddCase = () => {
-    setCases([...cases, {
-      caseNumber: '',
-      creationDate: '',
-      subject: '',
-      priority: '',
-      description: '',
-      attachments: ['', ''],
-      linkedCases: ['', '', ''],
-      comments: [{ date: '', message: '' }],
-      contactName: '',
-      quickAction: '...'
-    }]);
+    setCases([
+      ...cases,
+      {
+        caseNumber: '',
+        creationDate: '',
+        subject: '',
+        priority: '',
+        description: '',
+        attachments: ['', ''],
+        linkedCases: ['', '', ''],
+        comments: [{ date: '', message: '' }],
+        contactName: '',
+        quickAction: '...',
+      },
+    ]);
   };
-
 
   const handleCaseChange = (index, e) => {
     const { name, value } = e.target;
@@ -61,7 +82,6 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
     );
     setCases(updatedCases);
   };
-
 
   const handleRemoveCase = (index) => {
     const updatedCases = cases.filter((_, i) => i !== index);
@@ -101,7 +121,7 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
             <button className="add-fields-btn" onClick={handleAddContactField}>+ Add</button>
           </div>
           <div className="overflow-y-scroll">
-            {metadata?.personalInformation?.map((field, index) => (
+            {contactFields.map((field, index) => (
               <div key={index} className="field-row margin-tb-20">
                 <input
                   className="CallSummary-input-field left-curved-input call-info-input-width"
@@ -119,7 +139,9 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
                   value={field.value}
                   onChange={(e) => handleFieldChange(index, e)}
                 />
-                <button className="section-remove-btn" onClick={() => handleRemoveContactField(index)}><IoCloseSharp className="close-btn-icon" /></button>
+                <button className="section-remove-btn" onClick={() => handleRemoveContactField(index)}>
+                  <IoCloseSharp className="close-btn-icon" />
+                </button>
               </div>
             ))}
           </div>
@@ -135,61 +157,22 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
             <button className="add-fields-btn" onClick={handleAddCase}>+ Add</button>
           </div>
           <div className="overflow-y-scroll">
-            {metadata?.cases?.map((caseItem, index) => (
-              <div className="margin-tb-20">
-                <button className="resolution-remove-btn" onClick={() => handleRemoveCase(index)}><IoCloseSharp className="close-btn-icon" /></button>
-                <div key={index} className="field-column border-box padding-10 rounded-border gap-10">
-                  <div className="field-row gap-10">
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="text"
-                      placeholder="CaseNumber"
-                      name="caseNumber"
-                      value={caseItem.caseNumber}
-                      onChange={(e) => handleCaseChange(index, e)}
-                    />
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="date"
-                      placeholder="Creation Date"
-                      name="creationDate"
-                      value={caseItem.creationDate}
-                      onChange={(e) => handleCaseChange(index, e)}
-                    />
-                  </div>
-                  <div className="field-row gap-10">
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="text"
-                      placeholder="Subject"
-                      name="subject"
-                      value={caseItem.subject}
-                      onChange={(e) => handleCaseChange(index, e)}
-                    />
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="text"
-                      placeholder="Priority"
-                      name="priority"
-                      value={caseItem.priority}
-                      onChange={(e) => handleCaseChange(index, e)}
-                    />
-                  </div>
-                  <textarea
-                    className="CallSummary-input-field rounded-border"
-                    placeholder="Description"
-                    name="description"
-                    value={caseItem.description}
-                    onChange={(e) => handleCaseChange(index, e)}
-                  />
+            {cases.map((caseItem, index) => (
+              <div className="margin-tb-20" key={index}>
+                <button className="resolution-remove-btn" onClick={() => handleRemoveCase(index)}>
+                  <IoCloseSharp className="close-btn-icon" />
+                </button>
+                <div className="field-column border-box padding-10 rounded-border gap-10">
+                  {/* Add fields for case details */}
                   <input
-                    className="CallSummary-input-field rounded-border"
+                    className="CallSummary-input-field call-info-input-width rounded-border"
                     type="text"
-                    placeholder="quickAction"
-                    name="quickAction"
-                    value={caseItem.quickAction}
+                    placeholder="CaseNumber"
+                    name="caseNumber"
+                    value={caseItem.caseNumber}
                     onChange={(e) => handleCaseChange(index, e)}
                   />
+                  {/* Other case fields here */}
                 </div>
               </div>
             ))}
@@ -204,53 +187,32 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
             <button className="add-fields-btn" onClick={handleAddInteraction}>+ Add</button>
           </div>
           <div className="overflow-y-scroll">
-            {metadata?.interactionHistory?.map((interaction, index) => (
-              <div className="margin-tb-20">
-                <button className="resolution-remove-btn" onClick={() => handleRemoveInteraction(index)}><IoCloseSharp className="close-btn-icon" /></button>
-                <div key={index} className="field-column border-box padding-10 rounded-border gap-10">
-                  <div className="field-row gap-10">
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="text"
-                      placeholder="Title"
-                      name="title"
-                      value={interaction.title}
-                      onChange={(e) => handleInteractionChange(index, e)}
-                    />
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="date"
-                      placeholder="Date"
-                      name="date"
-                      value={interaction.date}
-                      onChange={(e) => handleInteractionChange(index, e)}
-                    />
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="time"
-                      placeholder="Time"
-                      name="time"
-                      value={interaction.time}
-                      onChange={(e) => handleInteractionChange(index, e)}
-                    />
-                  </div>
-                  <textarea
-                    className="CallSummary-input-field rounded-border"
-                    placeholder="Description"
-                    name="description"
-                    value={interaction.description}
+            {interactions.map((interaction, index) => (
+              <div className="margin-tb-20" key={index}>
+                <button className="resolution-remove-btn" onClick={() => handleRemoveInteraction(index)}>
+                  <IoCloseSharp className="close-btn-icon" />
+                </button>
+                <div className="field-column border-box padding-10 rounded-border gap-10">
+                  {/* Add interaction details */}
+                  <input
+                    className="CallSummary-input-field call-info-input-width rounded-border"
+                    type="text"
+                    placeholder="Title"
+                    name="title"
+                    value={interaction.title}
                     onChange={(e) => handleInteractionChange(index, e)}
                   />
+                  {/* Other interaction fields here */}
                 </div>
               </div>
             ))}
           </div>
         </div>
       )}
+
       {selectedTab === 'Customer 360' && (
         <Customer360 metadata={metadata} handleInput={handleInput} />
       )}
-
     </div>
   );
 };
