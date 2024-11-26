@@ -163,16 +163,57 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
                   <IoCloseSharp className="close-btn-icon" />
                 </button>
                 <div className="field-column border-box padding-10 rounded-border gap-10">
-                  {/* Add fields for case details */}
-                  <input
-                    className="CallSummary-input-field call-info-input-width rounded-border"
-                    type="text"
-                    placeholder="CaseNumber"
-                    name="caseNumber"
-                    value={caseItem.caseNumber}
+                  <div className="field-row gap-10">
+                    <input
+                      className="CallSummary-input-field call-info-input-width rounded-border"
+                      type="text"
+                      placeholder="CaseNumber"
+                      name="caseNumber"
+                      value={caseItem.caseNumber}
+                      onChange={(e) => handleCaseChange(index, e)}
+                    />
+                    <input
+                      className="CallSummary-input-field call-info-input-width rounded-border"
+                      type="date"
+                      placeholder="Creation Date"
+                      name="creationDate"
+                      value={caseItem.creationDate}
+                      onChange={(e) => handleCaseChange(index, e)}
+                    />
+                  </div>
+                  <div className="field-row gap-10">
+                    <input
+                      className="CallSummary-input-field call-info-input-width rounded-border"
+                      type="text"
+                      placeholder="Subject"
+                      name="subject"
+                      value={caseItem.subject}
+                      onChange={(e) => handleCaseChange(index, e)}
+                    />
+                    <input
+                      className="CallSummary-input-field call-info-input-width rounded-border"
+                      type="text"
+                      placeholder="Priority"
+                      name="priority"
+                      value={caseItem.priority}
+                      onChange={(e) => handleCaseChange(index, e)}
+                    />
+                  </div>
+                  <textarea
+                    className="CallSummary-input-field rounded-border"
+                    placeholder="Description"
+                    name="description"
+                    value={caseItem.description}
                     onChange={(e) => handleCaseChange(index, e)}
                   />
-                  {/* Other case fields here */}
+                  <input
+                    className="CallSummary-input-field rounded-border"
+                    type="text"
+                    placeholder="quickAction"
+                    name="quickAction"
+                    value={caseItem.quickAction}
+                    onChange={(e) => handleCaseChange(index, e)}
+                  />
                 </div>
               </div>
             ))}
@@ -192,18 +233,39 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
                 <button className="resolution-remove-btn" onClick={() => handleRemoveInteraction(index)}>
                   <IoCloseSharp className="close-btn-icon" />
                 </button>
-                <div className="field-column border-box padding-10 rounded-border gap-10">
-                  {/* Add interaction details */}
-                  <input
-                    className="CallSummary-input-field call-info-input-width rounded-border"
-                    type="text"
-                    placeholder="Title"
-                    name="title"
-                    value={interaction.title}
+                <div className="field-row gap-10">
+                    <input
+                      className="CallSummary-input-field call-info-input-width rounded-border"
+                      type="text"
+                      placeholder="Title"
+                      name="title"
+                      value={interaction.title}
+                      onChange={(e) => handleInteractionChange(index, e)}
+                    />
+                    <input
+                      className="CallSummary-input-field call-info-input-width rounded-border"
+                      type="date"
+                      placeholder="Date"
+                      name="date"
+                      value={interaction.date}
+                      onChange={(e) => handleInteractionChange(index, e)}
+                    />
+                    <input
+                      className="CallSummary-input-field call-info-input-width rounded-border"
+                      type="time"
+                      placeholder="Time"
+                      name="time"
+                      value={interaction.time}
+                      onChange={(e) => handleInteractionChange(index, e)}
+                    />
+                  </div>
+                  <textarea
+                    className="CallSummary-input-field rounded-border"
+                    placeholder="Description"
+                    name="description"
+                    value={interaction.description}
                     onChange={(e) => handleInteractionChange(index, e)}
                   />
-                  {/* Other interaction fields here */}
-                </div>
               </div>
             ))}
           </div>
