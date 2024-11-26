@@ -6,9 +6,14 @@ import TranscriptionStatus from '../text2json/Status';
 import Download from './Download';
 import { uploadToS3 } from '../../../utility/text2speech/uploadAudioToS3';
 import { FILE_UPLOADED } from '../../../utility/constants';
-import {AUDIO_FILE_SPEAKER} from '../../../utility/constants';
+import { AUDIO_FILE_SPEAKER } from '../../../utility/constants';
 import { removeStatus } from '../../../store/speech-slice'
-import {setProgressBarAudio} from "../../../store/callSlice"
+import { setProgressBarAudio } from "../../../store/callSlice"
+
+// Importing ffmpeg.js
+import { createFFmpeg, fetchFile } from '@ffmpeg/ffmpeg';
+
+const ffmpeg = createFFmpeg({ log: true });
 
 const AudiotoJson = () => {
   const [notification, setNotification] = useState('');
@@ -18,6 +23,7 @@ const AudiotoJson = () => {
   const [selectedFile, setSelectedFile] = useState(false);
   const [isFileUploaded, setIsFileUploaded] = useState(false);
   const [firstSpeaker, setFirstSpeaker] = useState(AUDIO_FILE_SPEAKER.FIRST_SPEAKER);
+  const [trimmedAudio, setTrimmedAudio] = useState(null);
   const dispatch = useDispatch()
 
   useEffect(() => {
@@ -47,16 +53,50 @@ const AudiotoJson = () => {
     }
   }, [file])
 
+  const trimAudio = async () => {
+    if (!file) return;
+
+    // Load the ffmpeg library
+    if (!ffmpeg.isLoaded()) {
+      await ffmpeg.load();
+    }
+
+    // Load the uploaded audio file into ffmpeg
+    ffmpeg.FS('writeFile', file.name, await fetchFile(file));
+
+    // Define trim start and end time (in seconds)
+    const startTime = 5; // start at 5 seconds
+    const duration = 10; // trim the next 10 seconds
+
+    // Run ffmpeg command to trim the audio
+    await ffmpeg.run(
+      '-i', file.name, 
+      '-ss', `${startTime}`, // start time
+      '-t', `${duration}`, // duration
+      'output.mp3'
+    );
+
+    // Fetch the trimmed audio file from ffmpeg's file system
+    const trimmedAudioData = ffmpeg.FS('readFile', 'output.mp3');
+
+    // Create a blob URL for the trimmed audio
+    const audioBlob = new Blob([trimmedAudioData.buffer], { type: 'audio/mpeg' });
+    const audioUrl = URL.createObjectURL(audioBlob);
+
+    // Set the trimmed audio file in state
+    setTrimmedAudio(audioUrl);
+  }
+
   const handleFileUpload = async () => {
-    if (!file) {
+    if (!trimmedAudio) {
       return;
     }
 
-    try{
-    const buffer = await file.arrayBuffer()
-    uploadToS3(buffer, dispatch, firstSpeaker)
-    }catch(err){
-      console.error("File type is not valid",err)
+    try {
+      const buffer = await fetch(trimmedAudio).then(res => res.arrayBuffer());
+      uploadToS3(buffer, dispatch, firstSpeaker);
+    } catch (err) {
+      console.error("File upload failed", err);
     }
     setIsFileUploaded(true);
     setSelectedFile(false);
@@ -79,7 +119,7 @@ const AudiotoJson = () => {
                   </select>
                 </div>
                 <label htmlFor='audio-file' className='upload-btn1 tab btn-active'>+ Upload</label>
-                <input className='file-upload' id='audio-file' type='file' accept='.mp3' onChange={e => {setFile(e.target.files[0]); dispatch(setProgressBarAudio(e.target.files[0]))}} />
+                <input className='file-upload' id='audio-file' type='file' accept='.mp3' onChange={e => { setFile(e.target.files[0]); dispatch(setProgressBarAudio(e.target.files[0])) }} />
               </>
             )}
             {notification && <p className='file-notification'>{notification}</p>}
@@ -90,7 +130,15 @@ const AudiotoJson = () => {
                 <span><strong>{file.name}</strong></span>
               </div>
             )}
-            {selectedFile && <button className='submit-btn' onClick={handleFileUpload}>Submit</button>}
+            {selectedFile && !trimmedAudio && (
+              <button className='submit-btn' onClick={trimAudio}>Trim Audio</button>
+            )}
+            {trimmedAudio && (
+              <div>
+                <audio controls src={trimmedAudio}></audio>
+                <button className='submit-btn' onClick={handleFileUpload}>Submit Trimmed Audio</button>
+              </div>
+            )}
           </div>
           {status.length !== 0 && <div className='upload-body-child'>
             <TranscriptionStatus message={message} />
@@ -103,6 +151,3 @@ const AudiotoJson = () => {
 }
 
 export default AudiotoJson;
-
-
-
