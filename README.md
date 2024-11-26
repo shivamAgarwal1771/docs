@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { uploadToS3 } from '../../../utility/text2speech/uploadAudioToS3';
 import { FILE_UPLOADED, AUDIO_FILE_SPEAKER } from '../../../utility/constants';
@@ -9,19 +9,23 @@ import TranscriptionStatus from '../text2json/Status';
 import Download from './Download';
 
 const MergedMediaSelection = () => {
+  // State hooks for tab functionality
+  const [activeTab, setActiveTab] = useState('audio'); // Default tab is 'audio'
+
+  // State hooks for file upload and trimming
   const [notification, setNotification] = useState('');
   const [file, setFile] = useState(undefined);
   const [selectedFile, setSelectedFile] = useState(false);
   const [isFileUploaded, setIsFileUploaded] = useState(false);
   const [firstSpeaker, setFirstSpeaker] = useState(AUDIO_FILE_SPEAKER.FIRST_SPEAKER);
-  const [audioFile, setAudioFile] = useState(null); // For storing the uploaded audio file
-  const [trimmedAudioFile, setTrimmedAudioFile] = useState(null); // For storing trimmed audio
+  const [audioFile, setAudioFile] = useState(null);
+  const [trimmedAudioFile, setTrimmedAudioFile] = useState(null);
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
-  
+
   const audioRef = useRef(null);
   const trimmedAudioRef = useRef(null);
-  
+
   const dispatch = useDispatch();
   const status = useSelector(state => state?.speechstate?.status || '');
   const appCallData = useSelector((state) => state?.call);
@@ -153,95 +157,124 @@ const MergedMediaSelection = () => {
   return (
     <div className="container">
       <div className="main-body-container">
-        {/* File Upload and Speaker Selection */}
-        <form className="upload-body-container">
-          {!isFileUploaded && (
-            <>
-              <div className="speaker-selection-container1">
-                <label>Who is Speaking first?</label>
-                <select
-                  className="speaker-selection"
-                  value={firstSpeaker}
-                  onChange={(e) => setFirstSpeaker(e.target.value)}
-                >
-                  <option value="Agent">Agent</option>
-                  <option value="Customer">Customer</option>
-                </select>
-              </div>
-              <label htmlFor="audio-file" className="upload-btn1 tab btn-active">
-                + Upload
-              </label>
-              <input
-                className="file-upload"
-                id="audio-file"
-                type="file"
-                accept=".mp3"
-                onChange={handleFileUpload}
-              />
-            </>
-          )}
-
-          {notification && <p className="file-notification">{notification}</p>}
-        </form>
-
-        {/* Uploaded File Preview and Trimming */}
-        {audioFile && !isFileUploaded && (
-          <div className="media-selection-audio-trimmer">
-            <h3>Uploaded Audio Preview</h3>
-            <audio controls src={audioFile} ref={audioRef} />
-            <h3>Trim Audio</h3>
-            <div className="media-trimmer">
-              <label>
-                Start Time (seconds):
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={startTime}
-                  onChange={(e) => setStartTime(e.target.value)}
-                />
-              </label>
-              <label>
-                End Time (seconds):
-                <input
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={endTime}
-                  onChange={(e) => setEndTime(e.target.value)}
-                />
-              </label>
-            </div>
-            <button style={{ background: "#af8cf6", color: "white", padding: "4px" }} onClick={handleTrim}>
-              Trim Audio
-            </button>
-          </div>
-        )}
-
-        {/* Preview Trimmed Audio */}
-        {trimmedAudioFile && (
-          <div>
-            <h3>Trimmed Audio Preview</h3>
-            <audio controls src={trimmedAudioFile} ref={trimmedAudioRef} />
-          </div>
-        )}
-
-        {/* Submit Button */}
-        {selectedFile && !isFileUploaded && (
-          <button className="submit-btn" onClick={handleFileSubmit}>
-            Submit
+        {/* Tab Navigation */}
+        <div className="tabs">
+          <button
+            className={activeTab === 'audio' ? 'active' : ''}
+            onClick={() => setActiveTab('audio')}
+          >
+            Audio to JSON
           </button>
-        )}
+          <button
+            className={activeTab === 'video' ? 'active' : ''}
+            onClick={() => setActiveTab('video')}
+          >
+            Video to JSON
+          </button>
+          <button
+            className={activeTab === 'text' ? 'active' : ''}
+            onClick={() => setActiveTab('text')}
+          >
+            Text to JSON
+          </button>
+        </div>
 
-        {/* Transcription Status */}
-        {status.length !== 0 && (
-          <div className="upload-body-child">
-            <TranscriptionStatus />
+        {/* Conditional rendering of content based on active tab */}
+        {activeTab === 'audio' && (
+          <div className="audio-tab-content">
+            {/* File Upload and Speaker Selection */}
+            <form className="upload-body-container">
+              {!isFileUploaded && (
+                <>
+                  <div className="speaker-selection-container1">
+                    <label>Who is Speaking first?</label>
+                    <select
+                      className="speaker-selection"
+                      value={firstSpeaker}
+                      onChange={(e) => setFirstSpeaker(e.target.value)}
+                    >
+                      <option value="Agent">Agent</option>
+                      <option value="Customer">Customer</option>
+                    </select>
+                  </div>
+                  <label htmlFor="audio-file" className="upload-btn1 tab btn-active">
+                    + Upload
+                  </label>
+                  <input
+                    className="file-upload"
+                    id="audio-file"
+                    type="file"
+                    accept=".mp3"
+                    onChange={handleFileUpload}
+                  />
+                </>
+              )}
+
+              {notification && <p className="file-notification">{notification}</p>}
+            </form>
+
+            {/* Uploaded File Preview and Trimming */}
+            {audioFile && !isFileUploaded && (
+              <div className="media-selection-audio-trimmer">
+                <h3>Uploaded Audio Preview</h3>
+                <audio controls src={audioFile} ref={audioRef} />
+                <h3>Trim Audio</h3>
+                <div className="media-trimmer">
+                  <label>
+                    Start Time (seconds):
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                    />
+                  </label>
+                  <label>
+                    End Time (seconds):
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                    />
+                  </label>
+                  <button className="trim-btn" onClick={handleTrim}>
+                    Trim Audio
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Trimmed Audio Preview */}
+            {trimmedAudioFile && (
+              <div>
+                <h3>Trimmed Audio Preview</h3>
+                <audio controls src={trimmedAudioFile} ref={trimmedAudioRef} />
+              </div>
+            )}
+
+            {/* Submit Button */}
+            {selectedFile && !isFileUploaded && (
+              <button className="submit-btn" onClick={handleFileSubmit}>
+                Submit
+              </button>
+            )}
+
+            {/* Transcription Status */}
+            {status.length !== 0 && (
+              <div className="upload-body-child">
+                <TranscriptionStatus />
+              </div>
+            )}
+
+            {/* Download Component */}
+            <Download />
           </div>
         )}
 
-        {/* Download Component */}
-        <Download />
+        {/* Add similar logic for 'video' and 'text' tabs if needed */}
       </div>
     </div>
   );
