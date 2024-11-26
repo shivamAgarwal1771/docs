@@ -121,34 +121,34 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
             <button className="add-fields-btn" onClick={handleAddContactField}>+ Add</button>
           </div>
           <div className="overflow-y-scroll">
-            {contactFields.map((field, index) => (
-              <div key={index} className="field-row margin-tb-20">
-                <input
-                  className="CallSummary-input-field left-curved-input call-info-input-width"
-                  type="text"
-                  placeholder="Field"
-                  name="key"
-                  value={field.key}
-                  onChange={(e) => handleFieldChange(index, e)}
-                />
-                <input
-                  className="CallSummary-input-field call-info-input-width"
-                  type="text"
-                  placeholder="Value"
-                  name="value"
-                  value={field.value}
-                  onChange={(e) => handleFieldChange(index, e)}
-                />
-                <button className="section-remove-btn" onClick={() => handleRemoveContactField(index)}>
-                  <IoCloseSharp className="close-btn-icon" />
-                </button>
-              </div>
-            ))}
+            <div className="fields-container">
+              {contactFields.map((field, index) => (
+                <div key={index} className="field-row margin-tb-20">
+                  <input
+                    className="CallSummary-input-field left-curved-input call-info-input-width"
+                    type="text"
+                    placeholder="Field"
+                    name="key"
+                    value={field.key}
+                    onChange={(e) => handleFieldChange(index, e)}
+                  />
+                  <input
+                    className="CallSummary-input-field call-info-input-width"
+                    type="text"
+                    placeholder="Value"
+                    name="value"
+                    value={field.value}
+                    onChange={(e) => handleFieldChange(index, e)}
+                  />
+                  <button className="section-remove-btn" onClick={() => handleRemoveContactField(index)}>
+                    <IoCloseSharp className="close-btn-icon" />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
-
-      {/* Code for Cases and Interaction History can be updated similarly */}
 
       {selectedTab === 'Cases' && (
         <div className="CallSummary-cases">
@@ -157,12 +157,12 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
             <button className="add-fields-btn" onClick={handleAddCase}>+ Add</button>
           </div>
           <div className="overflow-y-scroll">
-            {cases.map((caseItem, index) => (
-              <div className="margin-tb-20" key={index}>
-                <button className="resolution-remove-btn" onClick={() => handleRemoveCase(index)}>
-                  <IoCloseSharp className="close-btn-icon" />
-                </button>
-                <div className="field-column border-box padding-10 rounded-border gap-10">
+            <div className="fields-container">
+              {cases.map((caseItem, index) => (
+                <div className="field-column" key={index}>
+                  <button className="resolution-remove-btn" onClick={() => handleRemoveCase(index)}>
+                    <IoCloseSharp className="close-btn-icon" />
+                  </button>
                   <div className="field-row gap-10">
                     <input
                       className="CallSummary-input-field call-info-input-width rounded-border"
@@ -209,14 +209,14 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
                   <input
                     className="CallSummary-input-field rounded-border"
                     type="text"
-                    placeholder="quickAction"
+                    placeholder="Quick Action"
                     name="quickAction"
                     value={caseItem.quickAction}
                     onChange={(e) => handleCaseChange(index, e)}
                   />
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
       )}
@@ -228,37 +228,36 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
             <button className="add-fields-btn" onClick={handleAddInteraction}>+ Add</button>
           </div>
           <div className="overflow-y-scroll">
-            {interactions.map((interaction, index) => (
-              <div className="margin-tb-20" key={index}>
-                <button className="resolution-remove-btn" onClick={() => handleRemoveInteraction(index)}>
-                  <IoCloseSharp className="close-btn-icon" />
-                </button>
-                <div className="field-row gap-10">
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="text"
-                      placeholder="Title"
-                      name="title"
-                      value={interaction.title}
-                      onChange={(e) => handleInteractionChange(index, e)}
-                    />
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="date"
-                      placeholder="Date"
-                      name="date"
-                      value={interaction.date}
-                      onChange={(e) => handleInteractionChange(index, e)}
-                    />
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="time"
-                      placeholder="Time"
-                      name="time"
-                      value={interaction.time}
-                      onChange={(e) => handleInteractionChange(index, e)}
-                    />
-                  </div>
+            <div className="fields-container">
+              {interactions.map((interaction, index) => (
+                <div className="field-row" key={index}>
+                  <button className="resolution-remove-btn" onClick={() => handleRemoveInteraction(index)}>
+                    <IoCloseSharp className="close-btn-icon" />
+                  </button>
+                  <input
+                    className="CallSummary-input-field call-info-input-width rounded-border"
+                    type="text"
+                    placeholder="Title"
+                    name="title"
+                    value={interaction.title}
+                    onChange={(e) => handleInteractionChange(index, e)}
+                  />
+                  <input
+                    className="CallSummary-input-field call-info-input-width rounded-border"
+                    type="date"
+                    placeholder="Date"
+                    name="date"
+                    value={interaction.date}
+                    onChange={(e) => handleInteractionChange(index, e)}
+                  />
+                  <input
+                    className="CallSummary-input-field call-info-input-width rounded-border"
+                    type="time"
+                    placeholder="Time"
+                    name="time"
+                    value={interaction.time}
+                    onChange={(e) => handleInteractionChange(index, e)}
+                  />
                   <textarea
                     className="CallSummary-input-field rounded-border"
                     placeholder="Description"
@@ -266,8 +265,9 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
                     value={interaction.description}
                     onChange={(e) => handleInteractionChange(index, e)}
                   />
-              </div>
-            ))}
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
