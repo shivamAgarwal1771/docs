@@ -7,6 +7,7 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
   const [cases, setCases] = useState([]);
   const [interactions, setInteractions] = useState([]);
   const [selectedTab, setSelectedTab] = useState('Contact Card'); // Default tab
+  const [activeCaseTab, setActiveCaseTab] = useState(null); // Track the active case tab
 
   // Initialize fields from metadata only if no user changes are made
   useEffect(() => {
@@ -105,6 +106,11 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
     setInteractions(updatedInteractions);
   };
 
+  const handleCaseTabClick = (index) => {
+    // Set the active case tab without resetting the selectedTab
+    setActiveCaseTab(index);
+  };
+
   return (
     <div>
       <div className="CallSummary-tabs">
@@ -158,8 +164,8 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
             {cases.map((_, index) => (
               <button
                 key={index}
-                className={`tab-button ${selectedTab === `Case ${index + 1}` ? 'active' : ''}`}
-                onClick={() => setSelectedTab(`Case ${index + 1}`)}
+                className={`tab-button ${activeCaseTab === index ? 'active' : ''}`}
+                onClick={() => handleCaseTabClick(index)} // This now only updates the active case tab
               >
                 Case {index + 1}
               </button>
@@ -170,9 +176,9 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
             {cases.map((caseItem, index) => (
               <div
                 key={index}
-                className={`case-tab-content ${selectedTab === `Case ${index + 1}` ? 'active' : ''}`}
+                className={`case-tab-content ${activeCaseTab === index ? 'active' : ''}`}
               >
-                {selectedTab === `Case ${index + 1}` && (
+                {activeCaseTab === index && (
                   <div className="field-column border-box padding-10 rounded-border gap-10">
                     <div className="field-row gap-10">
                       <input
@@ -222,7 +228,7 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
                     <input
                       className="CallSummary-input-field rounded-border"
                       type="text"
-                      placeholder="quickAction"
+                      placeholder="Quick Action"
                       name="quickAction"
                       value={caseItem.quickAction}
                       onChange={(e) => handleCaseChange(index, e)}
