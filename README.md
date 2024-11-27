@@ -6,7 +6,7 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
   const [contactFields, setContactFields] = useState([]);
   const [cases, setCases] = useState([]);
   const [interactions, setInteractions] = useState([]);
-  const [selectedTab, setSelectedTab] = useState('Contact Card');
+  const [selectedTab, setSelectedTab] = useState('Contact Card'); // Default tab
 
   // Initialize fields from metadata only if no user changes are made
   useEffect(() => {
@@ -154,75 +154,81 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
             <h2><b>Cases</b></h2>
             <button className="add-fields-btn" onClick={handleAddCase}>+ Add</button>
           </div>
+          <div className="tabs">
+            {cases.map((_, index) => (
+              <button
+                key={index}
+                className={`tab-button ${selectedTab === `Case ${index + 1}` ? 'active' : ''}`}
+                onClick={() => setSelectedTab(`Case ${index + 1}`)}
+              >
+                Case {index + 1}
+              </button>
+            ))}
+          </div>
+
           <div className="overflow-y-scroll">
-            <div className="tabs">
-              {cases.map((_, index) => (
-                <button
-                  key={index}
-                  className={`tab-button ${selectedTab === `Case ${index + 1}` ? 'active' : ''}`}
-                  onClick={() => setSelectedTab(`Case ${index + 1}`)}
-                >
-                  Case {index + 1}
-                </button>
-              ))}
-            </div>
             {cases.map((caseItem, index) => (
-              <div key={index} className={`case-tab-content ${selectedTab === `Case ${index + 1}` ? 'active' : ''}`}>
-                <div className="field-column border-box padding-10 rounded-border gap-10">
-                  <div className="field-row gap-10">
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="text"
-                      placeholder="CaseNumber"
-                      name="caseNumber"
-                      value={caseItem.caseNumber}
+              <div
+                key={index}
+                className={`case-tab-content ${selectedTab === `Case ${index + 1}` ? 'active' : ''}`}
+              >
+                {selectedTab === `Case ${index + 1}` && (
+                  <div className="field-column border-box padding-10 rounded-border gap-10">
+                    <div className="field-row gap-10">
+                      <input
+                        className="CallSummary-input-field call-info-input-width rounded-border"
+                        type="text"
+                        placeholder="CaseNumber"
+                        name="caseNumber"
+                        value={caseItem.caseNumber}
+                        onChange={(e) => handleCaseChange(index, e)}
+                      />
+                      <input
+                        className="CallSummary-input-field call-info-input-width rounded-border"
+                        type="date"
+                        placeholder="Creation Date"
+                        name="creationDate"
+                        value={caseItem.creationDate}
+                        onChange={(e) => handleCaseChange(index, e)}
+                      />
+                    </div>
+                    <div className="field-row gap-10">
+                      <input
+                        className="CallSummary-input-field call-info-input-width rounded-border"
+                        type="text"
+                        placeholder="Subject"
+                        name="subject"
+                        value={caseItem.subject}
+                        onChange={(e) => handleCaseChange(index, e)}
+                      />
+                      <select
+                        className="CallSummary-input-field call-info-input-width rounded-border"
+                        name="priority"
+                        value={caseItem.priority}
+                        onChange={(e) => handleCaseChange(index, e)}
+                      >
+                        <option value="Low">Low</option>
+                        <option value="Mid">Mid</option>
+                        <option value="High">High</option>
+                      </select>
+                    </div>
+                    <textarea
+                      className="CallSummary-input-field rounded-border"
+                      placeholder="Description"
+                      name="description"
+                      value={caseItem.description}
                       onChange={(e) => handleCaseChange(index, e)}
                     />
                     <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="date"
-                      placeholder="Creation Date"
-                      name="creationDate"
-                      value={caseItem.creationDate}
+                      className="CallSummary-input-field rounded-border"
+                      type="text"
+                      placeholder="quickAction"
+                      name="quickAction"
+                      value={caseItem.quickAction}
                       onChange={(e) => handleCaseChange(index, e)}
                     />
                   </div>
-                  <div className="field-row gap-10">
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="text"
-                      placeholder="Subject"
-                      name="subject"
-                      value={caseItem.subject}
-                      onChange={(e) => handleCaseChange(index, e)}
-                    />
-                    <select
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      name="priority"
-                      value={caseItem.priority}  
-                      onChange={(e) => handleCaseChange(index, e)}  
-                    >
-                      <option value="Low">Low</option>
-                      <option value="Mid">Mid</option>
-                      <option value="High">High</option>
-                    </select>
-                  </div>
-                  <textarea
-                    className="CallSummary-input-field rounded-border"
-                    placeholder="Description"
-                    name="description"
-                    value={caseItem.description}
-                    onChange={(e) => handleCaseChange(index, e)}
-                  />
-                  <input
-                    className="CallSummary-input-field rounded-border"
-                    type="text"
-                    placeholder="quickAction"
-                    name="quickAction"
-                    value={caseItem.quickAction}
-                    onChange={(e) => handleCaseChange(index, e)}
-                  />
-                </div>
+                )}
               </div>
             ))}
           </div>
