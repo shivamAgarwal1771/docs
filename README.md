@@ -6,8 +6,9 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
   const [contactFields, setContactFields] = useState([]);
   const [cases, setCases] = useState([]);
   const [interactions, setInteractions] = useState([]);
-  const [selectedTab, setSelectedTab] = useState('Contact Card'); // Default tab
-  const [activeCaseTab, setActiveCaseTab] = useState(null); // Track the active case tab
+  const [selectedTab, setSelectedTab] = useState('Contact Card');
+  const [activeCaseTab, setActiveCaseTab] = useState(null);
+  const [activeInteractionTab, setActiveInteractionTab] = useState(null); // Active interaction tab
 
   // Initialize fields from metadata only if no user changes are made
   useEffect(() => {
@@ -41,6 +42,7 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
     handleInput("interactionHistory", interactions);
   }, [interactions, handleInput]);
 
+  // Contact Fields Handlers
   const handleAddContactField = () => {
     setContactFields([...contactFields, { key: '', value: '' }]);
   };
@@ -58,6 +60,7 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
     setContactFields(updatedFields);
   };
 
+  // Case Handlers
   const handleAddCase = () => {
     setCases([
       ...cases,
@@ -89,6 +92,7 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
     setCases(updatedCases);
   };
 
+  // Interaction Handlers
   const handleAddInteraction = () => {
     setInteractions([...interactions, { title: '', date: '', time: '', description: '' }]);
   };
@@ -106,9 +110,14 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
     setInteractions(updatedInteractions);
   };
 
+  // Set Active Case Tab
   const handleCaseTabClick = (index) => {
-    // Set the active case tab without resetting the selectedTab
     setActiveCaseTab(index);
+  };
+
+  // Set Active Interaction Tab
+  const handleInteractionTabClick = (index) => {
+    setActiveInteractionTab(index);
   };
 
   return (
@@ -165,7 +174,7 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
               <button
                 key={index}
                 className={`tab-button ${activeCaseTab === index ? 'active' : ''}`}
-                onClick={() => handleCaseTabClick(index)} // This now only updates the active case tab
+                onClick={() => handleCaseTabClick(index)}
               >
                 Case {index + 1}
               </button>
@@ -247,45 +256,59 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
             <h2><b>Interaction History</b></h2>
             <button className="add-fields-btn" onClick={handleAddInteraction}>+ Add</button>
           </div>
+          <div className="tabs">
+            {interactions.map((_, index) => (
+              <button
+                key={index}
+                className={`tab-button ${activeInteractionTab === index ? 'active' : ''}`}
+                onClick={() => handleInteractionTabClick(index)}
+              >
+                Interaction {index + 1}
+              </button>
+            ))}
+          </div>
+
           <div className="overflow-y-scroll">
             {interactions.map((interaction, index) => (
-              <div className="margin-tb-20" key={index}>
-                <button className="resolution-remove-btn" onClick={() => handleRemoveInteraction(index)}>
-                  <IoCloseSharp className="close-btn-icon" />
-                </button>
-                <div className="field-row gap-10">
-                  <input
-                    className="CallSummary-input-field call-info-input-width rounded-border"
-                    type="text"
-                    placeholder="Title"
-                    name="title"
-                    value={interaction.title}
-                    onChange={(e) => handleInteractionChange(index, e)}
-                  />
-                  <input
-                    className="CallSummary-input-field call-info-input-width rounded-border"
-                    type="date"
-                    placeholder="Date"
-                    name="date"
-                    value={interaction.date}
-                    onChange={(e) => handleInteractionChange(index, e)}
-                  />
-                  <input
-                    className="CallSummary-input-field call-info-input-width rounded-border"
-                    type="time"
-                    placeholder="Time"
-                    name="time"
-                    value={interaction.time}
-                    onChange={(e) => handleInteractionChange(index, e)}
-                  />
-                </div>
-                <textarea
-                  className="CallSummary-input-field rounded-border"
-                  placeholder="Description"
-                  name="description"
-                  value={interaction.description}
-                  onChange={(e) => handleInteractionChange(index, e)}
-                />
+              <div
+                key={index}
+                className={`interaction-tab-content ${activeInteractionTab === index ? 'active' : ''}`}
+              >
+                {activeInteractionTab === index && (
+                  <div className="field-row gap-10">
+                    <input
+                      className="CallSummary-input-field call-info-input-width rounded-border"
+                      type="text"
+                      placeholder="Title"
+                      name="title"
+                      value={interaction.title}
+                      onChange={(e) => handleInteractionChange(index, e)}
+                    />
+                    <input
+                      className="CallSummary-input-field call-info-input-width rounded-border"
+                      type="date"
+                      placeholder="Date"
+                      name="date"
+                      value={interaction.date}
+                      onChange={(e) => handleInteractionChange(index, e)}
+                    />
+                    <input
+                      className="CallSummary-input-field call-info-input-width rounded-border"
+                      type="time"
+                      placeholder="Time"
+                      name="time"
+                      value={interaction.time}
+                      onChange={(e) => handleInteractionChange(index, e)}
+                    />
+                    <textarea
+                      className="CallSummary-input-field rounded-border"
+                      placeholder="Description"
+                      name="description"
+                      value={interaction.description}
+                      onChange={(e) => handleInteractionChange(index, e)}
+                    />
+                  </div>
+                )}
               </div>
             ))}
           </div>
