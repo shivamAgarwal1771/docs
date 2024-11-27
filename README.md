@@ -1,325 +1,369 @@
-import React, { useEffect, useState } from 'react';
-import Customer360 from './Customer360';
+import React, { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { updateDemoData } from "../../../store/demo-slice";
 import { IoCloseSharp } from "react-icons/io5";
 
-const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
-  const [contactFields, setContactFields] = useState([]);
-  const [cases, setCases] = useState([]);
-  const [interactions, setInteractions] = useState([]);
-  const [selectedTab, setSelectedTab] = useState('Contact Card');
-  const [activeCaseTab, setActiveCaseTab] = useState(null);
-  const [activeInteractionTab, setActiveInteractionTab] = useState(null); // Active interaction tab
+const Customer360 = ({ metadata, handleInput }) => {
+    const dispatch = useDispatch()
 
-  // Initialize fields from metadata only if no user changes are made
-  useEffect(() => {
-    if (!contactFields.length && metadata?.personalInformation) {
-      setContactFields(metadata.personalInformation);
+    const validateRequiredFields = () => {
+        if (metadata.customer360) {
+            const customerDataa = Object.keys(metadata?.customer360);
+            const requiredFields = new Set(['customerInfo', 'marketAnalysis', 'riskAssessment', 'nextBestAction', 'lifeEvents']);
+            if (customerDataa.length !== 5) {
+                requiredFields.forEach((obj, ind) => {
+                    if (!(customerDataa[obj])) {
+                        metadata.customer360[obj] = obj === 'marketAnalysis' && obj === 'riskAssessment' ? {} : []
+                    }
+                })
+            }
+        }
+        return metadata.customer360;
+    };
+
+    let customer360data = metadata?.customer360 ? true : false
+
+    metadata['customer360'] = metadata?.customer360 ? validateRequiredFields() : {
+        "customerInfo": [
+            {
+                title: [
+                    { titleHeading: "Account Number", value: "12322435" }
+                ],
+                items: [
+                    {
+                        key: "Account Type",
+                        value: "Savings"
+                    },
+                    {
+                        key: "Balance",
+                        value: "$2000"
+                    },
+                    {
+                        key: "Last Transaction",
+                        value: "$200 withdrawal, 14-02-24"
+                    }
+                ]
+            }
+        ],
+        "marketAnalysis": {
+            rates: {
+                OpenRate: "30",
+                ClickRate: "12"
+            },
+            summary: [
+                {
+                    description: "Responds well to email marketing."
+                },
+                {
+                    description: "Has clicked on 3 FD schemes offers in app.",
+                }
+            ]
+        },
+        "nextBestAction": [
+            {
+                description: "Discuss the benefits of higher tier savings account."
+            },
+            {
+                description: "Offer a home loan considering recent browsing session."
+            }
+        ],
+        "riskAssessment": {
+            summary: [
+                {
+                    description: "No late payments for the last 12 months."
+                },
+                {
+                    description: "Low risk for default."
+                }
+            ],
+            riskCategory: "Low"
+        },
+        "lifeEvents": [
+            {
+                date: "12/01/24",
+                event: "Married"
+            },
+            {
+                date: "24/12/23",
+                event: "New Car"
+            },
+            {
+                date: "12/03/21",
+                event: "Graduated"
+            }
+        ],
     }
-  }, [metadata?.personalInformation, contactFields]);
 
-  useEffect(() => {
-    if (!cases.length && metadata?.cases) {
-      setCases(metadata.cases);
+    useEffect(() => {
+        if (!customer360data) {
+            dispatch(updateDemoData({ type: "metadata", data: metadata }))
+        };
+    }, [customer360data])
+
+    function handleAdd(e, type, subType) {
+        e.preventDefault()
+        let newCustomer360 = metadata.customer360
+
+        if (type === 'customerInfo') {
+            if (type == 'customerInfo' && subType === 'items') {
+                newCustomer360.customerInfo = newCustomer360.customerInfo.map(info => ({
+                    ...info,
+                    items: [...(info.items || []), { key: "", value: "" }]
+                }))
+            } else {
+                newCustomer360.customerInfo = [...(newCustomer360.customerInfo || []), { title: [{ titleHeading: "", value: "" }], items: [{ key: "", value: "" }], }]
+            }
+        }
+        else if (type === 'marketAnalysis' && subType === 'rates') {
+            newCustomer360.marketAnalysis = { ...(newCustomer360.marketAnalysis || {}), rates: { ...(newCustomer360.marketAnalysis.rates || {}), OpenRate: "", ClickRate: "" } }
+        } else if (type === 'marketAnalysis' && subType === 'summary') {
+            newCustomer360.marketAnalysis = { ...(newCustomer360.marketAnalysis || {}), summary: [...(newCustomer360.marketAnalysis.summary || []), { description: "" }] }
+        } else if (type === 'riskAssessment' && subType === 'summary') {
+            newCustomer360.riskAssessment = { ...(newCustomer360.riskAssessment || {}), summary: [...(newCustomer360.riskAssessment.summary || []), { description: "" }] }
+        } else if (type === 'riskAssessment' && subType === 'riskCategory') {
+            newCustomer360.riskAssessment = { ...(newCustomer360.riskAssessment || {}), riskCategory: "" }
+        } else if (type === 'nextBestAction') {
+            newCustomer360.nextBestAction = [...(newCustomer360.nextBestAction || []), { description: "" }]
+        } else if (type === 'lifeEvents') {
+            newCustomer360.lifeEvents = [...(newCustomer360.lifeEvents || []), { date: "", event: "" }]
+        }
+        handleInput('customer360', newCustomer360)
     }
-  }, [metadata?.cases, cases]);
 
-  useEffect(() => {
-    if (!interactions.length && metadata?.interactionHistory) {
-      setInteractions(metadata.interactionHistory);
+    function handleChange(index, type, value, subType, subIndex, subKey) {
+        let newCustomer360 = metadata.customer360
+
+        if (type === 'customerInfo') {
+            if (subType === 'title') {
+                newCustomer360.customerInfo[index].title[subIndex][subKey] = value;
+            } else if (subType === 'items') {
+                newCustomer360.customerInfo[index].items[subIndex][subKey] = value;
+            }
+            // newCustomer360.customerInfo[index][subType] = value;
+        } else if (type === 'marketAnalysis' && subType === 'rates') {
+            newCustomer360.marketAnalysis.rates[subKey] = value
+        } else if (type === 'marketAnalysis' && subType === 'summary') {
+            newCustomer360.marketAnalysis.summary[index][subKey] = value
+        } else if (type === 'riskAssessment' && subType === 'summary') {
+            newCustomer360.riskAssessment.summary[index][subKey] = value
+        } else if (type === 'riskAssessment' && subType === 'riskCategory') {
+            newCustomer360.riskAssessment[subType] = value
+        } else if (type === 'nextBestAction') {
+            newCustomer360.nextBestAction[index][subType] = value
+        } else if (type === 'lifeEvents') {
+            newCustomer360.lifeEvents[index][subType] = value
+        }
+        handleInput('customer360', newCustomer360)
     }
-  }, [metadata?.interactionHistory, interactions]);
 
-  // Sync updated fields with the parent component
-  useEffect(() => {
-    handleInput("personalInformation", contactFields);
-  }, [contactFields, handleInput]);
+    function handleRemove(e, type, index, subType, subIndex, subKey) {
+        e.preventDefault()
+        let newCustomer360 = metadata.customer360
 
-  useEffect(() => {
-    handleInput("cases", cases);
-  }, [cases, handleInput]);
+        if (type === 'customerInfo') {
+            if (subType === 'title') {
+                newCustomer360.customerInfo[index].title.splice(subIndex, 1)
+            } else if (subType === 'items') {
+                newCustomer360.customerInfo[index].items.splice(subIndex, 1)
+            } else {
+                newCustomer360.customerInfo.splice(index, 1)
+            }
+        } else if (type === 'marketAnalysis' && subType === 'rates') {
+            const { [subKey]: _, ...remainingRates } = newCustomer360.marketAnalysis.rates
+            newCustomer360.marketAnalysis.rates = remainingRates
+        } else if (type === 'marketAnalysis' && subType === 'summary') {
+            newCustomer360.marketAnalysis.summary.splice(index, 1)
+        } else if (type === 'riskAssessment' && subType === 'summary') {
+            newCustomer360.riskAssessment.summary.splice(index, 1)
+        } else if (type === 'nextBestAction') {
+            newCustomer360.nextBestAction.splice(index, 1)
+        } else if (type === 'lifeEvents') {
+            newCustomer360.lifeEvents.splice(index, 1)
+        }
+        handleInput('customer360', newCustomer360)
+    }
 
-  useEffect(() => {
-    handleInput("interactionHistory", interactions);
-  }, [interactions, handleInput]);
-
-  // Contact Fields Handlers
-  const handleAddContactField = () => {
-    setContactFields([...contactFields, { key: '', value: '' }]);
-  };
-
-  const handleRemoveContactField = (index) => {
-    const updatedFields = contactFields.filter((_, i) => i !== index);
-    setContactFields(updatedFields);
-  };
-
-  const handleFieldChange = (index, e) => {
-    const { name, value } = e.target;
-    const updatedFields = contactFields.map((field, i) =>
-      i === index ? { ...field, [name]: value } : field
-    );
-    setContactFields(updatedFields);
-  };
-
-  // Case Handlers
-  const handleAddCase = () => {
-    setCases([
-      ...cases,
-      {
-        caseNumber: '',
-        creationDate: '',
-        subject: '',
-        priority: '',
-        description: '',
-        attachments: ['', ''],
-        linkedCases: ['', '', ''],
-        comments: [{ date: '', message: '' }],
-        contactName: '',
-        quickAction: '...',
-      },
-    ]);
-  };
-
-  const handleCaseChange = (index, e) => {
-    const { name, value } = e.target;
-    const updatedCases = cases.map((caseItem, i) =>
-      i === index ? { ...caseItem, [name]: value } : caseItem
-    );
-    setCases(updatedCases);
-  };
-
-  const handleRemoveCase = (index) => {
-    const updatedCases = cases.filter((_, i) => i !== index);
-    setCases(updatedCases);
-  };
-
-  // Interaction Handlers
-  const handleAddInteraction = () => {
-    setInteractions([...interactions, { title: '', date: '', time: '', description: '' }]);
-  };
-
-  const handleInteractionChange = (index, e) => {
-    const { name, value } = e.target;
-    const updatedInteractions = interactions.map((interaction, i) =>
-      i === index ? { ...interaction, [name]: value } : interaction
-    );
-    setInteractions(updatedInteractions);
-  };
-
-  const handleRemoveInteraction = (index) => {
-    const updatedInteractions = interactions.filter((_, i) => i !== index);
-    setInteractions(updatedInteractions);
-  };
-
-  // Set Active Case Tab
-  const handleCaseTabClick = (index) => {
-    setActiveCaseTab(index);
-  };
-
-  // Set Active Interaction Tab
-  const handleInteractionTabClick = (index) => {
-    setActiveInteractionTab(index);
-  };
-
-  return (
-    <div>
-      <div className="CallSummary-tabs">
-        <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Contact Card')}>Contact Card</button>
-        <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Cases')}>Cases</button>
-        <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Interaction History')}>Interaction History</button>
-        <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Customer 360')}>Customer 360</button>
-      </div>
-
-      {selectedTab === 'Contact Card' && (
-        <div className="contact-card">
-          <div className="contact-card-header">
-            <h2><b>Contact Card</b></h2>
-            <button className="add-fields-btn" onClick={handleAddContactField}>+ Add</button>
-          </div>
-          <div className="overflow-y-scroll">
-            {contactFields.map((field, index) => (
-              <div key={index} className="field-row margin-tb-20">
-                <input
-                  className="CallSummary-input-field left-curved-input call-info-input-width"
-                  type="text"
-                  placeholder="Field"
-                  name="key"
-                  value={field.key}
-                  onChange={(e) => handleFieldChange(index, e)}
-                />
-                <input
-                  className="CallSummary-input-field call-info-input-width"
-                  type="text"
-                  placeholder="Value"
-                  name="value"
-                  value={field.value}
-                  onChange={(e) => handleFieldChange(index, e)}
-                />
-                <button className="section-remove-btn" onClick={() => handleRemoveContactField(index)}>
-                  <IoCloseSharp className="close-btn-icon" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {selectedTab === 'Cases' && (
-        <div className="CallSummary-cases">
-          <div className="contact-card-header">
-            <h2><b>Cases</b></h2>
-            <button className="add-fields-btn" onClick={handleAddCase}>+ Add</button>
-          </div>
-          <div className="tabs">
-            {cases.map((_, index) => (
-              <button
-                key={index}
-                className={`tab-button ${activeCaseTab === index ? 'active' : ''}`}
-                onClick={() => handleCaseTabClick(index)}
-              >
-                Case {index + 1}
-              </button>
-            ))}
-          </div>
-
-          <div className="overflow-y-scroll">
-            {cases.map((caseItem, index) => (
-              <div
-                key={index}
-                className={`case-tab-content ${activeCaseTab === index ? 'active' : ''}`}
-              >
-                {activeCaseTab === index && (
-                  <div className="field-column border-box padding-10 rounded-border gap-10">
-                    <div className="field-row gap-10">
-                      <input
-                        className="CallSummary-input-field call-info-input-width rounded-border"
-                        type="text"
-                        placeholder="CaseNumber"
-                        name="caseNumber"
-                        value={caseItem.caseNumber}
-                        onChange={(e) => handleCaseChange(index, e)}
-                      />
-                      <input
-                        className="CallSummary-input-field call-info-input-width rounded-border"
-                        type="date"
-                        placeholder="Creation Date"
-                        name="creationDate"
-                        value={caseItem.creationDate}
-                        onChange={(e) => handleCaseChange(index, e)}
-                      />
+    return (
+        <div className="customer360-container field-column padding-10 gap-10">
+            <div className="border-box rounded-border">
+                <div className="demo-section">
+                    <span className="customer360-header"><h1><b>Customer Info</b></h1></span>
+                    <button className="add-fields-btn" onClick={e => handleAdd(e, 'customerInfo')}>+ Add</button>
+                </div>
+                {metadata?.customer360?.customerInfo?.map((item, index) => (
+                    <div key={index}>
+                        <div className='customer-info-items padding-2vh align-item-center'>
+                            <span className="font-14 width-15"><b>Title :</b></span>
+                            <div className="personal-info-field-value width-85">
+                                {item?.title?.map((title, titleIndex) => (
+                                    <div className='personal-info-field-value-child' key={titleIndex}>
+                                        <input
+                                            className='upload-demo-input left-curved-input call-info-input-width'
+                                            placeholder='Field'
+                                            value={title.titleHeading}
+                                            onChange={e => handleChange(index, 'customerInfo', e.target.value, 'title', titleIndex, 'titleHeading')}
+                                        />
+                                        <input
+                                            className='upload-demo-input call-info-input-width'
+                                            placeholder='Value'
+                                            value={title.value}
+                                            onChange={e => handleChange(index, 'customerInfo', e.target.value, 'title', titleIndex, 'value')}
+                                        />
+                                        <button className='section-remove-btn' onClick={e => handleRemove(e, 'customerInfo', index, 'title', titleIndex)}><IoCloseSharp className="close-btn-icon" /></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className='customer-info-items padding-2vh align-item-top'>
+                            <span className="font-14 width-15"><b>Personal Info :</b></span>
+                            <div className="personal-info-field-value width-85 gap-10">
+                                {item?.items?.map((title, titleIndex) => (
+                                    <div className='personal-info-field-value-child' key={titleIndex}>
+                                        <input
+                                            className='upload-demo-input left-curved-input call-info-input-width'
+                                            placeholder='Field'
+                                            value={title.key}
+                                            onChange={e => handleChange(index, 'customerInfo', e.target.value, 'items', titleIndex, 'key')}
+                                        />
+                                        <input
+                                            className='upload-demo-input call-info-input-width'
+                                            placeholder='Value'
+                                            value={title.value}
+                                            onChange={e => handleChange(index, 'customerInfo', e.target.value, 'items', titleIndex, 'value')}
+                                        />
+                                        <button className='section-remove-btn' onClick={e => handleRemove(e, 'customerInfo', index, 'items', titleIndex)}><IoCloseSharp className="close-btn-icon" /></button>
+                                    </div>
+                                ))}
+                                <div className='field-row padding-10 gap-10'>
+                                    <button className='add-fields-btn rounded-border call-info-input-width' onClick={e => handleAdd(e, 'customerInfo', 'items')}> Add more Items </button>
+                                    <button className='section-remove-btn rounded-border call-info-input-width' onClick={e => handleRemove(e, 'customerInfo', index)}> Remove </button>
+                                </div>
+                            </div>
+                        </div>
+                        {/* <button className='demo-btn remove-btn' onClick={e => handleRemove(e, 'customerInfo', index)}> Remove </button> */}
                     </div>
-                    <div className="field-row gap-10">
-                      <input
-                        className="CallSummary-input-field call-info-input-width rounded-border"
-                        type="text"
-                        placeholder="Subject"
-                        name="subject"
-                        value={caseItem.subject}
-                        onChange={(e) => handleCaseChange(index, e)}
-                      />
-                      <select
-                        className="CallSummary-input-field call-info-input-width rounded-border"
-                        name="priority"
-                        value={caseItem.priority}
-                        onChange={(e) => handleCaseChange(index, e)}
-                      >
-                        <option value="Low">Low</option>
-                        <option value="Mid">Mid</option>
-                        <option value="High">High</option>
-                      </select>
+                ))}
+            </div>
+
+            <div className="border-box rounded-border">
+                <div className="demo-section">
+                    <span className="customer360-header"><h1><b>Market Analysis Rates</b></h1></span>
+                    <button className="add-fields-btn" onClick={e => handleAdd(e, 'marketAnalysis', 'rates')}>+ Add</button>
+                </div>
+                {metadata?.customer360?.marketAnalysis?.rates && Object.entries(metadata.customer360.marketAnalysis.rates).map(([key, value], index) => (
+                    <div className='personal-info-field-value-child padding-10' key={index}>
+                        <input
+                            className='upload-demo-input left-curved-input call-info-input-width'
+                            placeholder='Rate Type'
+                            value={key}
+                            // onChange={e => handleChange(index, 'customerInfo', e.target.value, 'key')}
+                            readOnly
+                        />
+                        <input
+                            className='upload-demo-input call-info-input-width'
+                            placeholder='Value'
+                            value={value}
+                            onChange={e => handleChange(index, 'marketAnalysis', e.target.value, 'rates', index, key)}
+                        />
+                        <button className='section-remove-btn' onClick={e => handleRemove(e, 'marketAnalysis', index, 'rates', key)}><IoCloseSharp className="close-btn-icon" /></button>
                     </div>
-                    <textarea
-                      className="CallSummary-input-field rounded-border"
-                      placeholder="Description"
-                      name="description"
-                      value={caseItem.description}
-                      onChange={(e) => handleCaseChange(index, e)}
-                    />
-                    <input
-                      className="CallSummary-input-field rounded-border"
-                      type="text"
-                      placeholder="Quick Action"
-                      name="quickAction"
-                      value={caseItem.quickAction}
-                      onChange={(e) => handleCaseChange(index, e)}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+                ))}
+            </div>
+
+            <div className="border-box rounded-border">
+                <div className="demo-section">
+                    <span className="customer360-header"><h1><b>Market Analysis Summary</b></h1></span>
+                    <button className="add-fields-btn" onClick={e => handleAdd(e, 'marketAnalysis', 'summary')}>+ Add</button>
+                </div>
+                {metadata?.customer360?.marketAnalysis?.summary?.map((item, index) => (
+                    <div className='personal-info-field-value-child padding-10' key={index}>
+                        <input
+                            className='upload-demo-input left-curved-input width-100'
+                            placeholder='Description'
+                            value={item.description}
+                            onChange={e => handleChange(index, 'marketAnalysis', e.target.value, 'summary', index, 'description')}
+                        />
+                        <button className='section-remove-btn' onClick={e => handleRemove(e, 'marketAnalysis', index, 'summary', index)}><IoCloseSharp className="close-btn-icon" /></button>
+                    </div>
+                ))}
+            </div>
+
+            <div className="border-box rounded-border">
+                <div className="demo-section">
+                    <span className="customer360-header"><h1><b>Risk Assessment Summary</b></h1></span>
+                    <button className="add-fields-btn" onClick={e => handleAdd(e, 'riskAssessment', 'summary')}>+ Add</button>
+                </div>
+                {metadata?.customer360?.riskAssessment?.summary?.map((item, index) => (
+                    <div className='personal-info-field-value-child padding-10' key={index}>
+                        <input
+                            className='upload-demo-input left-curved-input width-100'
+                            placeholder='Description'
+                            value={item.description}
+                            onChange={e => handleChange(index, 'riskAssessment', e.target.value, 'summary', index, 'description')}
+                        />
+                        <button className='section-remove-btn' onClick={e => handleRemove(e, 'riskAssessment', index, 'summary', index)}><IoCloseSharp className="close-btn-icon" /></button>
+                    </div>
+                ))}
+            </div>
+
+            <div className="border-box rounded-border">
+                <div className="demo-section">
+                    <span className="customer360-header"><h1><b>Risk Category</b></h1></span>
+                    <select
+                        className='upload-demo-input rounded-border call-info-input-width'
+                        value={metadata?.customer360?.riskAssessment?.riskCategory}
+                        onChange={e => handleChange(null, 'riskAssessment', e.target.value, 'riskCategory')}
+                    >
+                        <option value={'High'}>High </option>
+                        <option value={'Medium'}>Medium</option>
+                        <option value={'Low'}>Low</option>
+                    </select>
+                </div>
+            </div>
+
+            <div className="border-box rounded-border">
+                <div className="demo-section">
+                    <span className="customer360-header"><h1><b>Next Best Action</b></h1></span>
+                    <button className="add-fields-btn" onClick={e => handleAdd(e, 'nextBestAction')}>+ Add</button>
+                </div>
+                {metadata?.customer360?.nextBestAction?.map((item, index) => (
+                    <div className='personal-info-field-value-child padding-10' key={index}>
+                        <input
+                            className='upload-demo-input left-curved-input width-100'
+                            placeholder='Description'
+                            value={item.description}
+                            onChange={e => handleChange(index, 'nextBestAction', e.target.value, 'description')}
+                        />
+                        <button className='section-remove-btn' onClick={e => handleRemove(e, 'nextBestAction', index)}><IoCloseSharp className="close-btn-icon" /></button>
+                    </div>
+                ))}
+            </div>
+
+            <div className="border-box rounded-border">
+                <div className="demo-section">
+                    <span className="customer360-header"><h1><b>Life Events</b></h1></span>
+                    <button className="add-fields-btn" onClick={e => handleAdd(e, 'lifeEvents')}>+ Add</button>
+                </div>
+                {metadata.customer360.lifeEvents?.map((item, index) => (
+                    <div className='personal-info-field-value-child padding-10' key={index}>
+                        <input
+                            className='upload-demo-input left-curved-input call-info-input-width'
+                            placeholder='Date'
+                            value={item.date}
+                            onChange={e => handleChange(index, 'lifeEvents', e.target.value, 'date')}
+                        />
+                        <input
+                            className='upload-demo-input call-info-input-width'
+                            placeholder='Event'
+                            value={item.event}
+                            onChange={e => handleChange(index, 'lifeEvents', e.target.value, 'event')}
+                        />
+                        <button className='section-remove-btn' onClick={e => handleRemove(e, 'lifeEvents', index)}><IoCloseSharp className="close-btn-icon" /></button>
+                    </div>
+                ))}
+            </div>
         </div>
-      )}
+    )
+}
 
-      {selectedTab === 'Interaction History' && (
-        <div className="CallSummary-interaction-history">
-          <div className="contact-card-header">
-            <h2><b>Interaction History</b></h2>
-            <button className="add-fields-btn" onClick={handleAddInteraction}>+ Add</button>
-          </div>
-          <div className="tabs">
-            {interactions.map((_, index) => (
-              <button
-                key={index}
-                className={`tab-button ${activeInteractionTab === index ? 'active' : ''}`}
-                onClick={() => handleInteractionTabClick(index)}
-              >
-                Interaction {index + 1}
-              </button>
-            ))}
-          </div>
-
-          <div className="overflow-y-scroll">
-            {interactions.map((interaction, index) => (
-              <div
-                key={index}
-                className={`interaction-tab-content ${activeInteractionTab === index ? 'active' : ''}`}
-              >
-                {activeInteractionTab === index && (
-                  <div className="field-row gap-10">
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="text"
-                      placeholder="Title"
-                      name="title"
-                      value={interaction.title}
-                      onChange={(e) => handleInteractionChange(index, e)}
-                    />
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="date"
-                      placeholder="Date"
-                      name="date"
-                      value={interaction.date}
-                      onChange={(e) => handleInteractionChange(index, e)}
-                    />
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="time"
-                      placeholder="Time"
-                      name="time"
-                      value={interaction.time}
-                      onChange={(e) => handleInteractionChange(index, e)}
-                    />
-                    <textarea
-                      className="CallSummary-input-field rounded-border"
-                      placeholder="Description"
-                      name="description"
-                      value={interaction.description}
-                      onChange={(e) => handleInteractionChange(index, e)}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {selectedTab === 'Customer 360' && (
-        <Customer360 metadata={metadata} handleInput={handleInput} />
-      )}
-    </div>
-  );
-};
-
-export default CallSummaryDetailsForm;
+export default Customer360
