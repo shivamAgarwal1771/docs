@@ -148,8 +148,6 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
         </div>
       )}
 
-      {/* Code for Cases and Interaction History can be updated similarly */}
-
       {selectedTab === 'Cases' && (
         <div className="CallSummary-cases">
           <div className="contact-card-header">
@@ -157,11 +155,19 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
             <button className="add-fields-btn" onClick={handleAddCase}>+ Add</button>
           </div>
           <div className="overflow-y-scroll">
-            {cases.map((caseItem, index) => (
-              <div className="margin-tb-20" key={index}>
-                <button className="resolution-remove-btn" onClick={() => handleRemoveCase(index)}>
-                  <IoCloseSharp className="close-btn-icon" />
+            <div className="tabs">
+              {cases.map((_, index) => (
+                <button
+                  key={index}
+                  className={`tab-button ${selectedTab === `Case ${index + 1}` ? 'active' : ''}`}
+                  onClick={() => setSelectedTab(`Case ${index + 1}`)}
+                >
+                  Case {index + 1}
                 </button>
+              ))}
+            </div>
+            {cases.map((caseItem, index) => (
+              <div key={index} className={`case-tab-content ${selectedTab === `Case ${index + 1}` ? 'active' : ''}`}>
                 <div className="field-column border-box padding-10 rounded-border gap-10">
                   <div className="field-row gap-10">
                     <input
@@ -200,7 +206,6 @@ const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
                       <option value="Mid">Mid</option>
                       <option value="High">High</option>
                     </select>
-
                   </div>
                   <textarea
                     className="CallSummary-input-field rounded-border"
