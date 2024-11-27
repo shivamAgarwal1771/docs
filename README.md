@@ -1,242 +1,173 @@
 import React, { useEffect, useState } from 'react';
-import { FaChevronDown, FaChevronUp } from 'react-icons/fa6';
-import Customer360 from './Customer360';
-import { IoCloseSharp } from "react-icons/io5";
+import Body from './Body';
+import { useDispatch, useSelector } from 'react-redux';
+import json from "../../../assets/resource/andydemo.json"
+import { MdDownload } from "react-icons/md";
+import TranscriptPreview from './Preview';
+import { FaPlus, FaMinus } from "react-icons/fa6";
+import { checkJson } from '../../../utility/customise/checkJson';
+import AgentWikiBody from "./agentWikiBody"
+import AutoAuditBody from "./AutoAuditBody"
+import ActionWorkflow from "./actionWorkflow"
+import {setProgressBarTranscript} from "../../../store/callSlice"
+import { setDemoTranscriptSubmitted, setEditDemoTranscript, updateDemoData } from '../../../store/demo-slice';
 
-const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
-  const [contactFields, setContactFields] = useState([]);
-  const [cases, setCases] = useState([]);
-  const [interactions, setInteractions] = useState([]);
-  const [selectedTab, setSelectedTab] = useState('Contact Card');
-  const [caseTabs, setCaseTabs] = useState([]); // Track dynamic case tabs
-  const [interactionTabs, setInteractionTabs] = useState([]); // Track dynamic interaction history tabs
 
-  // Initialize fields from metadata only if no user changes are made
-  useEffect(() => {
-    if (!contactFields.length && metadata?.personalInformation) {
-      setContactFields(metadata.personalInformation);
-    }
-  }, [metadata?.personalInformation, contactFields]);
+function FileUpload({ setTranscript, message, setMessage }) {
+  const dispatch = useDispatch()
+  const onUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  useEffect(() => {
-    if (!cases.length && metadata?.cases) {
-      setCases(metadata.cases);
-    }
-  }, [metadata?.cases, cases]);
+    const filereader = new FileReader();
+    filereader.readAsText(file, 'UTF-8');
 
-  useEffect(() => {
-    if (!interactions.length && metadata?.interactionHistory) {
-      setInteractions(metadata.interactionHistory);
-    }
-  }, [metadata?.interactionHistory, interactions]);
+    filereader.onload = (e) => {
+      let content = e.target.result;
 
-  // Sync updated fields with the parent component
-  useEffect(() => {
-    handleInput("personalInformation", contactFields);
-  }, [contactFields, handleInput]);
-
-  useEffect(() => {
-    handleInput("cases", cases);
-  }, [cases, handleInput]);
-
-  useEffect(() => {
-    handleInput("interactionHistory", interactions);
-  }, [interactions, handleInput]);
-
-  const handleAddContactField = () => {
-    setContactFields([...contactFields, { key: '', value: '' }]);
-  };
-
-  const handleAddCase = () => {
-    const newCaseIndex = caseTabs.length;
-    const newCase = {
-      caseNumber: '',
-      creationDate: '',
-      subject: '',
-      priority: '',
-      description: '',
-      attachments: ['', ''],
-      linkedCases: ['', '', ''],
-      comments: [{ date: '', message: '' }],
-      contactName: '',
-      status: 'Open',
-      quickAction: '...',
+      try {
+        let jsonData = JSON.parse(content);
+        let reviewJson = checkJson(jsonData);
+        if (!reviewJson.value) {
+          setMessage(reviewJson.msg);
+          setTimeout(() => {
+            setMessage('');
+          }, 8000);
+        } else {
+          jsonData.forEach((obj) => {
+            if (obj.eventData.Context && !Array.isArray(obj.eventData.Context)) {
+              obj.eventData.Context = Array(obj.eventData.Context);
+            }
+          });
+          setTranscript(jsonData);
+        }
+      } catch (err) {
+        setMessage('Not a valid JSON or format');
+        setTimeout(() => {
+          setMessage('');
+        }, 8000);
+        console.error(err);
+      }
     };
-
-    setCases([...cases, newCase]);
-    setCaseTabs([...caseTabs, `Case ${newCaseIndex + 1}`]); // Add new tab name
-    setSelectedTab(`Case ${newCaseIndex + 1}`); // Set this new case tab as selected
-  };
-
-  const handleAddInteraction = () => {
-    const newInteractionIndex = interactionTabs.length;
-    const newInteraction = { title: '', date: '', time: '', description: '' };
-    
-    setInteractions([...interactions, newInteraction]);
-    setInteractionTabs([...interactionTabs, `Interaction ${newInteractionIndex + 1}`]); // Add new tab name
-    setSelectedTab(`Interaction ${newInteractionIndex + 1}`); // Set this new interaction tab as selected
-  };
-
-  const handleRemoveTab = (tabType, index) => {
-    if (tabType === 'case') {
-      const updatedCases = cases.filter((_, i) => i !== index);
-      setCases(updatedCases);
-      const updatedCaseTabs = caseTabs.filter((_, i) => i !== index);
-      setCaseTabs(updatedCaseTabs);
-    } else if (tabType === 'interaction') {
-      const updatedInteractions = interactions.filter((_, i) => i !== index);
-      setInteractions(updatedInteractions);
-      const updatedInteractionTabs = interactionTabs.filter((_, i) => i !== index);
-      setInteractionTabs(updatedInteractionTabs);
-    }
-    setSelectedTab(tabType === 'case' ? (caseTabs[0] || '') : (interactionTabs[0] || ''));
-  };
-
-  const handleCaseChange = (index, e) => {
-    const { name, value } = e.target;
-    const updatedCases = cases.map((caseItem, i) =>
-      i === index ? { ...caseItem, [name]: value } : caseItem
-    );
-    setCases(updatedCases);
-  };
-
-  const handleInteractionChange = (index, e) => {
-    const { name, value } = e.target;
-    const updatedInteractions = interactions.map((interaction, i) =>
-      i === index ? { ...interaction, [name]: value } : interaction
-    );
-    setInteractions(updatedInteractions);
-  };
-
-  const renderCaseDetails = (index) => (
-    <div className="case-details">
-      <div>
-        <input
-          className="upload-demo-input"
-          placeholder="Case Number"
-          value={cases[index]?.caseNumber}
-          onChange={(e) => handleCaseChange(index, e)}
-        />
-        <select
-          className="upload-demo-input"
-          value={cases[index]?.priority}
-          onChange={(e) => handleCaseChange(index, e)}
-        >
-          <option hidden>Select Priority</option>
-          <option value="Low">Low</option>
-          <option value="Medium">Medium</option>
-          <option value="High">High</option>
-        </select>
-        <label htmlFor={`creation-date-${index}`}>Creation Date</label>
-        <input
-          className="upload-demo-input"
-          type="date"
-          id={`creation-date-${index}`}
-          placeholder="Creation Date"
-          value={cases[index]?.creationDate}
-          onChange={(e) => handleCaseChange(index, e)}
-        />
-        <div>
-          <input
-            className="upload-demo-subject-description"
-            placeholder="Subject"
-            value={cases[index]?.subject}
-            onChange={(e) => handleCaseChange(index, e)}
-          />
-        </div>
-        <div>
-          <textarea
-            className="upload-demo-subject-description"
-            placeholder="Description"
-            value={cases[index]?.description}
-            onChange={(e) => handleCaseChange(index, e)}
-          ></textarea>
-        </div>
-        <button className="demo-btn remove-btn" onClick={(e) => handleRemoveTab('case', index)}>
-          Remove Case
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderInteractionDetails = (index) => (
-    <div className="interaction-details">
-      <div>
-        <input
-          className="upload-demo-input"
-          placeholder="Title"
-          value={interactions[index]?.title}
-          onChange={(e) => handleInteractionChange(index, e)}
-        />
-        <input
-          className="upload-demo-input"
-          type="date"
-          placeholder="Date"
-          value={interactions[index]?.date}
-          onChange={(e) => handleInteractionChange(index, e)}
-        />
-        <input
-          className="upload-demo-input"
-          type="time"
-          placeholder="Time"
-          value={interactions[index]?.time}
-          onChange={(e) => handleInteractionChange(index, e)}
-        />
-        <textarea
-          className="upload-demo-subject-description"
-          placeholder="Description"
-          value={interactions[index]?.description}
-          onChange={(e) => handleInteractionChange(index, e)}
-        />
-      </div>
-      <button className="demo-btn remove-btn" onClick={(e) => handleRemoveTab('interaction', index)}>
-        Remove Interaction
-      </button>
-    </div>
-  );
+  }
 
   return (
-    <div>
-      <div className="tabs">
-        <button className="tab-button" onClick={() => setSelectedTab('Contact Card')}>Contact Card</button>
+    <form className='body-container'>
+      <label htmlFor='json-file' className='upload-btn tab btn-active'>+ Upload</label>
+      <input style={{ visibility: 'hidden' }} id='json-file' type='file' acontextNudgeTabept='application/JSON' onChange={onUpload} />
+      {message && <p style={{ color: 'red' }}>{message}</p>}
+    </form>
+  );
+}
 
-        {caseTabs.map((tabName, index) => (
-          <div className="tab-item" key={index}>
-            <button className={`tab-button ${selectedTab === tabName ? 'active' : ''}`} onClick={() => setSelectedTab(tabName)}>
-              {tabName}
-              <IoCloseSharp
-                className="close-tab-icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveTab('case', index);
-                }}
-              />
-            </button>
-          </div>
-        ))}
-        {interactionTabs.map((tabName, index) => (
-          <div className="tab-item" key={index}>
-            <button className={`tab-button ${selectedTab === tabName ? 'active' : ''}`} onClick={() => setSelectedTab(tabName)}>
-              {tabName}
-              <IoCloseSharp
-                className="close-tab-icon"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleRemoveTab('interaction', index);
-                }}
-              />
-            </button>
-          </div>
-        ))}
-      </div>
+export default function Customize({finalTranscript,setFinalTranscript,transcripts, setTranscripts,handleInput, audio, setAudio, tab }) {
+  const demoState = useSelector((state) => state?.demostate);
+  const appCallData = useSelector((state) => state?.call);
+  const speechCallData = useSelector((state) => state?.speechstate);
+  const isEditDemo = demoState?.editDemo;
+  const [transcript, setTranscript] = useState(demoState?.getDemoData?.transcript || []);
+  const [message, setMessage] = useState(undefined);
+  const [selectedNudge, setSelectedNudge] = useState('contextNudgeTab'); // Default to Call Context
+  const [index, setIndex] = useState(0);
+  const [progessScript,setProgessScript] = useState(true)
+  const [fields, setFields] = useState({
+    contextNudgeTab: [],
+    aiNudgeTab: [],
+    speechSuggestionNudge: [],
+    knowledgeTab: [],
+    utterance: [],
+  });
+  const dispatch = useDispatch();
 
-      <div className="content">
-        {selectedTab === 'Contact Card' && <Customer360 metadata={metadata} handleInput={handleInput} />}
-        {caseTabs.includes(selectedTab) && renderCaseDetails(caseTabs.indexOf(selectedTab))}
-        {interactionTabs.includes(selectedTab) && renderInteractionDetails(interactionTabs.indexOf(selectedTab))}
-      </div>
+  audio && setAudio(audio);
+
+
+  const sendTranscriptData = () => {
+    if (isEditDemo && transcript?.length) {
+      // dispatch(updateDemoData({ type: "transcript", data: transcript }));
+    }
+    dispatch(setEditDemoTranscript(false));
+    dispatch(setDemoTranscriptSubmitted(true));
+  };
+
+  const downloadTranscript = () => {
+    if (transcript) {
+        // dispatch(setProgressBarTranscript(transcript))
+      const transcriptURL = URL.createObjectURL(new Blob([JSON.stringify(transcript)], { type: 'application/json' }))
+
+      const a = document.createElement('a')
+      a.href = transcriptURL
+
+      a.download = "transcription.json"
+      a.style.display = "none"
+      document.body.appendChild(a)
+
+      a.click()
+
+      document.body.removeChild(a)
+      URL.revokeObjectURL(transcriptURL)
+    }
+  }
+
+  const handleNudgeType = (type) => {
+    setSelectedNudge(type);
+  };
+
+  const addField = (type) => {
+    setFields((prev) => ({
+      ...prev,
+      [type]: [...prev[type], prev[type].length + 1],
+    }));
+  };
+
+  const removeField = (type, index) => {
+    setFields((prev) => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index),
+    }));
+  };
+
+  useEffect(()=>{
+    transcript?.length && setFinalTranscript(transcript)
+    progessScript && speechCallData.conversation && setFinalTranscript(speechCallData.conversation)
+    progessScript && speechCallData.conversation && setTranscript(speechCallData.conversation);
+    setProgessScript(false)
+  },[transcript,speechCallData.conversation])
+
+  return (
+    <div className='transcript-container'>
+      {tab==1&&<div className="nudge-types">
+        <div className="options-types">NUDGE TYPE AND UTTERANCES</div>
+        <div className="nudge-options">
+          {['contextNudgeTab', 'aiNudgeTab', 'speechSuggestionNudge', 'knowledgeTab', 'utterance'].map(type => (
+            <div key={type} 
+              className={`nudge-option ${type === 'contextNudgeTab' ? "first-nudge" : (type === 'utterance' ? "last-nudge" : "mid-nudge")}`} 
+              onClick={() => handleNudgeType(type)}
+            >
+              <span>{type === 'contextNudgeTab' ? '+ CALL CONTEXT' : type === 'aiNudgeTab' ? '+ AI GUIDANCE' : type === 'speechSuggestionNudge' ? '+ SPEECH SUGGESTION' : type === 'knowledgeTab' ? '+ KNOWLEDGE ARTICLE' : '+ UTTERANCES'}</span>
+            </div>
+          ))}
+        </div>
+      </div>}
+       
+      {!transcript?.length && <FileUpload setTranscript={setTranscript} message={message} setMessage={setMessage} />}
+      {transcript?.length &&
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div className='transcript-body'>
+            {tab==1&&<Body tabs={1} transcript={JSON.parse(JSON.stringify(transcript))} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
+            {tab==2&&<AgentWikiBody tabs={2} transcript={JSON.parse(JSON.stringify(transcript))} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
+            {tab==3&&<AutoAuditBody tabs={3} transcript={JSON.parse(JSON.stringify(transcript))} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
+            {tab==4&&<ActionWorkflow tabs={4} transcript={JSON.parse(JSON.stringify(transcript))} setTranscript={setTranscript} selectNudge= {selectedNudge} setIndex={setIndex} index={index}/>}
+          </div>
+          <div className={`transcript-preview ${tab == 1 ? "transcript-preview" : "transcript-preview-enlarged"}`}>
+            <TranscriptPreview
+              transcript={transcript}
+              setTranscript={setTranscript}
+              setIndex={setIndex}
+              index={index}
+            />
+          </div>
+        </div>}
     </div>
   );
-};
-
-export default CallSummaryDetailsForm;
+}
