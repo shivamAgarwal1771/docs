@@ -1,297 +1,258 @@
-import React, { useEffect, useState } from 'react';
-import Customer360 from './Customer360';
-import { IoCloseSharp } from "react-icons/io5";
+import { useState } from "react";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa6";
 
-const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
-  const [contactFields, setContactFields] = useState([]);
-  const [cases, setCases] = useState([]);
-  const [interactions, setInteractions] = useState([]);
-  const [selectedTab, setSelectedTab] = useState('Contact Card');
-  const [caseTabs, setCaseTabs] = useState([]); // Track dynamic case tabs
-  const [interactionTabs, setInteractionTabs] = useState([]); // Track dynamic interaction history tabs
+export default function Cases({ metadata, handleInput }) {
+    const [tab, setTab] = useState(0)
 
-  // Initialize fields from metadata only if no user changes are made
-  useEffect(() => {
-    if (!contactFields.length && metadata?.personalInformation) {
-      setContactFields(metadata.personalInformation);
+    metadata['cases'] = metadata?.cases ? metadata?.cases : []
+
+    function handleChangeCase(index, field, value) {
+        let newCases = metadata?.cases
+        newCases[index][field] = value
+        handleInput('cases', newCases)
     }
-  }, [metadata?.personalInformation, contactFields]);
 
-  useEffect(() => {
-    if (!cases.length && metadata?.cases) {
-      setCases(metadata.cases);
+    function handleChangeAtt(index, field, value, ind) {
+        let newCases = metadata?.cases
+        newCases[index][field][ind] = value
+        handleInput('cases', newCases)
     }
-  }, [metadata?.cases, cases]);
 
-  useEffect(() => {
-    if (!interactions.length && metadata?.interactionHistory) {
-      setInteractions(metadata.interactionHistory);
+    function handleChangeLinCom(index, field, ind, field2, value) {
+        let newCases = metadata?.cases
+        newCases[index][field][ind][field2] = value
+        handleInput('cases', newCases)
     }
-  }, [metadata?.interactionHistory, interactions]);
 
-  // Sync updated fields with the parent component
-  useEffect(() => {
-    handleInput("personalInformation", contactFields);
-  }, [contactFields, handleInput]);
+    function handleAddCase(e) {
+        e.preventDefault()
+        const newCase = ({
+            'caseNumber': '',
+            'priority': '',
+            'creationDate': '',
+            'subject': '',
+            'description': '',
+            'attachments': [],
+            'linkedCases': [],
+            'comments': [],
+            'contactName': '',
+            'status': '',
+            'quickActions': '...'
+        })
 
-  useEffect(() => {
-    handleInput("cases", cases);
-  }, [cases, handleInput]);
-
-  useEffect(() => {
-    handleInput("interactionHistory", interactions);
-  }, [interactions, handleInput]);
-
-  const handleAddContactField = () => {
-    setContactFields([...contactFields, { key: '', value: '' }]);
-  };
-
-  const handleAddCase = () => {
-    const newCaseIndex = caseTabs.length;
-    const newCase = {
-      caseNumber: '',
-      creationDate: '',
-      subject: '',
-      priority: '',
-      description: '',
-      attachments: ['', ''],
-      linkedCases: ['', '', ''],
-      comments: [{ date: '', message: '' }],
-      contactName: '',
-      quickAction: '...',
-    };
-    
-    setCases([...cases, newCase]);
-    setCaseTabs([...caseTabs, `Case ${newCaseIndex + 1}`]); // Add new tab name
-    setSelectedTab(`Case ${newCaseIndex + 1}`); // Set this new case tab as selected
-  };
-
-  const handleAddInteraction = () => {
-    const newInteractionIndex = interactionTabs.length;
-    const newInteraction = { title: '', date: '', time: '', description: '' };
-    
-    setInteractions([...interactions, newInteraction]);
-    setInteractionTabs([...interactionTabs, `Interaction ${newInteractionIndex + 1}`]); // Add new tab name
-    setSelectedTab(`Interaction ${newInteractionIndex + 1}`); // Set this new interaction tab as selected
-  };
-
-  const handleRemoveTab = (tabType, index) => {
-    if (tabType === 'case') {
-      const updatedCases = cases.filter((_, i) => i !== index);
-      setCases(updatedCases);
-      const updatedCaseTabs = caseTabs.filter((_, i) => i !== index);
-      setCaseTabs(updatedCaseTabs);
-    } else if (tabType === 'interaction') {
-      const updatedInteractions = interactions.filter((_, i) => i !== index);
-      setInteractions(updatedInteractions);
-      const updatedInteractionTabs = interactionTabs.filter((_, i) => i !== index);
-      setInteractionTabs(updatedInteractionTabs);
+        const newCases = [...metadata?.cases, newCase]
+        handleInput('cases', newCases)
+        setTab(newCases.length - 1)
     }
-    setSelectedTab(tabType === 'case' ? (caseTabs[0] || '') : (interactionTabs[0] || ''));
-  };
 
-  const handleCaseChange = (index, e) => {
-    const { name, value } = e.target;
-    const updatedCases = cases.map((caseItem, i) =>
-      i === index ? { ...caseItem, [name]: value } : caseItem
-    );
-    setCases(updatedCases);
-  };
+    const handleCaseButtonClick = (index) => {
+        if (tab === index) {
+            setTab(null);
+        } else {
+            setTab(index)
+        }
+    }
 
-  const handleInteractionChange = (index, e) => {
-    const { name, value } = e.target;
-    const updatedInteractions = interactions.map((interaction, i) =>
-      i === index ? { ...interaction, [name]: value } : interaction
-    );
-    setInteractions(updatedInteractions);
-  };
+    function handleAddAttachment(e, index) {
+        e.preventDefault()
+        let newCases = metadata?.cases
+        newCases[index]['attachments'].push('')
+        handleInput('cases', newCases)
+    }
 
-  return (
-    <div>
-      <div className="CallSummary-tabs">
-        <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Contact Card')}>Contact Card</button>
-        {caseTabs.map((tabName, index) => (
-          <button key={index} className="CallSummary-tab-button" onClick={() => setSelectedTab(tabName)}>
-            {tabName}
-            <IoCloseSharp
-              className="close-btn-icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRemoveTab('case', index);
-              }}
-            />
-          </button>
-        ))}
-        {interactionTabs.map((tabName, index) => (
-          <button key={index} className="CallSummary-tab-button" onClick={() => setSelectedTab(tabName)}>
-            {tabName}
-            <IoCloseSharp
-              className="close-btn-icon"
-              onClick={(e) => {
-                e.stopPropagation();
-                handleRemoveTab('interaction', index);
-              }}
-            />
-          </button>
-        ))}
-        <button className="CallSummary-tab-button" onClick={() => setSelectedTab('Customer 360')}>Customer 360</button>
-      </div>
+    function handleRemoveAttachment(e, index, ind) {
+        e.preventDefault()
+        let newCases = metadata?.cases
+        newCases[index]['attachments'].splice(ind, 1)
+        handleInput('cases', newCases)
+    }
 
-      {selectedTab === 'Contact Card' && (
-        <div className="contact-card">
-          <div className="contact-card-header">
-            <h2><b>Contact Card</b></h2>
-            <button className="add-fields-btn" onClick={handleAddContactField}>+ Add</button>
-          </div>
-          <div className="overflow-y-scroll">
-            {contactFields.map((field, index) => (
-              <div key={index} className="field-row margin-tb-20">
+    function handleAddLinkedCase(e, index) {
+        e.preventDefault()
+        let newCases = metadata?.cases
+        newCases[index]['linkedCases'].push({
+            'caseNumber': '',
+            'Subject': ''
+        })
+        handleInput('cases', newCases)
+    }
+
+    function handleRemoveLinkedCase(e, index, ind) {
+        e.preventDefault()
+        let newCases = metadata?.cases
+        newCases[index]['linkedCases'].splice(ind, 1)
+        handleInput('cases', newCases)
+    }
+
+    function handleAddComment(e, index) {
+        e.preventDefault()
+        let newCases = metadata?.cases
+        newCases[index]['comments'].push({
+            'date': '',
+            'message': ''
+        })
+        handleInput('cases', newCases)
+    }
+
+    function handleRemoveComment(e, index, ind) {
+        e.preventDefault()
+        let newCases = metadata?.cases
+        newCases[index]['comments'].splice(ind, 1)
+        handleInput('cases', newCases)
+    }
+
+    function handleRemoveCase(e, index) {
+        e.preventDefault()
+        let newCases = metadata?.cases
+        newCases.splice(index, 1)
+        handleInput('cases', newCases)
+        setTab(0)
+    }
+
+    const renderCaseDetails = (index) => (
+        <div className="case-details">
+            <div >
                 <input
-                  className="CallSummary-input-field left-curved-input call-info-input-width"
-                  type="text"
-                  placeholder="Field"
-                  name="key"
-                  value={field.key}
-                  onChange={(e) => handleFieldChange(index, e)}
+                    className='upload-demo-input'
+                    placeholder="Case Number"
+                    value={metadata?.cases[index]?.caseNumber}
+                    onChange={(e) => handleChangeCase(index, 'caseNumber', e.target.value)}
                 />
+                <select
+                    className='upload-demo-input'
+                    value={metadata?.cases[index]?.priority}
+                    onChange={(e) => handleChangeCase(index, 'priority', e.target.value)}
+                >
+                    <option hidden>Select Priority</option>
+                    <option value='Low'>Low</option>
+                    <option value='Medium'>Medium</option>
+                    <option value='High'>High</option>
+                </select>
+                <label className="upload-demo-input" htmlFor={`creation-date-${index}`}>Creation Date</label>
                 <input
-                  className="CallSummary-input-field call-info-input-width"
-                  type="text"
-                  placeholder="Value"
-                  name="value"
-                  value={field.value}
-                  onChange={(e) => handleFieldChange(index, e)}
-                />
-                <button className="section-remove-btn" onClick={() => handleRemoveContactField(index)}>
-                  <IoCloseSharp className="close-btn-icon" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {caseTabs.includes(selectedTab) && (
-        <div className="CallSummary-cases">
-          {caseTabs.map((tabName, index) => (
-            selectedTab === tabName && (
-              <div className="margin-tb-20" key={index}>
-                <button className="resolution-remove-btn" onClick={() => handleRemoveCase(index)}>
-                  <IoCloseSharp className="close-btn-icon" />
-                </button>
-                <div className="field-column border-box padding-10 rounded-border gap-10">
-                  <div className="field-row gap-10">
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="text"
-                      placeholder="CaseNumber"
-                      name="caseNumber"
-                      value={cases[index]?.caseNumber}
-                      onChange={(e) => handleCaseChange(index, e)}
-                    />
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="date"
-                      placeholder="Creation Date"
-                      name="creationDate"
-                      value={cases[index]?.creationDate}
-                      onChange={(e) => handleCaseChange(index, e)}
-                    />
-                  </div>
-                  <div className="field-row gap-10">
-                    <input
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      type="text"
-                      placeholder="Subject"
-                      name="subject"
-                      value={cases[index]?.subject}
-                      onChange={(e) => handleCaseChange(index, e)}
-                    />
-                    <select
-                      className="CallSummary-input-field call-info-input-width rounded-border"
-                      name="priority"
-                      value={cases[index]?.priority}  
-                      onChange={(e) => handleCaseChange(index, e)}  
-                    >
-                      <option value="Low">Low</option>
-                      <option value="Mid">Mid</option>
-                      <option value="High">High</option>
-                    </select>
-                  </div>
-                  <textarea
-                    className="CallSummary-input-field rounded-border"
-                    placeholder="Description"
-                    name="description"
-                    value={cases[index]?.description}
-                    onChange={(e) => handleCaseChange(index, e)}
-                  />
-                  <input
-                    className="CallSummary-input-field rounded-border"
-                    type="text"
-                    placeholder="quickAction"
-                    name="quickAction"
-                    value={cases[index]?.quickAction}
-                    onChange={(e) => handleCaseChange(index, e)}
-                  />
-                </div>
-              </div>
-            )
-          ))}
-        </div>
-      )}
-
-      {interactionTabs.includes(selectedTab) && (
-        <div className="CallSummary-interaction-history">
-          {interactionTabs.map((tabName, index) => (
-            selectedTab === tabName && (
-              <div key={index}>
-                <button className="resolution-remove-btn" onClick={() => handleRemoveInteraction(index)}>
-                  <IoCloseSharp className="close-btn-icon" />
-                </button>
-                <div className="field-row gap-10">
-                  <input
-                    className="CallSummary-input-field call-info-input-width rounded-border"
-                    type="text"
-                    placeholder="Title"
-                    name="title"
-                    value={interactions[index]?.title}
-                    onChange={(e) => handleInteractionChange(index, e)}
-                  />
-                  <input
-                    className="CallSummary-input-field call-info-input-width rounded-border"
+                    className="upload-demo-input"
                     type="date"
-                    placeholder="Date"
-                    name="date"
-                    value={interactions[index]?.date}
-                    onChange={(e) => handleInteractionChange(index, e)}
-                  />
-                  <input
-                    className="CallSummary-input-field call-info-input-width rounded-border"
-                    type="time"
-                    placeholder="Time"
-                    name="time"
-                    value={interactions[index]?.time}
-                    onChange={(e) => handleInteractionChange(index, e)}
-                  />
-                </div>
-                <textarea
-                  className="CallSummary-input-field rounded-border"
-                  placeholder="Description"
-                  name="description"
-                  value={interactions[index]?.description}
-                  onChange={(e) => handleInteractionChange(index, e)}
+                    id={`creation-date-${index}`}
+                    placeholder="Creation Date"
+                    value={metadata?.cases[index]?.creationDate}
+                    onChange={(e) => handleChangeCase(index, 'creationDate', e.target.value)}
                 />
-              </div>
-            )
-          ))}
+                <div>
+                    <input
+                        className="upload-demo-subject-description"
+                        placeholder="Subject"
+                        value={metadata?.cases[index]?.subject}
+                        onChange={(e) => handleChangeCase(index, 'subject', e.target.value)}
+                    />
+                </div>
+                <div>
+                    <textarea
+                        className="upload-demo-subject-description"
+                        placeholder="Description"
+                        value={metadata?.cases[index]?.description}
+                        onChange={(e) => handleChangeCase(index, 'description', e.target.value)}
+                    ></textarea>
+                </div>
+                <div className="demo-section">
+                    <b className="demo-section-child">Attachments</b>
+                    <button className="demo-section-child demo-btn" onClick={e => handleAddAttachment(e, index)}>Add Attachment</button>
+                    {metadata?.cases[index]?.attachments?.map((element, ind) => (
+                        <div>
+                            <input
+                                className="upload-demo-input"
+                                placeholder="Attachment Name"
+                                value={metadata?.cases[index].attachments[ind]}
+                                onChange={e => handleChangeAtt(index, 'attachments', e.target.value, ind)}
+                            />
+                            <button className="demo-btn remove-btn" onClick={e => handleRemoveAttachment(e, index, ind)}>Remove</button>
+                        </div>
+                    ))}
+                </div>
+                <div className="demo-section">
+                    <b className="demo-section-child">Linked Cases</b>
+                    <button className="demo-section-child demo-btn" onClick={e => handleAddLinkedCase(e, index)}>Add Linked Case</button>
+                    {metadata?.cases[index]?.linkedCases?.map((element, ind) => (
+                        <div>
+                            <input
+                                className="upload-demo-input"
+                                placeholder="Case Number"
+                                value={metadata?.cases[index].linkedCases[ind]['caseNumber']}
+                                onChange={e => handleChangeLinCom(index, 'linkedCases', ind, 'caseNumber', e.target.value)}
+                            />
+                            <input
+                                className="upload-demo-input"
+                                placeholder="Subject"
+                                value={metadata?.cases[index].linkedCases[ind]['Subject']}
+                                onChange={e => handleChangeLinCom(index, 'linkedCases', ind, 'Subject', e.target.value)}
+                            />
+                            <button className="demo-btn remove-btn" onClick={e => handleRemoveLinkedCase(e, index, ind)}>Remove</button>
+                        </div>
+                    ))}
+                </div>
+                <div className="demo-section">
+                    <b className="demo-section-child">Comments</b>
+                    <button className="demo-section-child demo-btn" onClick={e => handleAddComment(e, index)}>Add Comment</button>
+                    {metadata?.cases[index]?.comments?.map((element, ind) => (
+                        <div>
+                            <label htmlFor={`comment-date-${ind}`}>Date</label>
+                            <input
+                                className="upload-demo-input"
+                                type='date'
+                                placeholder="Date"
+                                id={`comment-date-${ind}`}
+                                value={metadata?.cases[index].comments[ind]['date']}
+                                onChange={e => handleChangeLinCom(index, 'comments', ind, 'date', e.target.value)}
+                            />
+                            <input
+                                className="upload-demo-input"
+                                placeholder="Message"
+                                value={metadata?.cases[index].comments[ind]['message']}
+                                onChange={e => handleChangeLinCom(index, 'comments', ind, 'message', e.target.value)}
+                            />
+                            <button className="demo-btn remove-btn" onClick={e => handleRemoveComment(e, index, ind)}>Remove</button>
+                        </div>
+                    ))}
+                </div>
+            </div>
+            <div>
+                <input
+                    className="upload-demo-input"
+                    placeholder="Contact Name"
+                    value={metadata?.cases[index]?.contactName}
+                    onChange={(e) => handleChangeCase(index, 'contactName', e.target.value)}
+                />
+                <select
+                    className="upload-demo-input"
+                    value={metadata?.cases[index]?.status}
+                    onChange={(e) => handleChangeCase(index, 'status', e.target.value)}
+                >
+                    <option hidden>Select Priority</option>
+                    <option value='Open'>Open</option>
+                </select>
+            </div>
+            <button className="demo-btn remove-btn" onClick={e => handleRemoveCase(e, index)}>Remove Case</button>
         </div>
-      )}
+    )
 
-      {selectedTab === 'Customer 360' && (
-        <Customer360 metadata={metadata} handleInput={handleInput} />
-      )}
-    </div>
-  );
-};
-
-export default CallSummaryDetailsForm;
+    return (
+        <div className="demo-section-container">
+            <div className="demo-btn-container">
+                <button className="demo-btn" onClick={e => handleAddCase(e)}>Add New Case</button>
+                {metadata?.cases?.map((item, index) => (
+                    <div className="parent-case-header">
+                        <div className="case-header">
+                            <button className={`sub-btn ${tab === index ? 'active-sub-btn' : ''}`} onClick={() => handleCaseButtonClick(index)}> Case Details {index + 1} {tab === index ? <FaChevronDown /> : <FaChevronUp />} </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <div className="case-details-container">
+                {metadata?.cases?.length > 0 && tab !== null && (
+                    <div className="case-container">
+                        {renderCaseDetails(tab)}
+                    </div>
+                )}
+            </div>
+        </div >
+    )
+}
