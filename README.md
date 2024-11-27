@@ -1,258 +1,242 @@
-import { useState } from "react";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa6";
+import React, { useEffect, useState } from 'react';
+import { FaChevronDown, FaChevronUp } from 'react-icons/fa6';
+import Customer360 from './Customer360';
+import { IoCloseSharp } from "react-icons/io5";
 
-export default function Cases({ metadata, handleInput }) {
-    const [tab, setTab] = useState(0)
+const CallSummaryDetailsForm = ({ metadata, handleInput }) => {
+  const [contactFields, setContactFields] = useState([]);
+  const [cases, setCases] = useState([]);
+  const [interactions, setInteractions] = useState([]);
+  const [selectedTab, setSelectedTab] = useState('Contact Card');
+  const [caseTabs, setCaseTabs] = useState([]); // Track dynamic case tabs
+  const [interactionTabs, setInteractionTabs] = useState([]); // Track dynamic interaction history tabs
 
-    metadata['cases'] = metadata?.cases ? metadata?.cases : []
-
-    function handleChangeCase(index, field, value) {
-        let newCases = metadata?.cases
-        newCases[index][field] = value
-        handleInput('cases', newCases)
+  // Initialize fields from metadata only if no user changes are made
+  useEffect(() => {
+    if (!contactFields.length && metadata?.personalInformation) {
+      setContactFields(metadata.personalInformation);
     }
+  }, [metadata?.personalInformation, contactFields]);
 
-    function handleChangeAtt(index, field, value, ind) {
-        let newCases = metadata?.cases
-        newCases[index][field][ind] = value
-        handleInput('cases', newCases)
+  useEffect(() => {
+    if (!cases.length && metadata?.cases) {
+      setCases(metadata.cases);
     }
+  }, [metadata?.cases, cases]);
 
-    function handleChangeLinCom(index, field, ind, field2, value) {
-        let newCases = metadata?.cases
-        newCases[index][field][ind][field2] = value
-        handleInput('cases', newCases)
+  useEffect(() => {
+    if (!interactions.length && metadata?.interactionHistory) {
+      setInteractions(metadata.interactionHistory);
     }
+  }, [metadata?.interactionHistory, interactions]);
 
-    function handleAddCase(e) {
-        e.preventDefault()
-        const newCase = ({
-            'caseNumber': '',
-            'priority': '',
-            'creationDate': '',
-            'subject': '',
-            'description': '',
-            'attachments': [],
-            'linkedCases': [],
-            'comments': [],
-            'contactName': '',
-            'status': '',
-            'quickActions': '...'
-        })
+  // Sync updated fields with the parent component
+  useEffect(() => {
+    handleInput("personalInformation", contactFields);
+  }, [contactFields, handleInput]);
 
-        const newCases = [...metadata?.cases, newCase]
-        handleInput('cases', newCases)
-        setTab(newCases.length - 1)
+  useEffect(() => {
+    handleInput("cases", cases);
+  }, [cases, handleInput]);
+
+  useEffect(() => {
+    handleInput("interactionHistory", interactions);
+  }, [interactions, handleInput]);
+
+  const handleAddContactField = () => {
+    setContactFields([...contactFields, { key: '', value: '' }]);
+  };
+
+  const handleAddCase = () => {
+    const newCaseIndex = caseTabs.length;
+    const newCase = {
+      caseNumber: '',
+      creationDate: '',
+      subject: '',
+      priority: '',
+      description: '',
+      attachments: ['', ''],
+      linkedCases: ['', '', ''],
+      comments: [{ date: '', message: '' }],
+      contactName: '',
+      status: 'Open',
+      quickAction: '...',
+    };
+
+    setCases([...cases, newCase]);
+    setCaseTabs([...caseTabs, `Case ${newCaseIndex + 1}`]); // Add new tab name
+    setSelectedTab(`Case ${newCaseIndex + 1}`); // Set this new case tab as selected
+  };
+
+  const handleAddInteraction = () => {
+    const newInteractionIndex = interactionTabs.length;
+    const newInteraction = { title: '', date: '', time: '', description: '' };
+    
+    setInteractions([...interactions, newInteraction]);
+    setInteractionTabs([...interactionTabs, `Interaction ${newInteractionIndex + 1}`]); // Add new tab name
+    setSelectedTab(`Interaction ${newInteractionIndex + 1}`); // Set this new interaction tab as selected
+  };
+
+  const handleRemoveTab = (tabType, index) => {
+    if (tabType === 'case') {
+      const updatedCases = cases.filter((_, i) => i !== index);
+      setCases(updatedCases);
+      const updatedCaseTabs = caseTabs.filter((_, i) => i !== index);
+      setCaseTabs(updatedCaseTabs);
+    } else if (tabType === 'interaction') {
+      const updatedInteractions = interactions.filter((_, i) => i !== index);
+      setInteractions(updatedInteractions);
+      const updatedInteractionTabs = interactionTabs.filter((_, i) => i !== index);
+      setInteractionTabs(updatedInteractionTabs);
     }
+    setSelectedTab(tabType === 'case' ? (caseTabs[0] || '') : (interactionTabs[0] || ''));
+  };
 
-    const handleCaseButtonClick = (index) => {
-        if (tab === index) {
-            setTab(null);
-        } else {
-            setTab(index)
-        }
-    }
+  const handleCaseChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedCases = cases.map((caseItem, i) =>
+      i === index ? { ...caseItem, [name]: value } : caseItem
+    );
+    setCases(updatedCases);
+  };
 
-    function handleAddAttachment(e, index) {
-        e.preventDefault()
-        let newCases = metadata?.cases
-        newCases[index]['attachments'].push('')
-        handleInput('cases', newCases)
-    }
+  const handleInteractionChange = (index, e) => {
+    const { name, value } = e.target;
+    const updatedInteractions = interactions.map((interaction, i) =>
+      i === index ? { ...interaction, [name]: value } : interaction
+    );
+    setInteractions(updatedInteractions);
+  };
 
-    function handleRemoveAttachment(e, index, ind) {
-        e.preventDefault()
-        let newCases = metadata?.cases
-        newCases[index]['attachments'].splice(ind, 1)
-        handleInput('cases', newCases)
-    }
-
-    function handleAddLinkedCase(e, index) {
-        e.preventDefault()
-        let newCases = metadata?.cases
-        newCases[index]['linkedCases'].push({
-            'caseNumber': '',
-            'Subject': ''
-        })
-        handleInput('cases', newCases)
-    }
-
-    function handleRemoveLinkedCase(e, index, ind) {
-        e.preventDefault()
-        let newCases = metadata?.cases
-        newCases[index]['linkedCases'].splice(ind, 1)
-        handleInput('cases', newCases)
-    }
-
-    function handleAddComment(e, index) {
-        e.preventDefault()
-        let newCases = metadata?.cases
-        newCases[index]['comments'].push({
-            'date': '',
-            'message': ''
-        })
-        handleInput('cases', newCases)
-    }
-
-    function handleRemoveComment(e, index, ind) {
-        e.preventDefault()
-        let newCases = metadata?.cases
-        newCases[index]['comments'].splice(ind, 1)
-        handleInput('cases', newCases)
-    }
-
-    function handleRemoveCase(e, index) {
-        e.preventDefault()
-        let newCases = metadata?.cases
-        newCases.splice(index, 1)
-        handleInput('cases', newCases)
-        setTab(0)
-    }
-
-    const renderCaseDetails = (index) => (
-        <div className="case-details">
-            <div >
-                <input
-                    className='upload-demo-input'
-                    placeholder="Case Number"
-                    value={metadata?.cases[index]?.caseNumber}
-                    onChange={(e) => handleChangeCase(index, 'caseNumber', e.target.value)}
-                />
-                <select
-                    className='upload-demo-input'
-                    value={metadata?.cases[index]?.priority}
-                    onChange={(e) => handleChangeCase(index, 'priority', e.target.value)}
-                >
-                    <option hidden>Select Priority</option>
-                    <option value='Low'>Low</option>
-                    <option value='Medium'>Medium</option>
-                    <option value='High'>High</option>
-                </select>
-                <label className="upload-demo-input" htmlFor={`creation-date-${index}`}>Creation Date</label>
-                <input
-                    className="upload-demo-input"
-                    type="date"
-                    id={`creation-date-${index}`}
-                    placeholder="Creation Date"
-                    value={metadata?.cases[index]?.creationDate}
-                    onChange={(e) => handleChangeCase(index, 'creationDate', e.target.value)}
-                />
-                <div>
-                    <input
-                        className="upload-demo-subject-description"
-                        placeholder="Subject"
-                        value={metadata?.cases[index]?.subject}
-                        onChange={(e) => handleChangeCase(index, 'subject', e.target.value)}
-                    />
-                </div>
-                <div>
-                    <textarea
-                        className="upload-demo-subject-description"
-                        placeholder="Description"
-                        value={metadata?.cases[index]?.description}
-                        onChange={(e) => handleChangeCase(index, 'description', e.target.value)}
-                    ></textarea>
-                </div>
-                <div className="demo-section">
-                    <b className="demo-section-child">Attachments</b>
-                    <button className="demo-section-child demo-btn" onClick={e => handleAddAttachment(e, index)}>Add Attachment</button>
-                    {metadata?.cases[index]?.attachments?.map((element, ind) => (
-                        <div>
-                            <input
-                                className="upload-demo-input"
-                                placeholder="Attachment Name"
-                                value={metadata?.cases[index].attachments[ind]}
-                                onChange={e => handleChangeAtt(index, 'attachments', e.target.value, ind)}
-                            />
-                            <button className="demo-btn remove-btn" onClick={e => handleRemoveAttachment(e, index, ind)}>Remove</button>
-                        </div>
-                    ))}
-                </div>
-                <div className="demo-section">
-                    <b className="demo-section-child">Linked Cases</b>
-                    <button className="demo-section-child demo-btn" onClick={e => handleAddLinkedCase(e, index)}>Add Linked Case</button>
-                    {metadata?.cases[index]?.linkedCases?.map((element, ind) => (
-                        <div>
-                            <input
-                                className="upload-demo-input"
-                                placeholder="Case Number"
-                                value={metadata?.cases[index].linkedCases[ind]['caseNumber']}
-                                onChange={e => handleChangeLinCom(index, 'linkedCases', ind, 'caseNumber', e.target.value)}
-                            />
-                            <input
-                                className="upload-demo-input"
-                                placeholder="Subject"
-                                value={metadata?.cases[index].linkedCases[ind]['Subject']}
-                                onChange={e => handleChangeLinCom(index, 'linkedCases', ind, 'Subject', e.target.value)}
-                            />
-                            <button className="demo-btn remove-btn" onClick={e => handleRemoveLinkedCase(e, index, ind)}>Remove</button>
-                        </div>
-                    ))}
-                </div>
-                <div className="demo-section">
-                    <b className="demo-section-child">Comments</b>
-                    <button className="demo-section-child demo-btn" onClick={e => handleAddComment(e, index)}>Add Comment</button>
-                    {metadata?.cases[index]?.comments?.map((element, ind) => (
-                        <div>
-                            <label htmlFor={`comment-date-${ind}`}>Date</label>
-                            <input
-                                className="upload-demo-input"
-                                type='date'
-                                placeholder="Date"
-                                id={`comment-date-${ind}`}
-                                value={metadata?.cases[index].comments[ind]['date']}
-                                onChange={e => handleChangeLinCom(index, 'comments', ind, 'date', e.target.value)}
-                            />
-                            <input
-                                className="upload-demo-input"
-                                placeholder="Message"
-                                value={metadata?.cases[index].comments[ind]['message']}
-                                onChange={e => handleChangeLinCom(index, 'comments', ind, 'message', e.target.value)}
-                            />
-                            <button className="demo-btn remove-btn" onClick={e => handleRemoveComment(e, index, ind)}>Remove</button>
-                        </div>
-                    ))}
-                </div>
-            </div>
-            <div>
-                <input
-                    className="upload-demo-input"
-                    placeholder="Contact Name"
-                    value={metadata?.cases[index]?.contactName}
-                    onChange={(e) => handleChangeCase(index, 'contactName', e.target.value)}
-                />
-                <select
-                    className="upload-demo-input"
-                    value={metadata?.cases[index]?.status}
-                    onChange={(e) => handleChangeCase(index, 'status', e.target.value)}
-                >
-                    <option hidden>Select Priority</option>
-                    <option value='Open'>Open</option>
-                </select>
-            </div>
-            <button className="demo-btn remove-btn" onClick={e => handleRemoveCase(e, index)}>Remove Case</button>
+  const renderCaseDetails = (index) => (
+    <div className="case-details">
+      <div>
+        <input
+          className="upload-demo-input"
+          placeholder="Case Number"
+          value={cases[index]?.caseNumber}
+          onChange={(e) => handleCaseChange(index, e)}
+        />
+        <select
+          className="upload-demo-input"
+          value={cases[index]?.priority}
+          onChange={(e) => handleCaseChange(index, e)}
+        >
+          <option hidden>Select Priority</option>
+          <option value="Low">Low</option>
+          <option value="Medium">Medium</option>
+          <option value="High">High</option>
+        </select>
+        <label htmlFor={`creation-date-${index}`}>Creation Date</label>
+        <input
+          className="upload-demo-input"
+          type="date"
+          id={`creation-date-${index}`}
+          placeholder="Creation Date"
+          value={cases[index]?.creationDate}
+          onChange={(e) => handleCaseChange(index, e)}
+        />
+        <div>
+          <input
+            className="upload-demo-subject-description"
+            placeholder="Subject"
+            value={cases[index]?.subject}
+            onChange={(e) => handleCaseChange(index, e)}
+          />
         </div>
-    )
+        <div>
+          <textarea
+            className="upload-demo-subject-description"
+            placeholder="Description"
+            value={cases[index]?.description}
+            onChange={(e) => handleCaseChange(index, e)}
+          ></textarea>
+        </div>
+        <button className="demo-btn remove-btn" onClick={(e) => handleRemoveTab('case', index)}>
+          Remove Case
+        </button>
+      </div>
+    </div>
+  );
 
-    return (
-        <div className="demo-section-container">
-            <div className="demo-btn-container">
-                <button className="demo-btn" onClick={e => handleAddCase(e)}>Add New Case</button>
-                {metadata?.cases?.map((item, index) => (
-                    <div className="parent-case-header">
-                        <div className="case-header">
-                            <button className={`sub-btn ${tab === index ? 'active-sub-btn' : ''}`} onClick={() => handleCaseButtonClick(index)}> Case Details {index + 1} {tab === index ? <FaChevronDown /> : <FaChevronUp />} </button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-            <div className="case-details-container">
-                {metadata?.cases?.length > 0 && tab !== null && (
-                    <div className="case-container">
-                        {renderCaseDetails(tab)}
-                    </div>
-                )}
-            </div>
-        </div >
-    )
-}
+  const renderInteractionDetails = (index) => (
+    <div className="interaction-details">
+      <div>
+        <input
+          className="upload-demo-input"
+          placeholder="Title"
+          value={interactions[index]?.title}
+          onChange={(e) => handleInteractionChange(index, e)}
+        />
+        <input
+          className="upload-demo-input"
+          type="date"
+          placeholder="Date"
+          value={interactions[index]?.date}
+          onChange={(e) => handleInteractionChange(index, e)}
+        />
+        <input
+          className="upload-demo-input"
+          type="time"
+          placeholder="Time"
+          value={interactions[index]?.time}
+          onChange={(e) => handleInteractionChange(index, e)}
+        />
+        <textarea
+          className="upload-demo-subject-description"
+          placeholder="Description"
+          value={interactions[index]?.description}
+          onChange={(e) => handleInteractionChange(index, e)}
+        />
+      </div>
+      <button className="demo-btn remove-btn" onClick={(e) => handleRemoveTab('interaction', index)}>
+        Remove Interaction
+      </button>
+    </div>
+  );
+
+  return (
+    <div>
+      <div className="tabs">
+        <button className="tab-button" onClick={() => setSelectedTab('Contact Card')}>Contact Card</button>
+
+        {caseTabs.map((tabName, index) => (
+          <div className="tab-item" key={index}>
+            <button className={`tab-button ${selectedTab === tabName ? 'active' : ''}`} onClick={() => setSelectedTab(tabName)}>
+              {tabName}
+              <IoCloseSharp
+                className="close-tab-icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveTab('case', index);
+                }}
+              />
+            </button>
+          </div>
+        ))}
+        {interactionTabs.map((tabName, index) => (
+          <div className="tab-item" key={index}>
+            <button className={`tab-button ${selectedTab === tabName ? 'active' : ''}`} onClick={() => setSelectedTab(tabName)}>
+              {tabName}
+              <IoCloseSharp
+                className="close-tab-icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveTab('interaction', index);
+                }}
+              />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      <div className="content">
+        {selectedTab === 'Contact Card' && <Customer360 metadata={metadata} handleInput={handleInput} />}
+        {caseTabs.includes(selectedTab) && renderCaseDetails(caseTabs.indexOf(selectedTab))}
+        {interactionTabs.includes(selectedTab) && renderInteractionDetails(interactionTabs.indexOf(selectedTab))}
+      </div>
+    </div>
+  );
+};
+
+export default CallSummaryDetailsForm;
