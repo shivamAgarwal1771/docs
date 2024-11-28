@@ -14,16 +14,16 @@ export default function AgentDetails({ metadata, handleInput }) {
     setLocalMetadata(prevState => {
       const updatedMetadata = { ...prevState, [field]: value };
 
-      // Update the code field with a random 5-digit code
+      // Always update the 'code' field with a random 5-digit code if it's not already set
       if (field !== "code") {
         updatedMetadata.code = generateRandomCode();
       }
 
-      // Update the channel field to "Voice"
+      // Update the 'channel' field to "Voice"
       updatedMetadata.channel = "Voice";
 
-      // Call the parent handler
-      handleInput(field, value);
+      // Call the parent handler to update metadata
+      handleInput(updatedMetadata); // Send the whole metadata object including the code
 
       return updatedMetadata;
     });
