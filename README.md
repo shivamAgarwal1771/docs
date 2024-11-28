@@ -1,104 +1,119 @@
-import { BsEmojiSmileFill, BsEmojiFrownFill, BsEmojiNeutralFill } from "react-icons/bs";
+import { useEffect, useState } from "react";
 
-export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, handleAdjustSentiment }) {
-
-  // Function to handle sentiment score updates based on selected radio button
-  const handleSentimentEdit = (field, newValue) => {
-    const newSentimentScore = { ...sentimentScore };
-    newSentimentScore[field] = newValue;
-    handleEdit(objIndex, 'SentimentScore', newSentimentScore);
-    handleAdjustSentiment(objIndex);
-  };
-
-  // Handle the radio button change to set values correctly
-  const handleRadioChange = (selectedSentiment) => {
-    // Initialize all to 0.1
-    const newSentimentScore = {
-      Positive: 0.1,
-      Neutral: 0.1,
-      Negative: 0.1
-    };
-
-    // Set the selected sentiment to 0.8
-    newSentimentScore[selectedSentiment] = 0.8;
-
-    // Update the sentiment score based on the selected sentiment
-    handleEdit(objIndex, 'SentimentScore', newSentimentScore);
-    handleAdjustSentiment(objIndex);
-  };
-
-  return (
-    <>
-      {sentimentScore && !(nudge === "aiNudgeTab") ?
-        <div className='transcript-div-child-semtiment'>
-
-          <label className='transcript-div-label'>Sentiment:</label>
-
-          {/* Positive Sentiment */}
-          <div className='sentiment-input-wrapper positive-sentiment'>
-            <BsEmojiSmileFill className='sentiment-emoji positive-sentiment' />
-            <input
-              type="radio"
-              name="sentiment"
-              value="Positive"
-              checked={sentimentScore.Positive === 0.8}
-              onChange={() => handleRadioChange('Positive')}
-            />
-            <label>Positive</label>
-            <input
-              className='transcript-div-grandchild transcript-div-input-sentiment'
-              type="number"
-              step="0.01"
-              placeholder='Positive'
-              value={sentimentScore.Positive}
-              readOnly
-            />
-          </div>
-
-          {/* Negative Sentiment */}
-          <div className='sentiment-input-wrapper negative-sentiment'>
-            <BsEmojiFrownFill className='sentiment-emoji' />
-            <input
-              type="radio"
-              name="sentiment"
-              value="Negative"
-              checked={sentimentScore.Negative === 0.8}
-              onChange={() => handleRadioChange('Negative')}
-            />
-            <label>Negative</label>
-            <input
-              className='transcript-div-grandchild transcript-div-input-sentiment'
-              type="number"
-              step="0.01"
-              placeholder='Negative'
-              value={sentimentScore.Negative}
-              readOnly
-            />
-          </div>
-
-          {/* Neutral Sentiment */}
-          <div className='sentiment-input-wrapper neutral-sentiment'>
-            <BsEmojiNeutralFill className='sentiment-emoji' />
-            <input
-              type="radio"
-              name="sentiment"
-              value="Neutral"
-              checked={sentimentScore.Neutral === 0.8}
-              onChange={() => handleRadioChange('Neutral')}
-            />
-            <label>Neutral</label>
-            <input
-              className='transcript-div-grandchild transcript-div-input-sentiment'
-              type="number"
-              step="0.01"
-              placeholder='Neutral'
-              value={sentimentScore.Neutral}
-              readOnly
-            />
-          </div>
-
+export default function AgentDetails({ metadata, handleInput }) {
+    return (
+        <div className="agent-details-container align-column">
+            <div className="align-row">
+                <div className="align-column">
+                    <div className="agent-details-field">
+                        <label className="agent-details-label">Agent Name</label>
+                        <input
+                            id="agent"
+                            className="agent-details-input"
+                            placeholder="Agent Name"
+                            value={metadata?.agent}
+                            onChange={e => handleInput('agent', e.target.value)}
+                        />
+                    </div>
+                    <div className="agent-details-field">
+                        <label className="agent-details-label">Use Case</label>
+                        <input
+                            id="useCase"
+                            className="agent-details-input"
+                            placeholder="Use Case"
+                            value={metadata?.useCase}
+                            onChange={e => handleInput('useCase', e.target.value)}
+                        />
+                    </div>
+                    <div className="agent-details-field">
+                        <label className="agent-details-label">AHT</label>
+                        <input
+                            id="aht"
+                            className="agent-details-input"
+                            placeholder="AHT"
+                            value={metadata?.aht}
+                            onChange={e => handleInput('aht', e.target.value)}
+                        />
+                    </div>
+                    <div className="agent-details-field">
+                        <label className="agent-details-label">Industry</label>
+                        <select
+                            id="industry"
+                            className="agent-details-input"
+                            value={metadata?.industry}
+                            onChange={e => handleInput('industry', e.target.value)}
+                        >
+                            <option value="Insurance">Insurance</option>
+                            <option value="Healthcare">Healthcare</option>
+                            <option value="Finance">Finance</option>
+                            <option value="E-commerce">E-commerce</option>
+                            <option value="Utilities">Utilities</option>
+                        </select>
+                    </div>
+                </div>
+                <div className="align-column">
+                    <div className="agent-details-field">
+                        <label className="agent-details-label">Heading</label>
+                        <select
+                            id="header"
+                            className="agent-details-input"
+                            value={metadata?.header}
+                            onChange={e => handleInput('header', e.target.value)}
+                        >
+                            <option value="Agent Assist">Agent Assist</option>
+                            <option value="Dynamic 365">Dynamic 365</option>
+                        </select>
+                    </div>
+                    <div className="agent-details-field">
+                        <label className="agent-details-label">Interaction Date</label>
+                        <input
+                            id="interaction-date"
+                            className="agent-details-input"
+                            type="date"
+                            value={metadata?.interactionDate}
+                            onChange={e => handleInput('interactionDate', e.target.value)}
+                        />
+                    </div>
+                    <div className="agent-details-field">
+                        <label className="agent-details-label">code</label>
+                        <input
+                            id="code"
+                            className="agent-details-input"
+                            type="text"
+                            value={metadata?.code}
+                            onChange={e => handleInput('code', e.target.value)}
+                        />
+                    </div>
+                    <div className="agent-details-field">
+                        <label className="agent-details-label">Language</label>
+                        <select
+                            id="selectedLanguage"
+                            className="agent-details-input"
+                            value={metadata?.selectedLanguage}
+                            onChange={e => handleInput('selectedLanguage', e.target.value)}
+                        >
+                            <option value="Hindi">Hindi</option>
+                            <option value="English">English</option>
+                            <option value="Mandarin">Mandarin</option>
+                            <option value="Spanish">Spanish</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div className="agent-details-field">
+                <label className="agent-details-label">Channel</label>
+                <select
+                    id="channel"
+                    className="agent-details-input"
+                    value={metadata?.channel}
+                    onChange={e => handleInput('channel', e.target.value)}
+                >
+                    <option value="Voice">Voice</option>
+                    <option value="Mail">Mail</option>
+                </select>
+            </div>
         </div>
-        : null}
-    </>
-  );
+
+    );
 }
+
