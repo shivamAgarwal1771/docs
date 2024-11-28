@@ -1,50 +1,41 @@
 import { useState, useEffect } from "react";
 
+// Function to generate random 5-digit code
+const generateRandomCode = () => Math.floor(10000 + Math.random() * 90000);
+
 export default function AgentDetails({ metadata, handleInput }) {
   const [localMetadata, setLocalMetadata] = useState(metadata);
 
-  // Function to generate a random 5-digit code
-  const generateRandomCode = () => {
-    return Math.floor(10000 + Math.random() * 90000); // Random 5-digit number
-  };
+  // Effect to ensure code and channel are initialized when the component loads
+  useEffect(() => {
+    if (!localMetadata.code) {
+      setLocalMetadata((prev) => ({ ...prev, code: generateRandomCode() }));
+    }
 
-  // Function to handle the change of any input field
+    if (!localMetadata.channel) {
+      setLocalMetadata((prev) => ({ ...prev, channel: "Voice" }));
+    }
+  }, [metadata]); // This only runs on the initial render or when 'metadata' changes
+
+  // Handle input change for any field except 'code' and 'channel'
   const handleFieldChange = (field, value) => {
     setLocalMetadata((prevState) => {
       const updatedMetadata = { ...prevState, [field]: value };
 
-      // Only update 'code' if it's not set and 'channel' if it's not already "Voice"
+      // If the code is not already set, generate a random code
       if (!updatedMetadata.code) {
-        updatedMetadata.code = generateRandomCode(); // Assign random code if not already present
+        updatedMetadata.code = generateRandomCode();
       }
 
-      if (updatedMetadata.channel !== "Voice") {
-        updatedMetadata.channel = "Voice"; // Set 'channel' to "Voice"
-      }
+      // Ensure 'channel' is always set to 'Voice'
+      updatedMetadata.channel = "Voice";
 
-      // Call the parent handler to update metadata
+      // Call handleInput function to pass the updated data to the parent component
       handleInput(updatedMetadata);
 
       return updatedMetadata;
     });
   };
-
-  // On initial render, make sure 'code' and 'channel' are set if not in the metadata
-  useEffect(() => {
-    setLocalMetadata((prevState) => {
-      const updatedMetadata = { ...prevState };
-
-      if (!updatedMetadata.code) {
-        updatedMetadata.code = generateRandomCode();
-      }
-
-      if (updatedMetadata.channel !== "Voice") {
-        updatedMetadata.channel = "Voice";
-      }
-
-      return updatedMetadata;
-    });
-  }, [metadata]); // Only run when metadata changes (initial render)
 
   return (
     <div className="agent-details-container align-column">
@@ -56,7 +47,7 @@ export default function AgentDetails({ metadata, handleInput }) {
               id="agent"
               className="agent-details-input"
               placeholder="Agent Name"
-              value={localMetadata?.agent || ''}
+              value={localMetadata?.agent || ""}
               onChange={(e) => handleFieldChange("agent", e.target.value)}
             />
           </div>
@@ -66,7 +57,7 @@ export default function AgentDetails({ metadata, handleInput }) {
               id="useCase"
               className="agent-details-input"
               placeholder="Use Case"
-              value={localMetadata?.useCase || ''}
+              value={localMetadata?.useCase || ""}
               onChange={(e) => handleFieldChange("useCase", e.target.value)}
             />
           </div>
@@ -76,7 +67,7 @@ export default function AgentDetails({ metadata, handleInput }) {
               id="aht"
               className="agent-details-input"
               placeholder="AHT"
-              value={localMetadata?.aht || ''}
+              value={localMetadata?.aht || ""}
               onChange={(e) => handleFieldChange("aht", e.target.value)}
             />
           </div>
@@ -85,7 +76,7 @@ export default function AgentDetails({ metadata, handleInput }) {
             <select
               id="industry"
               className="agent-details-input"
-              value={localMetadata?.industry || ''}
+              value={localMetadata?.industry || ""}
               onChange={(e) => handleFieldChange("industry", e.target.value)}
             >
               <option value="Insurance">Insurance</option>
@@ -102,7 +93,7 @@ export default function AgentDetails({ metadata, handleInput }) {
             <select
               id="header"
               className="agent-details-input"
-              value={localMetadata?.header || ''}
+              value={localMetadata?.header || ""}
               onChange={(e) => handleFieldChange("header", e.target.value)}
             >
               <option value="Agent Assist">Agent Assist</option>
@@ -115,19 +106,8 @@ export default function AgentDetails({ metadata, handleInput }) {
               id="interaction-date"
               className="agent-details-input"
               type="date"
-              value={localMetadata?.interactionDate || ''}
+              value={localMetadata?.interactionDate || ""}
               onChange={(e) => handleFieldChange("interactionDate", e.target.value)}
-            />
-          </div>
-          {/* Hidden Code Field */}
-          <div className="agent-details-field" style={{ display: "none" }}>
-            <label className="agent-details-label">Code</label>
-            <input
-              id="code"
-              className="agent-details-input"
-              type="text"
-              value={localMetadata?.code || ''}
-              readOnly
             />
           </div>
           <div className="agent-details-field">
@@ -135,7 +115,7 @@ export default function AgentDetails({ metadata, handleInput }) {
             <select
               id="selectedLanguage"
               className="agent-details-input"
-              value={localMetadata?.selectedLanguage || ''}
+              value={localMetadata?.selectedLanguage || ""}
               onChange={(e) => handleFieldChange("selectedLanguage", e.target.value)}
             >
               <option value="Hindi">Hindi</option>
@@ -147,19 +127,21 @@ export default function AgentDetails({ metadata, handleInput }) {
         </div>
       </div>
 
-      {/* Hidden Channel Field */}
-      <div className="agent-details-field" style={{ display: "none" }}>
-        <label className="agent-details-label">Channel</label>
-        <select
-          id="channel"
-          className="agent-details-input"
-          value={localMetadata?.channel || ''}
-          onChange={(e) => handleFieldChange("channel", e.target.value)}
-        >
-          <option value="Voice">Voice</option>
-          <option value="Mail">Mail</option>
-        </select>
-      </div>
+      {/* Hidden field for channel, always set to 'Voice' */}
+      <input
+        type="hidden"
+        id="channel"
+        value={localMetadata?.channel || "Voice"}
+        onChange={() => {}}
+      />
+
+      {/* Hidden field for the randomly generated code */}
+      <input
+        type="hidden"
+        id="code"
+        value={localMetadata?.code || generateRandomCode()}
+        onChange={() => {}}
+      />
     </div>
   );
 }
