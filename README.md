@@ -10,7 +10,7 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
     handleAdjustSentiment(objIndex);
   };
 
-  // Handle the radio button change
+  // Handle the radio button change to set values correctly
   const handleRadioChange = (selectedSentiment) => {
     // Initialize all to 0.1
     const newSentimentScore = {
@@ -22,6 +22,7 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
     // Set the selected sentiment to 0.8
     newSentimentScore[selectedSentiment] = 0.8;
 
+    // Update the sentiment score based on the selected sentiment
     handleEdit(objIndex, 'SentimentScore', newSentimentScore);
     handleAdjustSentiment(objIndex);
   };
@@ -38,7 +39,7 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
             <BsEmojiSmileFill className='sentiment-emoji positive-sentiment' />
             <input
               type="radio"
-              name="sentimentPositive"
+              name="sentiment"
               value="Positive"
               checked={sentimentScore.Positive === 0.8}
               onChange={() => handleRadioChange('Positive')}
@@ -59,7 +60,7 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
             <BsEmojiFrownFill className='sentiment-emoji' />
             <input
               type="radio"
-              name="sentimentNegative"
+              name="sentiment"
               value="Negative"
               checked={sentimentScore.Negative === 0.8}
               onChange={() => handleRadioChange('Negative')}
@@ -80,7 +81,7 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
             <BsEmojiNeutralFill className='sentiment-emoji' />
             <input
               type="radio"
-              name="sentimentNeutral"
+              name="sentiment"
               value="Neutral"
               checked={sentimentScore.Neutral === 0.8}
               onChange={() => handleRadioChange('Neutral')}
