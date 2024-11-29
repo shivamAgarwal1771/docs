@@ -9,16 +9,17 @@ export default function AgentDetails({ metadata, handleInput }) {
 
     // Effect to set initial values when the component mounts
     useEffect(() => {
-        // Set the 'code' field to a random 5-digit code if not already set
+        // Check if 'code' is not set yet and assign a random 5-digit code
         if (!metadata?.code) {
-            handleInput('code', generateRandomCode().toString());
+            const randomCode = generateRandomCode().toString();
+            handleInput('code', randomCode); // Update the 'code' field
         }
-        
-        // Set the 'channel' to 'Voice' if not already set
+
+        // Check if 'channel' is not set yet and assign 'Voice'
         if (!metadata?.channel) {
-            handleInput('channel', 'Voice');
+            handleInput('channel', 'Voice'); // Set default channel to 'Voice'
         }
-    }, [metadata, handleInput]); // Only run on mount or if metadata/handleInput changes
+    }, [metadata, handleInput]); // Only run when metadata or handleInput changes
 
     return (
         <div className="agent-details-container align-column">
@@ -30,7 +31,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                             id="agent"
                             className="agent-details-input"
                             placeholder="Agent Name"
-                            value={metadata?.agent}
+                            value={metadata?.agent || ''}
                             onChange={e => handleInput('agent', e.target.value)}
                         />
                     </div>
@@ -40,7 +41,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                             id="useCase"
                             className="agent-details-input"
                             placeholder="Use Case"
-                            value={metadata?.useCase}
+                            value={metadata?.useCase || ''}
                             onChange={e => handleInput('useCase', e.target.value)}
                         />
                     </div>
@@ -50,7 +51,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                             id="aht"
                             className="agent-details-input"
                             placeholder="AHT"
-                            value={metadata?.aht}
+                            value={metadata?.aht || ''}
                             onChange={e => handleInput('aht', e.target.value)}
                         />
                     </div>
@@ -59,7 +60,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                         <select
                             id="industry"
                             className="agent-details-input"
-                            value={metadata?.industry}
+                            value={metadata?.industry || ''}
                             onChange={e => handleInput('industry', e.target.value)}
                         >
                             <option value="Insurance">{INDUSTRY_DETAILS.INSURANCE}</option>
@@ -76,7 +77,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                         <select
                             id="header"
                             className="agent-details-input"
-                            value={metadata?.header}
+                            value={metadata?.header || ''}
                             onChange={e => handleInput('header', e.target.value)}
                         >
                             <option value="Agent Assist">{SIMULATION_HEADER.AGENT_ASSIST}</option>
@@ -89,17 +90,17 @@ export default function AgentDetails({ metadata, handleInput }) {
                             id="interaction-date"
                             className="agent-details-input"
                             type="date"
-                            value={metadata?.interactionDate}
+                            value={metadata?.interactionDate || ''}
                             onChange={e => handleInput('interactionDate', e.target.value)}
                         />
                     </div>
                     <div className="agent-details-field">
-                        <label className="agent-details-label">code</label>
+                        <label className="agent-details-label">Code</label>
                         <input
                             id="code"
                             className="agent-details-input"
                             type="text"
-                            value={metadata?.code}
+                            value={metadata?.code || ''}
                             onChange={e => handleInput('code', e.target.value)}
                         />
                     </div>
@@ -108,7 +109,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                         <select
                             id="selectedLanguage"
                             className="agent-details-input"
-                            value={metadata?.selectedLanguage}
+                            value={metadata?.selectedLanguage || ''}
                             onChange={e => handleInput('selectedLanguage', e.target.value)}
                         >
                             <option value="Hindi">{LANGUAGES.HINDI.name}</option>
@@ -124,7 +125,7 @@ export default function AgentDetails({ metadata, handleInput }) {
                 <select
                     id="channel"
                     className="agent-details-input"
-                    value={metadata?.channel}
+                    value={metadata?.channel || ''}
                     onChange={e => handleInput('channel', e.target.value)}
                 >
                     <option value="Voice">Voice</option>
