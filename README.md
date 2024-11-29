@@ -1,7 +1,25 @@
-import { useEffect, useState } from "react";
-import {AGENTDEATAILS , SIMULATION_HEADER, LANGUAGES, INDUSTRY_DETAILS} from "../../../utility/constants"
+import { useEffect } from "react";
+import { AGENTDEATAILS, SIMULATION_HEADER, LANGUAGES, INDUSTRY_DETAILS } from "../../../utility/constants";
 
 export default function AgentDetails({ metadata, handleInput }) {
+    // Function to generate a random 5-digit code
+    const generateRandomCode = () => {
+        return Math.floor(10000 + Math.random() * 90000); // Generates a 5-digit number
+    };
+
+    // Effect to set initial values when the component mounts
+    useEffect(() => {
+        // Set the 'code' field to a random 5-digit code if not already set
+        if (!metadata?.code) {
+            handleInput('code', generateRandomCode().toString());
+        }
+        
+        // Set the 'channel' to 'Voice' if not already set
+        if (!metadata?.channel) {
+            handleInput('channel', 'Voice');
+        }
+    }, [metadata, handleInput]); // Only run on mount or if metadata/handleInput changes
+
     return (
         <div className="agent-details-container align-column">
             <div className="align-row">
@@ -114,7 +132,5 @@ export default function AgentDetails({ metadata, handleInput }) {
                 </select>
             </div>
         </div>
-
     );
 }
-
