@@ -1,3 +1,5 @@
+import { BsEmojiSmileFill, BsEmojiFrownFill, BsEmojiNeutralFill } from 'react-icons/bs';
+
 export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, handleAdjustSentiment }) {
 
   // Function to handle sentiment score updates based on selected radio button
