@@ -2,14 +2,6 @@ import { BsEmojiSmileFill, BsEmojiFrownFill, BsEmojiNeutralFill } from 'react-ic
 
 export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, handleAdjustSentiment }) {
 
-  // Function to handle sentiment score updates based on selected radio button
-  const handleSentimentEdit = (field, newValue) => {
-    const newSentimentScore = { ...sentimentScore };
-    newSentimentScore[field] = newValue;
-    handleEdit(objIndex, 'SentimentScore', newSentimentScore);
-    handleAdjustSentiment(objIndex);
-  };
-
   // Handle the radio button change to set values correctly
   const handleRadioChange = (selectedSentiment) => {
     // Initialize all to 0.1
