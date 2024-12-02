@@ -1,3 +1,5 @@
+import { BsEmojiSmileFill, BsEmojiFrownFill, BsEmojiNeutralFill } from "react-icons/bs";
+
 export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, handleAdjustSentiment }) {
 
   const handleSentimentEdit = (field, newValue) => {
@@ -23,12 +25,19 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
     handleAdjustSentiment(objIndex);
   };
 
+  // Set the default value for Neutral if it's not yet set in sentimentScore
+  if (!sentimentScore) {
+    sentimentScore = { Positive: 0.1, Neutral: 0.8, Negative: 0.1 };
+  }
+
   return (
     <>
       {sentimentScore && !(nudge === "aiNudgeTab") ?
         <div className='transcript-div-child-semtiment'>
 
           <label className='transcript-div-label'>Sentiment:</label>
+
+          {/* Positive Sentiment */}
           <div className='sentiment-input-wrapper positive-sentiment'>
             <BsEmojiSmileFill className='sentiment-emoji positive-sentiment' />
             <span className='sentiment-type'><b>Positive</b></span>
@@ -49,6 +58,7 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
             />
           </div>
 
+          {/* Negative Sentiment */}
           <div className='sentiment-input-wrapper negative-sentiment'>
             <BsEmojiFrownFill className='sentiment-emoji' />
             <span className='sentiment-type'><b>Negative</b></span>
@@ -69,6 +79,7 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
             />
           </div>
 
+          {/* Neutral Sentiment (set to default) */}
           <div className='sentiment-input-wrapper neutral-sentiment'>
             <BsEmojiNeutralFill className='sentiment-emoji' />
             <span className='sentiment-type'><b>Neutral</b></span>
