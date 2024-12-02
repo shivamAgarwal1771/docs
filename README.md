@@ -27,7 +27,7 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
 
   // Set the default value for Neutral if it's not yet set in sentimentScore
   if (!sentimentScore) {
-    sentimentScore = { Positive: 0.1, Neutral: 0.8, Negative: 0.1 };
+    sentimentScore = { Positive: 0.1, Neutral: 0.8, Negative: 0.1 }; // Default Neutral to 0.8
   }
 
   return (
@@ -45,7 +45,7 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
               type="radio"
               name="sentiment"
               value="Positive"
-              checked={sentimentScore.Positive === 0.8}
+              checked={sentimentScore.Positive === 0.8} // Check if Positive sentiment is selected
               onChange={() => handleRadioChange('Positive')}
             />
             <input
@@ -66,7 +66,7 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
               type="radio"
               name="sentiment"
               value="Negative"
-              checked={sentimentScore.Negative === 0.8}
+              checked={sentimentScore.Negative === 0.8} // Check if Negative sentiment is selected
               onChange={() => handleRadioChange('Negative')}
             />
             <input
@@ -87,7 +87,7 @@ export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, 
               type="radio"
               name="sentiment"
               value="Neutral"
-              checked={sentimentScore.Neutral === 0.8}
+              checked={sentimentScore.Neutral === 0.8} // Neutral is selected by default (if score is 0.8)
               onChange={() => handleRadioChange('Neutral')}
             />
             <input
