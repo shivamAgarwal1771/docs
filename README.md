@@ -1,107 +1,202 @@
-import { BsEmojiSmileFill, BsEmojiFrownFill, BsEmojiNeutralFill } from "react-icons/bs";
+import React, { useEffect, useState } from 'react';
+import Body from './Body';
+import { useDispatch, useSelector } from 'react-redux';
+// import json from "../../../assets/resource/andydemo.json"
+import { MdDownload } from "react-icons/md";
+import TranscriptPreview from './Preview';
+import { FaPlus, FaMinus } from "react-icons/fa6";
+import { checkJson } from '../../../utility/customise/checkJson';
+import AgentWikiBody from "./agentWikiBody"
+import AutoAuditBody from "./AutoAuditBody"
+import ActionWorkflow from "./actionWorkflow"
+import {NUDGES_UTTERANCES , NUDGE_TAB} from "../../../utility/constants"
+import { setTabsTrnacript } from "../../../store/callSlice"
+import { setDemoTranscriptSubmitted, setEditDemoTranscript, updateDemoData } from '../../../store/demo-slice';
 
-export function DisplaySentiment({ nudge, objIndex, sentimentScore, handleEdit, handleAdjustSentiment }) {
 
-  const handleSentimentEdit = (field, newValue) => {
-    const newSentimentScore = { ...sentimentScore };
-    newSentimentScore[field] = newValue;
-    handleEdit(objIndex, 'SentimentScore', newSentimentScore);
-    handleAdjustSentiment(objIndex);
-  };
+function FileUpload({ setTranscript, message, setMessage }) {
+  const onUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const handleRadioChange = (selectedSentiment) => {
-    // Initialize all to 0.1
-    const newSentimentScore = {
-      Positive: 0.1,
-      Neutral: 0.1,
-      Negative: 0.1
+    const filereader = new FileReader();
+    filereader.readAsText(file, 'UTF-8');
+
+    filereader.onload = (e) => {
+      let content = e.target.result;
+
+      try {
+        let jsonData = JSON.parse(content);
+        let reviewJson = checkJson(jsonData);
+        if (!reviewJson.value) {
+          setMessage(reviewJson.msg);
+          setTimeout(() => {
+            setMessage('');
+          }, 8000);
+        } else {
+          jsonData?.forEach((obj) => {
+            if (obj?.eventData?.Context && !Array.isArray(obj?.eventData?.Context)) {
+              obj.eventData.Context = Array(obj?.eventData?.Context);
+            }
+          });
+          setTranscript(jsonData);
+        }
+      } catch (err) {
+        setMessage('Not a valid JSON or format');
+        setTimeout(() => {
+          setMessage('');
+        }, 8000);
+        console.error(err);
+      }
     };
-
-    // Set the selected sentiment to 0.8
-    newSentimentScore[selectedSentiment] = 0.8;
-
-    // Update the sentiment score based on the selected sentiment
-    handleEdit(objIndex, 'SentimentScore', newSentimentScore);
-    handleAdjustSentiment(objIndex);
   };
-
-  // Set the default value for Neutral if it's not yet set in sentimentScore
-  if (!sentimentScore) {
-    sentimentScore = { Positive: 0.1, Neutral: 0.8, Negative: 0.1 }; // Default Neutral to 0.8
-  }
 
   return (
-    <>
-      {sentimentScore && !(nudge === "aiNudgeTab") ?
-        <div className='transcript-div-child-semtiment'>
+    <form className='body-container'>
+      <label htmlFor='json-file' className='upload-btn tab btn-active'>+ Upload</label>
+      <input style={{ visibility: 'hidden' }} id='json-file' type='file' accept='application/JSON' onChange={onUpload} />
+      {message && <p style={{ color: 'red' }}>{message}</p>}
+    </form>
+  );
+}
 
-          <label className='transcript-div-label'>Sentiment:</label>
+export default function Customize({ finalTranscript, setFinalTranscript, transcripts, setTranscripts, handleInput, audio, setAudio, tab }) {
+  const demoState = useSelector((state) => state?.demostate);
+  const appCallData = useSelector((state) => state?.call);
+  const speechCallData = useSelector((state) => state?.speechstate);
+  const isEditDemo = demoState?.editDemo;
+  const [transcript, setTranscript] = useState(demoState?.getDemoData?.transcript || []);
+  const [message, setMessage] = useState(undefined);
+  const [selectedNudge, setSelectedNudge] = useState('contextNudgeTab'); // Default to Call Context
+  const [index, setIndex] = useState(0);
+  const [progessScript, setProgessScript] = useState(true);
+  const [fields, setFields] = useState({
+    contextNudgeTab: [],
+    aiNudgeTab: [],
+    speechSuggestionNudge: [],
+    knowledgeTab: [],
+    utterance: [],
+  });
+  const dispatch = useDispatch();
 
-          {/* Positive Sentiment */}
-          <div className='sentiment-input-wrapper positive-sentiment'>
-            <BsEmojiSmileFill className='sentiment-emoji positive-sentiment' />
-            <span className='sentiment-type'><b>Positive</b></span>
-            <input
-              type="radio"
-              name="sentiment"
-              value="Positive"
-              checked={sentimentScore.Positive === 0.8} // Check if Positive sentiment is selected
-              onChange={() => handleRadioChange('Positive')}
-            />
-            <input
-              className='transcript-div-grandchild transcript-div-input-sentiment'
-              type="number"
-              step="0.01"
-              placeholder='Positive'
-              value={sentimentScore.Positive}
-              readOnly
-            />
+  audio && setAudio(audio);
+
+  const sendTranscriptData = () => {
+    if (isEditDemo && transcript?.length) {
+      // dispatch(updateDemoData({ type: "transcript", data: transcript }));
+    }
+    dispatch(setEditDemoTranscript(false));
+    dispatch(setDemoTranscriptSubmitted(true));
+  };
+
+  const downloadTranscript = () => {
+    if (transcript) {
+      const transcriptURL = URL.createObjectURL(new Blob([JSON.stringify(transcript)], { type: 'application/json' }));
+
+      const a = document.createElement('a');
+      a.href = transcriptURL;
+      a.download = "transcription.json";
+      a.style.display = "none";
+      document.body.appendChild(a);
+
+      a.click();
+
+      document.body.removeChild(a);
+      URL.revokeObjectURL(transcriptURL);
+    }
+  };
+
+  const handleNudgeType = (type) => {
+    setSelectedNudge(type);
+  };
+
+  const addField = (type) => {
+    setFields((prev) => ({
+      ...prev,
+      [type]: [...prev[type], prev[type].length + 1],
+    }));
+  };
+
+  const removeField = (type, index) => {
+    setFields((prev) => ({
+      ...prev,
+      [type]: prev[type].filter((_, i) => i !== index),
+    }));
+  };
+
+  useEffect(() => {
+    transcript?.length && setFinalTranscript(transcript);
+    progessScript && speechCallData?.conversation && setFinalTranscript(speechCallData?.conversation);
+    progessScript && speechCallData?.conversation && setTranscript(speechCallData?.conversation);
+    setProgessScript(false);
+    dispatch(setTabsTrnacript(transcript))
+  }, [transcript, speechCallData?.conversation]);
+
+  useEffect(()=>{
+    if(appCallData.tabsTrnacript && appCallData.progressBarResponse)
+    {
+      setFinalTranscript(appCallData.tabsTrnacript);
+      setTranscript(appCallData.tabsTrnacript);
+    }
+  },[])
+
+  return (
+    <div className='transcript-container'>
+      {tab === 1 && (
+        <div className="nudge-types">
+          <div className="options-types">NUDGE TYPE AND UTTERANCES</div>
+          <div className="nudge-options">
+            {[NUDGES_UTTERANCES.CONTEXT_TAB, NUDGES_UTTERANCES.AI_TAB, NUDGES_UTTERANCES.SS_TAB, NUDGES_UTTERANCES.KNOWLEDGE_ARTICLE_TAB, NUDGES_UTTERANCES.UTTERANCE].map((type) => (
+              <div
+                key={type}
+                className={`nudge-option ${type === NUDGES_UTTERANCES.CONTEXT_TAB ? "first-nudge" : (type === 'utterance' ? "last-nudge" : "mid-nudge")}`}
+                onClick={() => handleNudgeType(type)}
+              >
+                <span>
+                  {type === NUDGES_UTTERANCES.CONTEXT_TAB
+                    ? NUDGE_TAB.ADD_CONTEXT
+                    : type === NUDGES_UTTERANCES.AI_TAB
+                    ? NUDGE_TAB.ADD_GUIDANCE
+                    : type === NUDGES_UTTERANCES.SS_TAB
+                    ? NUDGE_TAB.ADD_SS
+                    : type === NUDGES_UTTERANCES.KNOWLEDGE_ARTICLE_TAB
+                    ? NUDGE_TAB.ADD_KNOWLEDGE
+                    : NUDGE_TAB.ADD_UTTERANCE}
+                </span>
+              </div>
+            ))}
           </div>
-
-          {/* Negative Sentiment */}
-          <div className='sentiment-input-wrapper negative-sentiment'>
-            <BsEmojiFrownFill className='sentiment-emoji' />
-            <span className='sentiment-type'><b>Negative</b></span>
-            <input
-              type="radio"
-              name="sentiment"
-              value="Negative"
-              checked={sentimentScore.Negative === 0.8} // Check if Negative sentiment is selected
-              onChange={() => handleRadioChange('Negative')}
-            />
-            <input
-              className='transcript-div-grandchild transcript-div-input-sentiment'
-              type="number"
-              step="0.01"
-              placeholder='Negative'
-              value={sentimentScore.Negative}
-              readOnly
-            />
-          </div>
-
-          {/* Neutral Sentiment (set to default) */}
-          <div className='sentiment-input-wrapper neutral-sentiment'>
-            <BsEmojiNeutralFill className='sentiment-emoji' />
-            <span className='sentiment-type'><b>Neutral</b></span>
-            <input
-              type="radio"
-              name="sentiment"
-              value="Neutral"
-              checked={sentimentScore.Neutral === 0.8} // Neutral is selected by default (if score is 0.8)
-              onChange={() => handleRadioChange('Neutral')}
-            />
-            <input
-              className='transcript-div-grandchild transcript-div-input-sentiment'
-              type="number"
-              step="0.01"
-              placeholder='Neutral'
-              value={sentimentScore.Neutral}
-              readOnly
-            />
-          </div>
-
         </div>
-        : null}
-    </>
+      )}
+
+      {!transcript?.length && <FileUpload setTranscript={setTranscript} message={message} setMessage={setMessage} />}
+      {transcript?.length && (
+        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+          <div className='transcript-body'>
+            {tab === 1 && <Body tabs={1} transcript={JSON.parse(JSON.stringify(transcript))} setTranscript={setTranscript} selectNudge={selectedNudge} setIndex={setIndex} index={index} />}
+            {tab === 2 && <AgentWikiBody tabs={2} transcript={JSON.parse(JSON.stringify(transcript))} setTranscript={setTranscript} selectNudge={selectedNudge} setIndex={setIndex} index={index} />}
+            {tab === 3 && <AutoAuditBody tabs={3} transcript={JSON.parse(JSON.stringify(transcript))} setTranscript={setTranscript} selectNudge={selectedNudge} setIndex={setIndex} index={index} />}
+            {tab === 4 && <ActionWorkflow tabs={4} transcript={JSON.parse(JSON.stringify(transcript))} setTranscript={setTranscript} selectNudge={selectedNudge} setIndex={setIndex} index={index} />}
+          </div>
+          <div className={`transcript-preview ${tab === 1 ? "transcript-preview" : "transcript-preview-enlarged"}`}>
+            <TranscriptPreview
+              transcript={transcript}
+              setTranscript={setTranscript}
+              setIndex={setIndex}
+              index={index}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Download Button */}
+      {transcript?.length > 0 && (
+        <div className="download-btn-container">
+          <button className="download-btn" onClick={downloadTranscript}>
+            <MdDownload style={{ marginRight: '8px' }} /> Download Transcript
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
