@@ -1,26 +1,50 @@
-<div className="CallSummary-tabs">
-  <button
-    className={`CallSummary-tab-button ${selectedTab === CUSTOMERDETAILS.CONTACT ? 'active-tab' : ''}`}
-    onClick={() => setSelectedTab(CUSTOMERDETAILS.CONTACT)}
-  >
-    {CUSTOMERDETAILS.CONTACT}
-  </button>
-  <button
-    className={`CallSummary-tab-button ${selectedTab === CUSTOMERDETAILS.CASES ? 'active-tab' : ''}`}
-    onClick={() => setSelectedTab(CUSTOMERDETAILS.CASES)}
-  >
-    {CUSTOMERDETAILS.CASES}
-  </button>
-  <button
-    className={`CallSummary-tab-button ${selectedTab === CUSTOMERDETAILS.INTERACTION_HISTORY ? 'active-tab' : ''}`}
-    onClick={() => setSelectedTab(CUSTOMERDETAILS.INTERACTION_HISTORY)}
-  >
-    {CUSTOMERDETAILS.INTERACTION_HISTORY}
-  </button>
-  <button
-    className={`CallSummary-tab-button ${selectedTab === CUSTOMERDETAILS.CUSTOMER_360 ? 'active-tab' : ''}`}
-    onClick={() => setSelectedTab(CUSTOMERDETAILS.CUSTOMER_360)}
-  >
-    {CUSTOMERDETAILS.CUSTOMER_360}
-  </button>
-</div>
+export function DisplaySentiment({ objIndex, sentimentScore, handleEdit, handleAdjustSentiment }) {
+  const handleSentimentEdit = (field, newValue) => {
+    const newSentimentScore = { ...sentimentScore }
+    newSentimentScore[field] = newValue
+    handleEdit(objIndex, 'SentimentScore', newSentimentScore)
+    handleAdjustSentiment(objIndex)
+  }
+
+  return (
+    <>
+      {sentimentScore ?
+        <div className='transcript-div-child'>
+
+          <label className='transcript-div-label'>Sentiment</label>
+
+          <input
+            className='transcript-div-grandchild transcript-div-input'
+            type="number"
+            step="0.01"
+            placeholder='Positive'
+            value={sentimentScore.Positive}
+            onChange={(e) => handleSentimentEdit('Positive', parseFloat(e.target.value))}
+            required
+          />
+
+          <input
+            className='transcript-div-grandchild transcript-div-input'
+            type="number"
+            step="0.01"
+            placeholder='Negative'
+            value={sentimentScore.Negative}
+            onChange={(e) => handleSentimentEdit('Negative', parseFloat(e.target.value))}
+            required
+          />
+
+          <input
+            className='transcript-div-grandchild transcript-div-input'
+            type="number"
+            step="0.01"
+            placeholder='Neutral'
+            value={sentimentScore.Neutral}
+            onChange={(e) => handleSentimentEdit('Neutral', parseFloat(e.target.value))}
+            required
+          />
+
+        </div>
+        : null}
+    </>
+  )
+}
