@@ -1,50 +1,61 @@
 export function DisplaySentiment({ objIndex, sentimentScore, handleEdit, handleAdjustSentiment }) {
   const handleSentimentEdit = (field, newValue) => {
-    const newSentimentScore = { ...sentimentScore }
-    newSentimentScore[field] = newValue
-    handleEdit(objIndex, 'SentimentScore', newSentimentScore)
-    handleAdjustSentiment(objIndex)
-  }
+    const newSentimentScore = { ...sentimentScore };
+    newSentimentScore[field] = newValue;
+    handleEdit(objIndex, 'SentimentScore', newSentimentScore);
+    handleAdjustSentiment(objIndex);
+  };
+
+  const handleRadioChange = (selectedField) => {
+    const newSentimentScore = {
+      Positive: 0.1,
+      Negative: 0.1,
+      Neutral: 0.1,
+      [selectedField]: 0.8, // Set the selected field to 0.8
+    };
+    handleEdit(objIndex, 'SentimentScore', newSentimentScore);
+    handleAdjustSentiment(objIndex);
+  };
 
   return (
     <>
-      {sentimentScore ?
+      {sentimentScore ? (
         <div className='transcript-div-child'>
-
           <label className='transcript-div-label'>Sentiment</label>
 
-          <input
-            className='transcript-div-grandchild transcript-div-input'
-            type="number"
-            step="0.01"
-            placeholder='Positive'
-            value={sentimentScore.Positive}
-            onChange={(e) => handleSentimentEdit('Positive', parseFloat(e.target.value))}
-            required
-          />
+          <div className="radio-group">
+            <label>
+              <input
+                type="radio"
+                name={`sentiment-${objIndex}`}
+                checked={sentimentScore.Positive === 0.8}
+                onChange={() => handleRadioChange('Positive')}
+              />
+              Positive
+            </label>
 
-          <input
-            className='transcript-div-grandchild transcript-div-input'
-            type="number"
-            step="0.01"
-            placeholder='Negative'
-            value={sentimentScore.Negative}
-            onChange={(e) => handleSentimentEdit('Negative', parseFloat(e.target.value))}
-            required
-          />
+            <label>
+              <input
+                type="radio"
+                name={`sentiment-${objIndex}`}
+                checked={sentimentScore.Negative === 0.8}
+                onChange={() => handleRadioChange('Negative')}
+              />
+              Negative
+            </label>
 
-          <input
-            className='transcript-div-grandchild transcript-div-input'
-            type="number"
-            step="0.01"
-            placeholder='Neutral'
-            value={sentimentScore.Neutral}
-            onChange={(e) => handleSentimentEdit('Neutral', parseFloat(e.target.value))}
-            required
-          />
-
+            <label>
+              <input
+                type="radio"
+                name={`sentiment-${objIndex}`}
+                checked={sentimentScore.Neutral === 0.8}
+                onChange={() => handleRadioChange('Neutral')}
+              />
+              Neutral
+            </label>
+          </div>
         </div>
-        : null}
+      ) : null}
     </>
-  )
+  );
 }
