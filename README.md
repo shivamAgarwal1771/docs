@@ -1,9 +1,11 @@
+gdhs
+
+
 x-superset-image: &superset-image apachesuperset.docker.scarf.sh/apache/superset:${TAG:-latest}
 x-superset-depends-on: &superset-depends-on
   - db
   - redis
-x-superset-volumes:
-  &superset-volumes # /app/pythonpath_docker will be appended to the PYTHONPATH in the final container
+x-superset-volumes: &superset-volumes
   - ./docker:/app/docker
   - superset_home:/app/superset_home
 
@@ -20,10 +22,8 @@ services:
 
   db:
     env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
+      - ./docker/.env
+      - ./docker/.env-local
     image: postgres:latest
     container_name: superset_db
     restart: unless-stopped
@@ -35,8 +35,7 @@ services:
 
   superset:
     env_file:
-      - path: docker/.env # default
-        required: true
+      - ./docker/.env
     image: apachesuperset.docker.scarf.sh/apache/superset
     container_name: superset_app
     command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
@@ -54,10 +53,8 @@ services:
     container_name: superset_init
     command: ["/app/docker/docker-init.sh"]
     env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
+      - ./docker/.env
+      - ./docker/.env-local
     depends_on: *superset-depends-on
     user: "root"
     volumes: *superset-volumes
@@ -71,10 +68,8 @@ services:
     container_name: superset_worker
     command: ["/app/docker/docker-bootstrap.sh", "worker"]
     env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
+      - ./docker/.env
+      - ./docker/.env-local
     restart: unless-stopped
     depends_on: *superset-depends-on
     user: "root"
@@ -93,10 +88,8 @@ services:
     container_name: superset_worker_beat
     command: ["/app/docker/docker-bootstrap.sh", "beat"]
     env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
+      - ./docker/.env
+      - ./docker/.env-local
     restart: unless-stopped
     networks:
       - superset
@@ -105,8 +98,8 @@ services:
     volumes: *superset-volumes
     healthcheck:
       disable: true
-      
-# Druid    
+
+  # Druid components
   postgres:
     container_name: postgres
     image: postgres:latest
@@ -120,9 +113,8 @@ services:
       - POSTGRES_USER=druid
       - POSTGRES_DB=druid
     networks:
-       - superset
+      - superset
 
-  # Need 3.5 or later for container nodes
   zookeeper:
     container_name: zookeeper
     image: zookeeper:3.5.10
@@ -135,10 +127,9 @@ services:
       - superset
 
   coordinator:
-          #image: apache/druid:29.0.1
     build:
-        context: ./druid
-        dockerfile: Dockerfile
+      context: ./druid
+      dockerfile: Dockerfile
     container_name: coordinator
     restart: always
     volumes:
@@ -152,15 +143,14 @@ services:
     command:
       - coordinator
     env_file:
-      - environment
+      - ./environment
     networks:
       - superset
 
   broker:
-          #image: apache/druid:29.0.1
     build:
-        context: ./druid
-        dockerfile: Dockerfile
+      context: ./druid
+      dockerfile: Dockerfile
     container_name: broker
     restart: always
     volumes:
@@ -174,15 +164,14 @@ services:
     command:
       - broker
     env_file:
-      - environment
+      - ./environment
     networks:
       - superset
 
   historical:
-          #image: apache/druid:29.0.1
     build:
-        context: ./druid
-        dockerfile: Dockerfile
+      context: ./druid
+      dockerfile: Dockerfile
     container_name: historical
     restart: always
     volumes:
@@ -197,15 +186,14 @@ services:
     command:
       - historical
     env_file:
-      - environment
+      - ./environment
     networks:
       - superset
 
   middlemanager:
-          #image: apache/druid:29.0.1
     build:
-       context: ./druid
-       dockerfile: Dockerfile
+      context: ./druid
+      dockerfile: Dockerfile
     user: root
     restart: always
     container_name: middlemanager
@@ -223,21 +211,19 @@ services:
     command:
       - middleManager
     env_file:
-      - environment
+      - ./environment
     networks:
       - superset
 
   router:
-          #image: apache/druid:29.0.1
     build:
-        context: ./druid
-        dockerfile: Dockerfile
+      context: ./druid
+      dockerfile: Dockerfile
     container_name: router
     user: druid
     restart: always
     volumes:
       - router_var:/opt/druid/var
-        # - ./data:/opt/druid/data
     depends_on:
       - zookeeper
       - postgres
@@ -247,7 +233,7 @@ services:
     command:
       - router
     env_file:
-      - environment
+      - ./environment
     networks:
       - superset
 
@@ -266,15 +252,6 @@ volumes:
   router_var: {}
   druid_shared: {}
   druid_shared_logs: {}
-    
+
 networks:
-    superset:
-
-cloned this from github
-
-running this command-docker compose -f docker-compose-druid-superset.yaml up -d
-
-getthing this error-validating C:\Users\Shivam220802\OneDrive - EXLService.com (I) Pvt. Ltd\Desktop\superset\saa-superset-1\docker-compose-druid-superset.yaml: services.superset-worker-beat.env_file.0 must be a string
-
-resolve whole code and give updated code so that it works fine
-
+  superset:
