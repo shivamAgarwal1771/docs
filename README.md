@@ -269,3 +269,12 @@ volumes:
     
 networks:
     superset:
+
+cloned this from github
+
+running this command-docker compose -f docker-compose-druid-superset.yaml up -d
+
+getthing this error-validating C:\Users\Shivam220802\OneDrive - EXLService.com (I) Pvt. Ltd\Desktop\superset\saa-superset-1\docker-compose-druid-superset.yaml: services.superset-worker-beat.env_file.0 must be a string
+
+resolve whole code and give updated code so that it works fine
+
