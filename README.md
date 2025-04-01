@@ -1,3 +1,8 @@
-SELECT "Product" AS "Product", "CSAT_Bucket" AS "CSAT_Bucket", COUNT("CSAT_Bucket")*0.001 AS "COUNT(""CSAT_Bucket"")*0.001" 
-FROM public."Sentiment_analyser_Data" GROUP BY "Product", "CSAT_Bucket" ORDER BY "COUNT(""CSAT_Bucket"")*0.001" DESC 
- LIMIT 10000;
+SELECT 
+    "Product", 
+    "CSAT_Bucket", 
+    COUNT("CSAT_Bucket") * 1.0 / SUM(COUNT("CSAT_Bucket")) OVER (PARTITION BY "Product") AS "Percentage"
+FROM public."Sentiment_analyser_Data" 
+GROUP BY "Product", "CSAT_Bucket"
+ORDER BY "Percentage" DESC 
+LIMIT 10000;
