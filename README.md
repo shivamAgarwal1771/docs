@@ -1,3 +1,7 @@
-SELECT "Intent_Class" AS "Intent_Class", COUNT(*)*0.001 AS "Percentage Contacts" 
-FROM public."Sentiment_analyser_Data" GROUP BY "Intent_Class" 
- LIMIT 10000;
+SELECT 
+    "Intent_Class", 
+    (COUNT(*) * 100.0) / SUM(COUNT(*)) OVER () AS "Percentage Contacts"
+FROM public."Sentiment_analyser_Data" 
+GROUP BY "Intent_Class" 
+ORDER BY "Percentage Contacts" DESC
+LIMIT 10000;
