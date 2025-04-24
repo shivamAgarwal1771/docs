@@ -1,8 +1,4 @@
-
-SELECT 
-  "Channel",
-  "Intent", 
-  SUM("Percentage") * 0.01 AS "Normalized_Percentage"
+SELECT "Channel", "Intent", SUM("Percentage") * 0.01 AS "SUM(""Percentage"")*0.01"
 FROM (
   WITH top_intents AS (
     SELECT "Intent"
@@ -32,18 +28,15 @@ FROM (
   ),
   total AS (
     SELECT 
-      "Channel", 
       SUM(intent_count) AS total_count 
     FROM counts
-    GROUP BY "Channel"
   )
   SELECT 
     counts."Channel",
     counts."Intent",
     ROUND((counts.intent_count * 100.0) / total.total_count, 2) AS "Percentage"
-  FROM counts
-  JOIN total ON counts."Channel" = total."Channel"
-) AS virtual_table 
+  FROM counts, total
+) AS virtual_table
 GROUP BY "Channel", "Intent"
-ORDER BY "Channel", "Normalized_Percentage" DESC
+ORDER BY "SUM(""Percentage"")*0.01" DESC
 LIMIT 1000;
