@@ -1,13 +1,12 @@
 SELECT 
-  DATE("Ticket_creation_time") AS "Ticket_creation_time",   
-
-  COUNT(CASE WHEN "Conv_AI_Adoption" = 'Yes' THEN 1 END) * 100.0 /
-  NULLIF(COUNT("Conv_AI_Adoption"), 0) AS "Conv AI",
-
-  COUNT(CASE WHEN "IVR_Adoption" = 'Yes' THEN 1 END) * 100.0 /
-  NULLIF(COUNT("IVR_Adoption"), 0) AS "IVR"
-
-FROM public."Key-insight-data-2"
-GROUP BY DATE("Ticket_creation_time")
-ORDER BY "Ticket_creation_time" ASC
+  DATE("Ticket_creation_time") AS "Date",
+  SUM("AHT") + SUM("ACW") AS "Total_Handle_and_Work_Time",
+  SUM("SHIFT_HOURS") AS "Total_Shift_Hours",
+  (SUM("AHT") + SUM("ACW")) / NULLIF(SUM("SHIFT_HOURS"), 0) AS "Agent Utilization"
+FROM 
+  public."Key-insight-data-2"
+GROUP BY 
+  DATE("Ticket_creation_time")
+ORDER BY 
+  "Date" ASC
 LIMIT 10000;
