@@ -1,29 +1,19 @@
-SELECT 
-    A."Conversation_start_Date" AS date, 
-    A."Channel", 
-    A."Intent", 
-    COUNT(*) AS "intent_count",
-    (COUNT(*) * 100.0 / total.total_count) AS "intent_percentage"
-FROM 
-    public."Key-insight-data-2" A
-JOIN (
-    SELECT 
-        "Conversation_start_Date",
-        "Channel",
-        COUNT(*) AS total_count
-    FROM 
-        public."Key-insight-data-2"
-    WHERE 
-        "Call_Type" = 'Inbound'
-    GROUP BY 
-        "Conversation_start_Date", "Channel"
-) total
-ON 
-    A."Conversation_start_Date" = total."Conversation_start_Date"
-    AND A."Channel" = total."Channel"
-WHERE 
-    A."Call_Type" = 'Inbound'
-GROUP BY 
-    A."Conversation_start_Date", A."Channel", A."Intent", total.total_count
-ORDER BY 
-    A."Conversation_start_Date", A."Channel", "intent_percentage" DESC;
+WITH intent_counts AS (
+    SELECT
+        intent,
+        COUNT(*) AS intent_count,
+        COUNT(*) * 100.0 / (SELECT COUNT(*) FROM inbound_contacts) AS intent_percentage
+    FROM inbound_contacts
+    GROUP BY intent
+)
+
+SELECT
+    intent,
+    intent_count,
+    intent_percentage,
+    channel,
+    DATE(created_at) AS date
+FROM intent_counts
+JOIN inbound_contacts ON inbound_contacts.intent = intent_counts.intent
+GROUP BY intent, channel, date
+ORDER BY date, intent;
