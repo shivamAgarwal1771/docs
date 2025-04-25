@@ -1,10 +1,11 @@
 SELECT 
+  "Conversation_start_Date" AS "Date", 
   "Channel", 
   "Intent", 
   SUM("Agent Utilization") AS "Agent Utilization" 
 FROM (
   SELECT 
-    DATE("Ticket_creation_time") AS "Date",
+    "Conversation_start_Date" AS "Date",
     "Channel",
     "Intent",
     SUM("AHT") + SUM("Agent_ACW") AS "Total_Handle_and_Work_Time",
@@ -13,13 +14,13 @@ FROM (
   FROM 
     public."Key-insight-data-2"
   GROUP BY 
-    DATE("Ticket_creation_time"), "Channel", "Intent"
+    "Conversation_start_Date", "Channel", "Intent"
   ORDER BY 
-    "Date" ASC
+    "Conversation_start_Date" ASC
   LIMIT 10000
 ) AS virtual_table 
 GROUP BY 
-  "Channel", "Intent" 
+  "Conversation_start_Date", "Channel", "Intent" 
 ORDER BY 
   "Agent Utilization" DESC 
 LIMIT 100;
