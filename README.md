@@ -1,21 +1,18 @@
-SELECT 
+SELECT "Intent" AS "Intent", SUM("Percentage")*0.01 AS "Percentage" 
+FROM (SELECT 
   "Conversation_start_Date" AS "Date", 
   "Channel", 
   "Intent", 
-  agent_utilization."Agent Utilization"
-FROM (
-  SELECT 
-    SUM("AHT") + SUM("Agent_ACW") AS "Total_Handle_and_Work_Time",
-    SUM("Agent_Shift_Time") AS "Total_Shift_Hours",
-    (SUM("AHT") + SUM("Agent_ACW")) / NULLIF(SUM("Agent_Shift_Time"), 0) AS "Agent Utilization"
-  FROM 
-    public."Key-insight-data-2"
-) AS agent_utilization,
-public."Key-insight-data-2" AS data
+  ROUND((COUNT(*) * 100.0) / NULLIF(total_inbound.total_count, 0), 2) AS "Percentage"
+FROM 
+  public."Key-insight-data-2",
+  (SELECT COUNT(*) AS total_count FROM public."Key-insight-data-2" WHERE "Call_Type" = 'Inbound') AS total_inbound
 WHERE 
-  data."Call_Type" = 'Inbound'
+  "Call_Type" = 'Inbound'
 GROUP BY 
-  "Conversation_start_Date", "Channel", "Intent", agent_utilization."Agent Utilization"
+  "Conversation_start_Date", "Channel", "Intent", total_inbound.total_count
 ORDER BY 
-  "Date" ASC
-LIMIT 1000;
+  "Percentage" DESC
+LIMIT 1000
+) AS virtual_table GROUP BY "Intent" ORDER BY "Percentage" DESC 
+ LIMIT 1000;
