@@ -1,19 +1,15 @@
-WITH intent_counts AS (
-    SELECT
-        intent,
-        COUNT(*) AS intent_count,
-        COUNT(*) * 100.0 / (SELECT COUNT(*) FROM inbound_contacts) AS intent_percentage
-    FROM inbound_contacts
-    GROUP BY intent
-)
-
-SELECT
-    intent,
-    intent_count,
-    intent_percentage,
-    channel,
-    DATE(created_at) AS date
-FROM intent_counts
-JOIN inbound_contacts ON inbound_contacts.intent = intent_counts.intent
-GROUP BY intent, channel, date
-ORDER BY date, intent;
+SELECT 
+  DATE("Ticket_creation_time") AS "Date", 
+  "Channel", 
+  "Intent", 
+  ROUND((COUNT(*) * 100.0) / NULLIF(total_inbound.total_count, 0), 2) AS "Percentage"
+FROM 
+  public."Key-insight-data-2",
+  (SELECT COUNT(*) AS total_count FROM public."Key-insight-data-2" WHERE "Call_Type" = 'Inbound') AS total_inbound
+WHERE 
+  "Call_Type" = 'Inbound'
+GROUP BY 
+  DATE("Ticket_creation_time"), "Channel", "Intent", total_inbound.total_count
+ORDER BY 
+  "Percentage" DESC
+LIMIT 1000;
