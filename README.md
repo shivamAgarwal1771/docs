@@ -1,15 +1,15 @@
-SELECT 
-  DATE("Ticket_creation_time") AS "Date", 
-  "Channel", 
-  "Intent", 
-  ROUND((COUNT(*) * 100.0) / NULLIF(total_inbound.total_count, 0), 2) AS "Percentage"
+SELECT sum("Agent Utilization") AS "Agent Utilization" 
+FROM (SELECT 
+  DATE("Ticket_creation_time") AS "Date",
+  SUM("AHT") + SUM("Agent_ACW") AS "Total_Handle_and_Work_Time",
+  SUM("Agent_Shift_Time") AS "Total_Shift_Hours",
+  (SUM("AHT") + SUM("Agent_ACW")) / NULLIF(SUM("Agent_Shift_Time"), 0) AS "Agent Utilization"
 FROM 
-  public."Key-insight-data-2",
-  (SELECT COUNT(*) AS total_count FROM public."Key-insight-data-2" WHERE "Call_Type" = 'Inbound') AS total_inbound
-WHERE 
-  "Call_Type" = 'Inbound'
+  public."Key-insight-data-2"
 GROUP BY 
-  DATE("Ticket_creation_time"), "Channel", "Intent", total_inbound.total_count
+  DATE("Ticket_creation_time")
 ORDER BY 
-  "Percentage" DESC
-LIMIT 1000;
+  "Date" ASC
+LIMIT 10000
+) AS virtual_table ORDER BY "Agent Utilization" DESC 
+ LIMIT 100;
