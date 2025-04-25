@@ -1,11 +1,12 @@
-WITH ticket_aht AS (
+SELECT DATE_TRUNC('day', "Conversation_start_Date") AS "Conversation_start_Date", AVG("avg_resolution_time")/60 AS "AVG(""avg_resolution_time"")/60" 
+FROM (WITH ticket_aht AS (
   SELECT 
     "Ticket_id",
-    DATE_TRUNC('day', "Conversation_start_Date") AS "Conversation_start_Date",  -- Group by day
-    SUM("AHT") AS total_aht  -- Sum AHTs for repeated tickets
+    "Conversation_start_Date",  
+    SUM("AHT") AS total_aht  
   FROM public."Key-insight-data-2"
   WHERE "Resolved" = 'Yes'
-  GROUP BY "Ticket_id", DATE_TRUNC('day', "Conversation_start_Date")
+  GROUP BY "Ticket_id", "Conversation_start_Date"
 ),
 final_summary AS (
   SELECT 
@@ -22,4 +23,6 @@ SELECT
   ROUND((total_resolution_time_in_sec / unique_ticket_count) / 60.0, 2) AS avg_aht_per_ticket_in_minutes
 FROM final_summary
 ORDER BY "Conversation_start_Date" DESC
-LIMIT 1000;
+LIMIT 1000
+) AS virtual_table GROUP BY DATE_TRUNC('day', "Conversation_start_Date") ORDER BY "AVG(""avg_resolution_time"")/60" DESC 
+ LIMIT 1000;
