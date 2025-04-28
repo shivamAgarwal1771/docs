@@ -1,29 +1,11 @@
-#
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+version: "3.8"
 
-# -----------------------------------------------------------------------
-# We don't support docker compose for production environments.
-# If you choose to use this type of deployment make sure to
-# create you own docker environment file (docker/.env) with your own
-# unique random secure passwords and SECRET_KEY.
-# -----------------------------------------------------------------------
-x-superset-image: &superset-image apachesuperset.docker.scarf.sh/apache/superset:${TAG:-latest-dev}
+# Base image with custom tag
+x-superset-image: &superset-image
+  image: apachesuperset.docker.scarf.sh/apache/superset:${TAG:-latest-dev}
+
 x-superset-volumes:
-  &superset-volumes # /app/pythonpath_docker will be appended to the PYTHONPATH in the final container
+  &superset-volumes
   - ./docker:/app/docker
   - superset_home:/app/superset_home
 
@@ -34,20 +16,23 @@ services:
     restart: unless-stopped
     volumes:
       - redis:/data
+    networks:
+      - superset_network
 
   db:
     env_file:
-      - "docker/.env" # default
+      - "docker/.env"
     image: postgres:16
     container_name: superset_db
     restart: unless-stopped
     volumes:
       - db_home:/var/lib/postgresql/data
       - ./docker/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    networks:
+      - superset_network
 
+  # Main Superset service (app)
   superset:
-    env_file:
-      - "docker/.env" # default
     image: *superset-image
     container_name: superset_app
     command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
@@ -61,13 +46,22 @@ services:
     volumes: *superset-volumes
     environment:
       SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 10s
+    networks:
+      - superset_network
 
+  # Superset Initialization (run initial setup)
   superset-init:
     image: *superset-image
     container_name: superset_init
     command: ["/app/docker/docker-init.sh"]
     env_file:
-      - "docker/.env" # default
+      - "docker/.env"
     depends_on:
       db:
         condition: service_started
@@ -80,13 +74,16 @@ services:
     environment:
       SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES:-yes}"
       SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
+    networks:
+      - superset_network
 
+  # Superset Worker (Celery Worker)
   superset-worker:
     image: *superset-image
     container_name: superset_worker
     command: ["/app/docker/docker-bootstrap.sh", "worker"]
     env_file:
-      - "docker/.env" # default
+      - "docker/.env"
     restart: unless-stopped
     depends_on:
       superset-init:
@@ -101,13 +98,16 @@ services:
         ]
     environment:
       SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
+    networks:
+      - superset_network
 
+  # Superset Beat (Celery Beat)
   superset-worker-beat:
     image: *superset-image
     container_name: superset_worker_beat
     command: ["/app/docker/docker-bootstrap.sh", "beat"]
     env_file:
-      - "docker/.env" # default
+      - "docker/.env"
     restart: unless-stopped
     depends_on:
       superset-init:
@@ -118,6 +118,8 @@ services:
       disable: true
     environment:
       SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
+    networks:
+      - superset_network
 
 volumes:
   superset_home:
@@ -126,3 +128,7 @@ volumes:
     external: false
   redis:
     external: false
+
+networks:
+  superset_network:
+    driver: bridge
