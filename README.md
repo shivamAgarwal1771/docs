@@ -41,4 +41,3 @@ ORDER BY
 LIMIT 1000
 ) AS virtual_table GROUP BY "Intent" ORDER BY "Percentage" DESC 
  LIMIT 1000;
-
