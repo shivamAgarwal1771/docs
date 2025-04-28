@@ -1,17 +1,3 @@
-validating C:\Users\Shivam220802\OneDrive - EXLService.com (I) Pvt. Ltd\Desktop\agent_performance_dashboard\superset\docker-compose-image-tag.yml: services.superset-worker-beat.image must be a string
-
-
-version: "3.8"
-
-# Base image with custom tag
-x-superset-image: &superset-image
-  image: apachesuperset.docker.scarf.sh/apache/superset:latest-dev .
-
-x-superset-volumes:
-  &superset-volumes
-  - ./docker:/app/docker
-  - superset_home:/app/superset_home
-
 services:
   redis:
     image: redis:7
@@ -36,7 +22,7 @@ services:
 
   # Main Superset service (app)
   superset:
-    image: *superset-image
+    image: apachesuperset.docker.scarf.sh/apache/superset:latest-dev
     container_name: superset_app
     command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
     user: "root"
@@ -46,7 +32,9 @@ services:
     depends_on:
       superset-init:
         condition: service_completed_successfully
-    volumes: *superset-volumes
+    volumes:
+      - ./docker:/app/docker
+      - superset_home:/app/superset_home
     environment:
       SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
     healthcheck:
@@ -60,7 +48,7 @@ services:
 
   # Superset Initialization (run initial setup)
   superset-init:
-    image: *superset-image
+    image: apachesuperset.docker.scarf.sh/apache/superset:latest-dev
     container_name: superset_init
     command: ["/app/docker/docker-init.sh"]
     env_file:
@@ -71,7 +59,9 @@ services:
       redis:
         condition: service_started
     user: "root"
-    volumes: *superset-volumes
+    volumes:
+      - ./docker:/app/docker
+      - superset_home:/app/superset_home
     healthcheck:
       disable: true
     environment:
@@ -82,7 +72,7 @@ services:
 
   # Superset Worker (Celery Worker)
   superset-worker:
-    image: *superset-image
+    image: apachesuperset.docker.scarf.sh/apache/superset:latest-dev
     container_name: superset_worker
     command: ["/app/docker/docker-bootstrap.sh", "worker"]
     env_file:
@@ -92,7 +82,9 @@ services:
       superset-init:
         condition: service_completed_successfully
     user: "root"
-    volumes: *superset-volumes
+    volumes:
+      - ./docker:/app/docker
+      - superset_home:/app/superset_home
     healthcheck:
       test:
         [
@@ -106,7 +98,7 @@ services:
 
   # Superset Beat (Celery Beat)
   superset-worker-beat:
-    image: *superset-image
+    image: apachesuperset.docker.scarf.sh/apache/superset:latest-dev
     container_name: superset_worker_beat
     command: ["/app/docker/docker-bootstrap.sh", "beat"]
     env_file:
@@ -116,7 +108,9 @@ services:
       superset-init:
         condition: service_completed_successfully
     user: "root"
-    volumes: *superset-volumes
+    volumes:
+      - ./docker:/app/docker
+      - superset_home:/app/superset_home
     healthcheck:
       disable: true
     environment:
