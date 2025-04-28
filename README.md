@@ -1,34 +1,17 @@
-SELECT DATE_TRUNC('day', "Conversation_start_Date") AS "Conversation_start_Date", "Channel" AS "Channel", AVG("avg_aht_per_ticket_in_minutes") AS "AVG(""avg_aht_per_ticket_in_minutes"")" 
-FROM (WITH ticket_aht AS (
-  SELECT 
-    "Ticket_id",
-    "Conversation_start_Date",  
-    "Channel",
-    "Intent",
-    SUM("AHT") AS total_aht  
-  FROM public."Key-insight-data-2"
-  WHERE "Resolved" = 'Yes'
-  GROUP BY "Ticket_id", "Conversation_start_Date","Channel","Intent"
-),
-final_summary AS (
-  SELECT 
-    "Conversation_start_Date",
-    "Channel",
-    "Intent",
-    COUNT(*) AS unique_ticket_count,
-    SUM(total_aht) AS total_resolution_time_in_sec
-  FROM ticket_aht
-  GROUP BY "Conversation_start_Date","Channel","Intent"
-)
-SELECT 
-  "Conversation_start_Date",
-  "Channel",
-  "Intent",
-  ROUND(total_resolution_time_in_sec / 60.0, 2) AS total_resolution_time_in_minutes,
-  unique_ticket_count,
-  ROUND((total_resolution_time_in_sec / unique_ticket_count) / 60.0, 2) AS avg_aht_per_ticket_in_minutes
-FROM final_summary
-ORDER BY "Conversation_start_Date" DESC
-LIMIT 1000
-) AS virtual_table GROUP BY DATE_TRUNC('day', "Conversation_start_Date"), "Channel" ORDER BY "AVG(""avg_aht_per_ticket_in_minutes"")" DESC 
- LIMIT 1000;
+Sr. No.	Conversation_id	Customer_id	Ticket_id	Call_Type	Channel	Intent	Was_FCR	CSAT	SLA_Achieved	Agent Name	BU_Name	Emp_ID	Designation	AHT	Resolved	Conversation_start_time	Ticket_start_Time	Ticket_close_Time	Conversation_start_Date	Ticket_start_Date	Ticket_close_Date	Query_age	Csat_category	Key	Agent_ACW	Agent_Shift_Time	Cost_per_Contact	Conv_AI_Adoption	IVR_Adoption	Conv_AI_Deflection	IVR_Deflection	Channel_usecase
+4331	12345666	400510	14350	Inbound	Email	Billing Query	Yes	2.2	Yes	Kristen	BU1	771668	Agent	710	Yes	2024-01-02 04:16:19	2024-01-02 04:16:19	2024-01-02 09:00:19	1/2/2024	1/2/2024	1/2/2024	4.73	Low	Kristen45293	2583	30600	0.5	NA	NA	NA	NA	Email
+793	12345667	202333	10812	Inbound	Phone	COT Reversal	No	1	No	James	BU1	433405	Agent	995	Yes	2024-01-06 00:06:26	2023-12-26 04:16:19	2024-01-06 06:44:26	1/6/2024	12/26/2023	1/6/2024	266.47	Low	James45297	2031	30600	5.9	No	Yes	NA	No	Phone
+1955	12345668	269078	11974	Inbound	Chat	Bill Not Received	No		Yes	Smith	BU2	122386	Agent	207	No	2024-01-04 21:25:16	2023-12-30 00:06:26	NA	1/4/2024	12/30/2023	NA	767.89	NA	Smith45295	3835	28800	2.5	NA	NA	NA	NA	Chat
+7647	12345669	587312	17666	Inbound	Phone	Add/Remove Name	Yes	2.2	Yes	Alisa	BU1	918965	Agent	867	Yes	2024-01-06 21:55:33	2024-01-06 21:55:33	2024-01-07 03:42:21	1/6/2024	1/6/2024	1/7/2024	5.78	Low	Alisa45297	3327	32400	6.9	No	No	NA	NA	Phone
+2914	12345670	326320	12933	Inbound	Email	High Bills/Incorrect Bills	No	1.1	Yes	Mikey	BU2	970703	Agent	1182	No	2024-01-06 02:43:14	2023-12-28 21:55:33	NA	1/6/2024	12/28/2023	NA	794.07	Low	Mikey45297	2840	32400	1.1	NA	NA	NA	NA	Email
+10258	12345671	733728	20277	Inbound	Email	Faulty Meter	No		No	James	BU1	433405	Agent	66	No	2024-01-06 05:28:19	2024-01-01 02:43:14	NA	1/6/2024	1/1/2024	NA	717.28	NA	James45297	2031	30600	1.7	No	No	NA	NA	Email
+11394	12345672	798471	21413	Inbound	Chat	Estimated Bills	No	1.2	No	Alisa	BU1	918965	Agent	109	Yes	2024-01-05 11:34:47	2023-12-31 05:28:19	2024-01-05 12:18:23	1/5/2024	12/31/2023	1/5/2024	126.83	Low	Alisa45296	1438	32400	1.8	NA	NA	NA	NA	Chat
+13389	12345673	912699	23408	Inbound	Phone	Move In	Yes		Yes	Alisa	BU1	918965	Agent	134	Yes	2024-01-02 17:03:41	2024-01-02 17:03:41	2024-01-02 17:57:17	1/2/2024	1/2/2024	1/2/2024	0.89	NA	Alisa45293	3627	30600	4.5	No	No	NA	NA	Phone
+4708	12345674	421446	14727	Outbound	Phone	High Bills/Incorrect Bills	No	2	No	John	BU1	188652	Agent	520	No	2024-01-03 05:02:14	2023-12-28 17:03:41	NA	1/3/2024	12/28/2023	NA	798.94	Low	John45294	2245	32400	6	NA	NA	NA	NA	Phone
+14498	12345675	972483	24517	Inbound	Email	Faulty Meter	No		No	Moorthy	BU2	152443	Agent	756	No	2024-01-01 20:23:35	2023-12-27 05:02:14	NA	1/1/2024	12/27/2023	NA	834.96	NA	Moorthy45292	3198	32400	2	No	No	NA	NA	Email
+10344	12345677	737851	20363	Inbound	Fax	Faulty Meter	Yes	3	Yes	John	BU1	188652	Agent	152	Yes	2024-01-04 18:10:49	2024-01-04 18:10:49	2024-01-04 19:11:37	1/4/2024	1/4/2024	1/4/2024	1.01	Medium	John45295	3049	28800	5.4	No	No	NA	NA	Fax
+2966	12345678	328491	12985	Inbound	Chat	Estimated Bills	No		No	Smith	BU2	122386	Agent	106	No	2024-01-01 00:18:55	2023-12-27 18:10:49	NA	1/1/2024	12/27/2023	NA	821.82	NA	Smith45292	4804	32400	4.1	NA	NA	NA	NA	Chat
+7539	12345680	580982	17558	Outbound	Fax	Change A/C details	Yes	4.4	Yes	Kristen	BU1	771668	Agent	581	Yes	2024-01-06 11:00:31	2024-01-06 11:00:31	2024-01-06 14:52:55	1/6/2024	1/6/2024	1/6/2024	3.87	High	Kristen45297	2305	28800	4.7	No	No	NA	NA	Fax
+8078	12345682	610722	18097	Inbound	Email	Billing Query	No	2.6	No	James	BU1	433405	Agent	933	No	2024-01-04 21:08:21	2023-12-29 11:00:31	NA	1/4/2024	12/29/2023	NA	780.99	Low	James45295	1246	30600	1	NA	NA	NA	NA	Email
+10373	12345683	739744	20392	Outbound	Fax	Move In	No	2.5	No	Kristen	BU1	771668	Agent	764	Yes	2024-01-02 06:06:09	2023-12-29 21:08:21	2024-01-02 11:11:45	1/2/2024	12/29/2023	1/2/2024	86.06	Low	Kristen45293	2583	30600	6	No	No	NA	NA	Fax
+![Uploading image.png…]()
