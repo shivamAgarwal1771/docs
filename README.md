@@ -108,23 +108,10 @@ services:
       - "host.docker.internal:host-gateway"
     depends_on:
       - redis
-    # Mount everything in superset-websocket into container and
-    # then exclude node_modules and dist with bogus volume mount.
-    # This is necessary because host and container need to have
-    # their own, separate versions of these files. .dockerignore
-    # does not seem to work when starting the service through
-    # docker compose.
-    #
-    # For example, node_modules may contain libs with native bindings.
-    # Those bindings need to be compiled for each OS and the container
-    # OS is not necessarily the same as host OS.
     volumes:
       - ./superset-websocket:/home/superset-websocket
       - /home/superset-websocket/node_modules
       - /home/superset-websocket/dist
-
-      # Mounting a config file that contains a dummy secret required to boot up.
-      # do not use this docker compose in production
       - ./docker/superset-websocket/config.json:/home/superset-websocket/config.json
     environment:
       - PORT=8080
@@ -158,21 +145,15 @@ services:
       context: .
       target: superset-node
       args:
-        # This prevents building the frontend bundle since we'll mount local folder
-        # and build it on startup while firing docker-frontend.sh in dev mode, where
-        # it'll mount and watch local files and rebuild as you update them
         DEV_MODE: "true"
         BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
     environment:
-      # set this to false if you have perf issues running the npm i; npm run dev in-docker
-      # if you do so, you have to run this manually on the host, which should perform better!
       BUILD_SUPERSET_FRONTEND_IN_DOCKER: true
       NPM_RUN_PRUNE: false
       SCARF_ANALYTICS: "${SCARF_ANALYTICS:-}"
-      # configuring the dev-server to use the host.docker.internal to connect to the backend
       superset: "http://superset:8088"
     ports:
-      - "127.0.0.1:9000:9000"  # exposing the dynamic webpack dev server
+      - "127.0.0.1:9000:9000"
     container_name: superset_node
     command: ["/app/docker/docker-frontend.sh"]
     env_file:
@@ -192,17 +173,18 @@ services:
       SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
     restart: unless-stopped
     depends_on:
-      superset-init:
-        condition: service_completed_successfully
+      - redis
+      - superset-init
     user: *superset-user
     volumes: *superset-volumes
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
-      test: ["CMD-SHELL", "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME"]
-    # Bump memory limit if processing selenium / thumbnails on superset-worker
-    # mem_limit: 2038m
-    # mem_reservation: 128M
+      test: ["CMD-SHELL", "celery -A superset.tasks.celery_app:app status"]
+      interval: 30s
+      retries: 3
+      start_period: 5s
+      timeout: 20s
 
   superset-worker-beat:
     build:
@@ -213,6 +195,7 @@ services:
       - "docker/.env" # default
     restart: unless-stopped
     depends_on:
+      - redis
       - superset-worker
     user: *superset-user
     volumes: *superset-volumes
