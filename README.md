@@ -1,32 +1,24 @@
-SELECT DATE_TRUNC('day', date) AS date, "Channel" AS "Channel", sum("SUM(inbound_contact_count)") AS "SUM(SUM(inbound_contact_count))" 
-FROM (SELECT 
-    "Conversation_start_Date" AS date, 
-    "Channel", 
-    "Intent",
-    SUM("inbound_contact_count") AS "SUM(inbound_contact_count)"
-FROM (
-    SELECT 
-        "Conversation_start_Date",
-        "Channel",
-        "Intent",
-        COUNT(*) AS "inbound_contact_count"
-    FROM 
-        public."Key-insight-data-2"
-    WHERE 
-        "Call_Type" = 'Inbound'
-    GROUP BY 
-        "Conversation_start_Date", "Channel", "Intent"
-) AS virtual_table 
+SELECT "Intent" AS "Intent", sum("SUM(Per)") AS "SUM(SUM(Per))" 
+FROM (SELECT "Intent" AS "Intent","Product" As "Product", sum("Per") AS "SUM(Per)" , "Date", "Agent_id", "Intent_Class"
+FROM (SELECT
+"A"."Intent_Class", "A"."Intent", "A"."Intent" as "Intent2", "Agent_id","Product","Date",
+"A"."Conversation_I",
+("A"."Conversation_I"::FLOAT/NULLIF((SELECT 
+COUNT(DISTINCT "Conversation_id")
+FROM public."Sentiment_analyser_Data"),0)) AS "Per"
+FROM 
+--("Total"::FLOAT/NULLIF("Ticket_Ids",0))*100
+(
+SELECT 
+"Intent_Class","Intent", "Agent_id","Product", "Date",
+COUNT(DISTINCT "Conversation_id") AS "Conversation_I"
+FROM public."Sentiment_analyser_Data"
 GROUP BY 
-    "Conversation_start_Date", "Channel", "Intent"
-ORDER BY 
-    "SUM(inbound_contact_count)" DESC
-) AS virtual_table GROUP BY DATE_TRUNC('day', date), "Channel" ORDER BY "SUM(SUM(inbound_contact_count))" DESC 
+"Intent_Class","Intent", "Agent_id","Product", "Date") AS "A"
+) AS virtual_table GROUP BY "Intent","Intent_Class","Product" , "Date", "Agent_id" ORDER BY "SUM(Per)" DESC 
+ LIMIT 1000
+) AS virtual_table GROUP BY "Intent" ORDER BY "SUM(SUM(Per))" DESC 
  LIMIT 1000;
-
-
-
-
 
 
 
@@ -50,73 +42,3 @@ LIMIT 1000
 ) AS virtual_table GROUP BY "Intent" ORDER BY "Percentage" DESC 
  LIMIT 1000;
 
-
-
-
-
-
-
-SELECT SUM("Agent Utilization")*0.01 AS "Agent Utilization" 
-FROM (SELECT 
-  "Conversation_start_Date" AS "Date", 
-  "Channel", 
-  "Intent", 
-  agent_utilization."Agent Utilization"
-FROM (
-  SELECT 
-    SUM("AHT") + SUM("Agent_ACW") AS "Total_Handle_and_Work_Time",
-    SUM("Agent_Shift_Time") AS "Total_Shift_Hours",
-    (SUM("AHT") + SUM("Agent_ACW")) / NULLIF(SUM("Agent_Shift_Time"), 0) AS "Agent Utilization"
-  FROM 
-    public."Key-insight-data-2"
-) AS agent_utilization,
-public."Key-insight-data-2" AS data
-WHERE 
-  data."Call_Type" = 'Inbound'
-GROUP BY 
-  "Conversation_start_Date", "Channel", "Intent", agent_utilization."Agent Utilization"
-ORDER BY 
-  "Date" ASC
-LIMIT 1000
-) AS virtual_table ORDER BY "Agent Utilization" DESC 
- LIMIT 100;
-
-
-
-
-
-
-SELECT DATE_TRUNC('day', "Conversation_start_Date") AS "Conversation_start_Date", "Channel" AS "Channel", AVG("avg_aht_per_ticket_in_minutes") AS "AVG(""avg_aht_per_ticket_in_minutes"")" 
-FROM (WITH ticket_aht AS (
-  SELECT 
-    "Ticket_id",
-    "Conversation_start_Date",  
-    "Channel",
-    "Intent",
-    SUM("AHT") AS total_aht  
-  FROM public."Key-insight-data-2"
-  WHERE "Resolved" = 'Yes'
-  GROUP BY "Ticket_id", "Conversation_start_Date","Channel","Intent"
-),
-final_summary AS (
-  SELECT 
-    "Conversation_start_Date",
-    "Channel",
-    "Intent",
-    COUNT(*) AS unique_ticket_count,
-    SUM(total_aht) AS total_resolution_time_in_sec
-  FROM ticket_aht
-  GROUP BY "Conversation_start_Date","Channel","Intent"
-)
-SELECT 
-  "Conversation_start_Date",
-  "Channel",
-  "Intent",
-  ROUND(total_resolution_time_in_sec / 60.0, 2) AS total_resolution_time_in_minutes,
-  unique_ticket_count,
-  ROUND((total_resolution_time_in_sec / unique_ticket_count) / 60.0, 2) AS avg_aht_per_ticket_in_minutes
-FROM final_summary
-ORDER BY "Conversation_start_Date" DESC
-LIMIT 1000
-) AS virtual_table GROUP BY DATE_TRUNC('day', "Conversation_start_Date"), "Channel" ORDER BY "AVG(""avg_aht_per_ticket_in_minutes"")" DESC 
- LIMIT 1000;
