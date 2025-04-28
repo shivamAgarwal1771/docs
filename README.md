@@ -1,134 +1,14 @@
-version: "3.8"
-
-# Base image with custom tag
-x-superset-image: &superset-image
-  image: apachesuperset.docker.scarf.sh/apache/superset:${TAG:-latest-dev}
-
-x-superset-volumes:
-  &superset-volumes
-  - ./docker:/app/docker
-  - superset_home:/app/superset_home
-
-services:
-  redis:
-    image: redis:7
-    container_name: superset_cache
-    restart: unless-stopped
-    volumes:
-      - redis:/data
-    networks:
-      - superset_network
-
-  db:
-    env_file:
-      - "docker/.env"
-    image: postgres:16
-    container_name: superset_db
-    restart: unless-stopped
-    volumes:
-      - db_home:/var/lib/postgresql/data
-      - ./docker/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-    networks:
-      - superset_network
-
-  # Main Superset service (app)
-  superset:
-    image: *superset-image
-    container_name: superset_app
-    command: ["/app/docker/docker-bootstrap.sh", "app-gunicorn"]
-    user: "root"
-    restart: unless-stopped
-    ports:
-      - 8088:8088
-    depends_on:
-      superset-init:
-        condition: service_completed_successfully
-    volumes: *superset-volumes
-    environment:
-      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8088"]
-      interval: 30s
-      retries: 3
-      start_period: 10s
-      timeout: 10s
-    networks:
-      - superset_network
-
-  # Superset Initialization (run initial setup)
-  superset-init:
-    image: *superset-image
-    container_name: superset_init
-    command: ["/app/docker/docker-init.sh"]
-    env_file:
-      - "docker/.env"
-    depends_on:
-      db:
-        condition: service_started
-      redis:
-        condition: service_started
-    user: "root"
-    volumes: *superset-volumes
-    healthcheck:
-      disable: true
-    environment:
-      SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES:-yes}"
-      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
-    networks:
-      - superset_network
-
-  # Superset Worker (Celery Worker)
-  superset-worker:
-    image: *superset-image
-    container_name: superset_worker
-    command: ["/app/docker/docker-bootstrap.sh", "worker"]
-    env_file:
-      - "docker/.env"
-    restart: unless-stopped
-    depends_on:
-      superset-init:
-        condition: service_completed_successfully
-    user: "root"
-    volumes: *superset-volumes
-    healthcheck:
-      test:
-        [
-          "CMD-SHELL",
-          "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME",
-        ]
-    environment:
-      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
-    networks:
-      - superset_network
-
-  # Superset Beat (Celery Beat)
-  superset-worker-beat:
-    image: *superset-image
-    container_name: superset_worker_beat
-    command: ["/app/docker/docker-bootstrap.sh", "beat"]
-    env_file:
-      - "docker/.env"
-    restart: unless-stopped
-    depends_on:
-      superset-init:
-        condition: service_completed_successfully
-    user: "root"
-    volumes: *superset-volumes
-    healthcheck:
-      disable: true
-    environment:
-      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
-    networks:
-      - superset_network
-
-volumes:
-  superset_home:
-    external: false
-  db_home:
-    external: false
-  redis:
-    external: false
-
-networks:
-  superset_network:
-    driver: bridge
+Dockerfile:82
+--------------------
+  81 |     # Build the frontend if not in dev mode
+  82 | >>> RUN --mount=type=cache,target=/root/.npm \
+  83 | >>>     if [ "$DEV_MODE" = "false" ]; then \
+  84 | >>>         echo "Running 'npm run ${BUILD_CMD}'"; \
+  85 | >>>         npm run ${BUILD_CMD}; \
+  86 | >>>     else \
+  87 | >>>         echo "Skipping 'npm run ${BUILD_CMD}' in dev mode"; \
+  88 | >>>     fi;
+  89 |
+--------------------
+ERROR: failed to solve: process "/bin/sh -c if [ \"$DEV_MODE\" = \"false\" ]; then         echo \"Running 'npm run ${BUILD_CMD}'\";         
+npm run ${BUILD_CMD};     else         echo \"Skipping 'npm run ${BUILD_CMD}' in dev mode\";     fi;" did not complete successfully: exit code: 1
