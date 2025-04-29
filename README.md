@@ -1,6 +1,14 @@
-SELECT ROUND(SUM("Average_Query_Age")/60) AS "ROUND(SUM(""Average_Query_Age"")/60)" 
-FROM (SELECT 
-  AVG("Query_age") AS "Average_Query_Age"
-FROM public."Key-insight-data-2"
-) AS virtual_table 
- LIMIT 50000;
+SELECT 
+  "Intent",
+  "Channel",
+  DATE_TRUNC('day', "Conversation_start_Date") AS "Conversation_start_Date",
+  ROUND(AVG("Query_age") / 60.0, 2) AS "Average_Query_Age_in_Minutes"
+FROM 
+  public."Key-insight-data-2"
+GROUP BY 
+  "Intent",
+  "Channel",
+  DATE_TRUNC('day', "Conversation_start_Date")
+ORDER BY 
+  "Average_Query_Age_in_Minutes" DESC
+LIMIT 50000;
