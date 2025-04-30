@@ -1,18 +1,7 @@
-SELECT "Intent" AS "Intent", SUM("Percentage")*0.01 AS "Percentage" 
-FROM (SELECT 
-  "Conversation_start_Date", 
-  "Channel", 
-  "Intent", 
-  ROUND((COUNT(*) * 100.0) / NULLIF(total_inbound.total_count, 0), 2) AS "Percentage"
-FROM 
-  public."Key-insight-data-2",
-  (SELECT COUNT(*) AS total_count FROM public."Key-insight-data-2" WHERE "Call_Type" = 'Inbound') AS total_inbound
-WHERE 
-  "Call_Type" = 'Inbound'
-GROUP BY 
-  "Conversation_start_Date", "Channel", "Intent", total_inbound.total_count
-ORDER BY 
-  "Percentage" DESC
-LIMIT 1000
-) AS virtual_table GROUP BY "Intent" ORDER BY "Percentage" DESC 
- LIMIT 5;
+3) By Default grid view when user come
+4) Filters should be in Horizontal view
+
+5) https://insightshub-dev.exlservice.com/superset/dashboard/14/?native_filters_key=A4mlaJraVlllz5Y9ab88qqmuO-4OJHbqqcVF-xaRW_GlqjV-e8p0tdfNHYdiuafE
+Instead of superset and dashboard we need BI and InsightView 
+
+6) Add image of dashboard in the grid view list
