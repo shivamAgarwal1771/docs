@@ -1,17 +1,18 @@
-SELECT 
-  "Intent",
+SELECT "Channel" AS "Channel", SUM("Resolved_Percentage_Of_All")*0.01 AS "Resolved" 
+FROM (SELECT 
   "Channel",
+  ROUND((COUNT(*) * 100.0) / NULLIF(total_all.total_count, 0), 2) AS "Resolved_Percentage_Of_All",
   DATE_TRUNC('day', "Conversation_start_Date") AS "Conversation_start_Date",
-  ROUND((COUNT(DISTINCT "Ticket_id") * 100.0) / NULLIF(total_inbound.total_count, 0), 2) AS "Resolved_Intent_Percentage"
+  "Intent"
 FROM 
   public."Key-insight-data-2",
-  (SELECT COUNT(DISTINCT "Ticket_id") AS total_count 
-   FROM public."Key-insight-data-2" 
-   WHERE "Call_Type" = 'Inbound' AND "Resolved" = 'Yes') AS total_inbound
+  (SELECT COUNT(*) AS total_count FROM public."Key-insight-data-2") AS total_all
 WHERE 
-  "Call_Type" = 'Inbound' AND "Resolved" = 'Yes'
+  "Resolved" = 'Yes'
 GROUP BY 
-  "Intent", "Channel", DATE_TRUNC('day', "Conversation_start_Date"), total_inbound.total_count
+  "Channel", DATE_TRUNC('day', "Conversation_start_Date"), "Intent", total_all.total_count
 ORDER BY 
-  "Resolved_Intent_Percentage" DESC
-LIMIT 1000;
+  "Resolved_Percentage_Of_All" DESC
+LIMIT 1000
+) AS virtual_table GROUP BY "Channel" 
+ LIMIT 1000;
