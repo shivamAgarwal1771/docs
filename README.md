@@ -1,14 +1,20 @@
 SELECT 
-  "Intent",
   "Channel",
   DATE_TRUNC('day', "Conversation_start_Date") AS "Conversation_start_Date",
-  ROUND(AVG("Query_age") / 60.0, 2) AS "Average_Query_Age_in_Minutes"
-FROM 
-  public."Key-insight-data-2"
-GROUP BY 
   "Intent",
-  "Channel",
-  DATE_TRUNC('day', "Conversation_start_Date")
+  ROUND((COUNT(*) * 100.0) / NULLIF(total_resolved.total_count, 0), 2) AS "Resolved_Percentage"
+FROM 
+  public."Key-insight-data-2",
+  (SELECT COUNT(*) AS total_count 
+   FROM public."Key-insight-data-2" 
+   WHERE "Resolved" = 'Yes') AS total_resolved
+WHERE 
+  "Resolved" = 'Yes'
+GROUP BY 
+  "Channel", 
+  DATE_TRUNC('day', "Conversation_start_Date"), 
+  "Intent", 
+  total_resolved.total_count
 ORDER BY 
-  "Average_Query_Age_in_Minutes" DESC
-LIMIT 50000;
+  "Resolved_Percentage" DESC
+LIMIT 1000;
