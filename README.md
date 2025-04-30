@@ -1,15 +1,30 @@
-SELECT 
+SELECT "Intent" AS "Intent", sum("Percentage") AS "SUM(Percentage)" 
+FROM (SELECT 
+  "Intent" AS "Intent", 
   "Channel",
-  ROUND((COUNT(*) * 100.0) / NULLIF(total_all.total_count, 0), 2) AS "Resolved_Percentage_Of_All",
-  DATE_TRUNC('day', "Conversation_start_Date") AS "Conversation_start_Date",
-  "Intent"
-FROM 
-  public."Key-insight-data-2",
-  (SELECT COUNT(*) AS total_count FROM public."Key-insight-data-2") AS total_all
-WHERE 
-  "Resolved" = 'Yes'
+  "Conversation_start_Date",
+  SUM("Percentage")*0.01 AS "Percentage" 
+FROM (
+  SELECT 
+    "Conversation_start_Date", 
+    "Channel", 
+    "Intent", 
+    ROUND((COUNT(*) * 100.0) / NULLIF(total_inbound.total_count, 0), 2) AS "Percentage"
+  FROM 
+    public."Key-insight-data-2",
+    (SELECT COUNT(*) AS total_count FROM public."Key-insight-data-2" WHERE "Call_Type" = 'Inbound' AND "Resolved" = 'Yes') AS total_inbound
+  WHERE 
+    "Call_Type" = 'Inbound' AND "Resolved" = 'Yes'
+  GROUP BY 
+    "Conversation_start_Date", "Channel", "Intent", total_inbound.total_count
+  ORDER BY 
+    "Percentage" DESC
+  LIMIT 1000
+) AS virtual_table 
 GROUP BY 
-  "Channel", DATE_TRUNC('day', "Conversation_start_Date"), "Intent", total_all.total_count
+  "Intent","Channel","Conversation_start_Date"
 ORDER BY 
-  "Resolved_Percentage_Of_All" DESC
-LIMIT 1000;
+  "Percentage" DESC 
+LIMIT 1000
+) AS virtual_table GROUP BY "Intent" ORDER BY "SUM(Percentage)" DESC 
+ LIMIT 5;
