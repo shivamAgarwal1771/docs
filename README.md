@@ -1,15 +1,17 @@
-C:\Users\Shivam220802\superset>docker ps
-CONTAINER ID   IMAGE                           COMMAND                  CREATED          STATUS                    PORTS                                            NAMES
-a6f390651c12   superset-superset-worker-beat   "/app/docker/docker-…"   55 minutes ago   Up 43 minutes             8088/tcp                                         superset_worker_beat
-c07d784eab90   superset-superset-worker        "/app/docker/docker-…"   55 minutes ago   Up 43 minutes (healthy)   8088/tcp                                         superset_worker
-b293645197a7   superset-superset               "/app/docker/docker-…"   55 minutes ago   Up 43 minutes (healthy)   0.0.0.0:8081->8081/tcp, 0.0.0.0:8088->8088/tcp   superset_app
-550dde9cb009   superset-superset-websocket     "docker-entrypoint.s…"   55 minutes ago   Up 55 minutes          
-   0.0.0.0:8080->8080/tcp                           superset_websocket
-4e78d841a612   postgres:16                     "docker-entrypoint.s…"   55 minutes ago   Up 55 minutes          
-   127.0.0.1:5432->5432/tcp                         superset_db
-abb1e159a086   redis:7                         "docker-entrypoint.s…"   55 minutes ago   Up 55 minutes          
-   127.0.0.1:6379->6379/tcp                         superset_cache
-e0d5623c6422   nginx:latest                    "/docker-entrypoint.…"   55 minutes ago   Up 55 minutes          
-   0.0.0.0:80->80/tcp                               superset_nginx
-710d420b068e   superset-superset-node          "docker-entrypoint.s…"   55 minutes ago   Up 55 minutes          
-   127.0.0.1:9000->9000/tcp                         superset_node
+C:\Users\Shivam220802\superset\superset-frontend>npm run build
+
+> superset@0.0.0-dev build
+> cross-env NODE_OPTIONS=--max_old_space_size=8192 NODE_ENV=production BABEL_ENV="${BABEL_ENV:=production}" webpack --color --mode production
+
+INFO: Could not find files for the given pattern(s).
+[webpack-cli] Failed to load 'C:\Users\Shivam220802\superset\superset-frontend\webpack.config.js' config
+[webpack-cli] Error: Can not access zstd! Is it installed?
+    at Object.<anonymous> (C:\Users\Shivam220802\superset\superset-frontend\node_modules\simple-zstd\index.js:15:9)  
+    at Module._compile (node:internal/modules/cjs/loader:1529:14)
+les/cjs/loader:1096:12)
+    at Module.require (node:internal/modules/cjs/loader:1298:19)
+    at require (node:internal/modules/helpers:182:18)
+    at Object.<anonymous> (C:\Users\Shivam220802\superset\superset-frontend\webpack.proxy-config.js:20:28)
+
+    at Module._compile (node:internal/modules/cjs/loader:1529:14)
+    at Module._extensions..js (node:internal/modules/cjs/loader:1613:10)
