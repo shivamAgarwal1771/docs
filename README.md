@@ -16,679 +16,329 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-/* eslint-disable camelcase */
-import { invert } from 'lodash';
+
+/* eslint-disable no-param-reassign */
 import {
-  AnnotationLayer,
-  AxisType,
-  buildCustomFormatters,
-  CategoricalColorNamespace,
-  CurrencyFormatter,
-  ensureIsArray,
-  tooltipHtml,
-  GenericDataType,
-  getCustomFormatter,
-  getMetricLabel,
-  getNumberFormatter,
-  getXAxisLabel,
-  isDefined,
-  isEventAnnotationLayer,
-  isFormulaAnnotationLayer,
-  isIntervalAnnotationLayer,
-  isPhysicalColumn,
-  isTimeseriesAnnotationLayer,
-  t,
-  TimeseriesChartDataResponseResult,
-  NumberFormats,
+  FC,
+  memo,
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from 'react';
+
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  DataMaskStateWithId,
+  DataMaskWithId,
+  Filter,
+  DataMask,
+  SLOW_DEBOUNCE,
+  isNativeFilter,
+  usePrevious,
+  styled,
 } from '@superset-ui/core';
+import { useHistory } from 'react-router-dom';
+import { updateDataMask, clearDataMask } from 'src/dataMask/actions';
+import { useImmer } from 'use-immer';
+import { isEmpty, isEqual, debounce } from 'lodash';
+import { getInitialDataMask } from 'src/dataMask/reducer';
+import { URL_PARAMS } from 'src/constants';
+import { applicationRoot } from 'src/utils/getBootstrapData';
+import { getUrlParam } from 'src/utils/urlUtils';
+import { useTabId } from 'src/hooks/useTabId';
+import { logEvent } from 'src/logger/actions';
+import { LOG_ACTIONS_CHANGE_DASHBOARD_FILTER } from 'src/logger/LogUtils';
+import { FilterBarOrientation, RootState } from 'src/dashboard/types';
+import { UserWithPermissionsAndRoles } from 'src/types/bootstrapTypes';
+import { checkIsApplyDisabled } from './utils';
+import { FiltersBarProps } from './types';
 import {
-  extractExtraMetrics,
-  getOriginalSeries,
-  isDerivedSeries,
-} from '@superset-ui/chart-controls';
-import type { EChartsCoreOption } from 'echarts/core';
-import type { LineStyleOption } from 'echarts/types/src/util/types';
-import type { SeriesOption } from 'echarts';
-import {
-  EchartsTimeseriesChartProps,
-  EchartsTimeseriesFormData,
-  OrientationType,
-  TimeseriesChartTransformedProps,
-} from './types';
-import { DEFAULT_FORM_DATA } from './constants';
-import { ForecastSeriesEnum, ForecastValue, Refs } from '../types';
-import { parseAxisBound } from '../utils/controls';
-import {
-  calculateLowerLogTick,
-  dedupSeries,
-  extractDataTotalValues,
-  extractSeries,
-  extractShowValueIndexes,
-  extractTooltipKeys,
-  getAxisType,
-  getColtypesMapping,
-  getLegendProps,
-  getMinAndMaxFromBounds,
-} from '../utils/series';
-import {
-  extractAnnotationLabels,
-  getAnnotationData,
-} from '../utils/annotation';
-import {
-  extractForecastSeriesContext,
-  extractForecastSeriesContexts,
-  extractForecastValuesFromTooltipParams,
-  formatForecastTooltipSeries,
-  rebaseForecastDatum,
-  reorderForecastSeries,
-} from '../utils/forecast';
-import { convertInteger } from '../utils/convertInteger';
-import { defaultGrid, defaultYAxis } from '../defaults';
-import {
-  getBaselineSeriesForStream,
-  getPadding,
-  transformEventAnnotation,
-  transformFormulaAnnotation,
-  transformIntervalAnnotation,
-  transformSeries,
-  transformTimeseriesAnnotation,
-} from './transformers';
-import {
-  OpacityEnum,
-  StackControlsValue,
-  TIMEGRAIN_TO_TIMESTAMP,
-  TIMESERIES_CONSTANTS,
-} from '../constants';
-import { getDefaultTooltip } from '../utils/tooltip';
-import {
-  getPercentFormatter,
-  getTooltipTimeFormatter,
-  getXAxisFormatter,
-  getYAxisFormatter,
-} from '../utils/formatters';
+  useNativeFiltersDataMask,
+  useFilters,
+  useFilterUpdates,
+  useInitialization,
+} from './state';
+import { createFilterKey, updateFilterKey } from './keyValue';
+import ActionButtons from './ActionButtons';
+import Horizontal from './Horizontal';
+import Vertical from './Vertical';
+import { useSelectFiltersInScope } from '../state';
 
-export default function transformProps(
-  chartProps: EchartsTimeseriesChartProps,
-): TimeseriesChartTransformedProps {
-  const {
-    width,
-    height,
-    filterState,
-    legendState,
-    formData,
-    hooks,
-    queriesData,
-    datasource,
-    theme,
-    inContextMenu,
-    emitCrossFilters,
-  } = chartProps;
+// FilterBar is just being hidden as it must still
+// render fully due to encapsulated logics
+const HiddenFilterBar = styled.div`
+  display: none;
+`;
 
-  let focusedSeries: string | null = null;
+const EXCLUDED_URL_PARAMS: string[] = [
+  URL_PARAMS.nativeFilters.name,
+  URL_PARAMS.permalinkKey.name,
+];
 
-  const {
-    verboseMap = {},
-    columnFormats = {},
-    currencyFormats = {},
-  } = datasource;
-  const [queryData] = queriesData;
-  const { data = [], label_map = {} } =
-    queryData as TimeseriesChartDataResponseResult;
-
-  const dataTypes = getColtypesMapping(queryData);
-  const annotationData = getAnnotationData(chartProps);
-
-  const {
-    area,
-    annotationLayers,
-    colorScheme,
-    contributionMode,
-    forecastEnabled,
-    groupby,
-    legendOrientation,
-    legendType,
-    legendMargin,
-    logAxis,
-    markerEnabled,
-    markerSize,
-    metrics,
-    minorSplitLine,
-    minorTicks,
-    onlyTotal,
-    opacity,
-    orientation,
-    percentageThreshold,
-    richTooltip,
-    seriesType,
-    showLegend,
-    showValue,
-    sliceId,
-    sortSeriesType,
-    sortSeriesAscending,
-    timeGrainSqla,
-    timeCompare,
-    timeShiftColor,
-    stack,
-    tooltipTimeFormat,
-    tooltipSortByMetric,
-    showTooltipTotal,
-    showTooltipPercentage,
-    truncateXAxis,
-    truncateYAxis,
-    xAxis: xAxisOrig,
-    xAxisBounds,
-    xAxisForceCategorical,
-    xAxisLabelRotation,
-    xAxisSort,
-    xAxisSortAsc,
-    xAxisTimeFormat,
-    xAxisTitle,
-    xAxisTitleMargin,
-    yAxisBounds,
-    yAxisFormat,
-    currencyFormat,
-    yAxisTitle,
-    yAxisTitleMargin,
-    yAxisTitlePosition,
-    zoomable,
-  }: EchartsTimeseriesFormData = { ...DEFAULT_FORM_DATA, ...formData };
-  const refs: Refs = {};
-  const groupBy = ensureIsArray(groupby);
-  const labelMap: { [key: string]: string[] } = Object.entries(
-    label_map,
-  ).reduce((acc, entry) => {
-    if (
-      entry[1].length > groupBy.length &&
-      Array.isArray(timeCompare) &&
-      timeCompare.includes(entry[1][0])
-    ) {
-      entry[1].shift();
-    }
-    return { ...acc, [entry[0]]: entry[1] };
-  }, {});
-  const colorScale = CategoricalColorNamespace.getScale(colorScheme as string);
-  const rebasedData = rebaseForecastDatum(data, verboseMap);
-  let xAxisLabel = getXAxisLabel(chartProps.rawFormData) as string;
-  if (
-    isPhysicalColumn(chartProps.rawFormData?.x_axis) &&
-    isDefined(verboseMap[xAxisLabel])
-  ) {
-    xAxisLabel = verboseMap[xAxisLabel];
-  }
-  const isHorizontal = orientation === OrientationType.Horizontal;
-  const { totalStackedValues, thresholdValues } = extractDataTotalValues(
-    rebasedData,
-    {
-      stack,
-      percentageThreshold,
-      xAxisCol: xAxisLabel,
-      legendState,
-    },
-  );
-  const extraMetricLabels = extractExtraMetrics(chartProps.rawFormData).map(
-    getMetricLabel,
-  );
-
-  const isMultiSeries = groupBy.length || metrics?.length > 1;
-
-  const [rawSeries, sortedTotalValues, minPositiveValue] = extractSeries(
-    rebasedData,
-    {
-      fillNeighborValue: stack && !forecastEnabled ? 0 : undefined,
-      xAxis: xAxisLabel,
-      extraMetricLabels,
-      stack,
-      totalStackedValues,
-      isHorizontal,
-      sortSeriesType,
-      sortSeriesAscending,
-      xAxisSortSeries: isMultiSeries ? xAxisSort : undefined,
-      xAxisSortSeriesAscending: isMultiSeries ? xAxisSortAsc : undefined,
-    },
-  );
-  const showValueIndexes = extractShowValueIndexes(rawSeries, {
-    stack,
-    onlyTotal,
-    isHorizontal,
-    legendState,
-  });
-  const seriesContexts = extractForecastSeriesContexts(
-    rawSeries.map(series => series.name as string),
-  );
-  const isAreaExpand = stack === StackControlsValue.Expand;
-  const xAxisDataType = dataTypes?.[xAxisLabel] ?? dataTypes?.[xAxisOrig];
-
-  const xAxisType = getAxisType(stack, xAxisForceCategorical, xAxisDataType);
-  const series: SeriesOption[] = [];
-
-  const forcePercentFormatter = Boolean(contributionMode || isAreaExpand);
-  const percentFormatter = forcePercentFormatter
-    ? getPercentFormatter(yAxisFormat)
-    : getPercentFormatter(NumberFormats.PERCENT_2_POINT);
-  const defaultFormatter = currencyFormat?.symbol
-    ? new CurrencyFormatter({ d3Format: yAxisFormat, currency: currencyFormat })
-    : getNumberFormatter(yAxisFormat);
-  const customFormatters = buildCustomFormatters(
-    metrics,
-    currencyFormats,
-    columnFormats,
-    yAxisFormat,
-    currencyFormat,
-  );
-
-  const array = ensureIsArray(chartProps.rawFormData?.time_compare);
-  const inverted = invert(verboseMap);
-
-  let patternIncrement = 0;
-
-  rawSeries.forEach(entry => {
-    const derivedSeries = isDerivedSeries(entry, chartProps.rawFormData);
-    const lineStyle: LineStyleOption = {};
-    if (derivedSeries) {
-      patternIncrement += 1;
-      // use a combination of dash and dot for the line style
-      lineStyle.type = [(patternIncrement % 5) + 1, (patternIncrement % 3) + 1];
-      lineStyle.opacity = OpacityEnum.DerivedSeries;
-    }
-
-    const entryName = String(entry.name || '');
-    const seriesName = inverted[entryName] || entryName;
-    const colorScaleKey = getOriginalSeries(seriesName, array);
-
-    const transformedSeries = transformSeries(
-      entry,
-      colorScale,
-      colorScaleKey,
-      {
-        area,
-        connectNulls: derivedSeries,
-        filterState,
-        seriesContexts,
-        markerEnabled,
-        markerSize,
-        areaOpacity: opacity,
-        seriesType,
-        legendState,
-        stack,
-        formatter: forcePercentFormatter
-          ? percentFormatter
-          : (getCustomFormatter(
-              customFormatters,
-              metrics,
-              labelMap?.[seriesName]?.[0],
-            ) ?? defaultFormatter),
-        showValue,
-        onlyTotal,
-        totalStackedValues: sortedTotalValues,
-        showValueIndexes,
-        thresholdValues,
-        richTooltip,
-        sliceId,
-        isHorizontal,
-        lineStyle,
-        timeCompare: array,
-        timeShiftColor,
-      },
-    );
-    if (transformedSeries) {
-      if (stack === StackControlsValue.Stream) {
-        // bug in Echarts - `stackStrategy: 'all'` doesn't work with nulls, so we cast them to 0
-        series.push({
-          ...transformedSeries,
-          data: (transformedSeries.data as any).map(
-            (row: [string | number, number]) => [row[0], row[1] ?? 0],
-          ),
-        });
-      } else {
-        series.push(transformedSeries);
-      }
-    }
-  });
-
-  if (stack === StackControlsValue.Stream) {
-    const baselineSeries = getBaselineSeriesForStream(
-      series.map(entry => entry.data) as [string | number, number][][],
-      seriesType,
-    );
-
-    series.unshift(baselineSeries);
-  }
-  const selectedValues = (filterState.selectedValues || []).reduce(
-    (acc: Record<string, number>, selectedValue: string) => {
-      const index = series.findIndex(({ name }) => name === selectedValue);
-      return {
-        ...acc,
-        [index]: selectedValue,
-      };
-    },
-    {},
-  );
-
-  annotationLayers
-    .filter((layer: AnnotationLayer) => layer.show)
-    .forEach((layer: AnnotationLayer) => {
-      if (isFormulaAnnotationLayer(layer))
-        series.push(
-          transformFormulaAnnotation(
-            layer,
-            data,
-            xAxisLabel,
-            xAxisType,
-            colorScale,
-            sliceId,
-            orientation,
-          ),
-        );
-      else if (isIntervalAnnotationLayer(layer)) {
-        series.push(
-          ...transformIntervalAnnotation(
-            layer,
-            data,
-            annotationData,
-            colorScale,
-            theme,
-            sliceId,
-            orientation,
-          ),
-        );
-      } else if (isEventAnnotationLayer(layer)) {
-        series.push(
-          ...transformEventAnnotation(
-            layer,
-            data,
-            annotationData,
-            colorScale,
-            theme,
-            sliceId,
-            orientation,
-          ),
-        );
-      } else if (isTimeseriesAnnotationLayer(layer)) {
-        series.push(
-          ...transformTimeseriesAnnotation(
-            layer,
-            markerSize,
-            data,
-            annotationData,
-            colorScale,
-            sliceId,
-            orientation,
-          ),
-        );
+const publishDataMask = debounce(
+  async (
+    history,
+    dashboardId,
+    updateKey,
+    dataMaskSelected: DataMaskStateWithId,
+    tabId,
+  ) => {
+    const { location } = history;
+    const { search } = location;
+    const previousParams = new URLSearchParams(search);
+    const newParams = new URLSearchParams();
+    let dataMaskKey: string | null;
+    previousParams.forEach((value, key) => {
+      if (!EXCLUDED_URL_PARAMS.includes(key)) {
+        newParams.append(key, value);
       }
     });
 
-  // axis bounds need to be parsed to replace incompatible values with undefined
-  const [xAxisMin, xAxisMax] = (xAxisBounds || []).map(parseAxisBound);
-  let [yAxisMin, yAxisMax] = (yAxisBounds || []).map(parseAxisBound);
+    const nativeFiltersCacheKey = getUrlParam(URL_PARAMS.nativeFiltersKey);
+    const dataMask = JSON.stringify(dataMaskSelected);
+    if (
+      updateKey &&
+      nativeFiltersCacheKey &&
+      (await updateFilterKey(
+        dashboardId,
+        dataMask,
+        nativeFiltersCacheKey,
+        tabId,
+      ))
+    ) {
+      dataMaskKey = nativeFiltersCacheKey;
+    } else {
+      dataMaskKey = await createFilterKey(dashboardId, dataMask, tabId);
+    }
+    if (dataMaskKey) {
+      newParams.set(URL_PARAMS.nativeFiltersKey.name, dataMaskKey);
+    }
 
-  // default to 0-100% range when doing row-level contribution chart
-  if ((contributionMode === 'row' || isAreaExpand) && stack) {
-    if (yAxisMin === undefined) yAxisMin = 0;
-    if (yAxisMax === undefined) yAxisMax = 1;
-  } else if (
-    logAxis &&
-    yAxisMin === undefined &&
-    minPositiveValue !== undefined
-  ) {
-    yAxisMin = calculateLowerLogTick(minPositiveValue);
-  }
+    // pathname could be updated somewhere else through window.history
+    // keep react router history in sync with window history
+    // replace params only when current page is /superset/dashboard
+    // this prevents a race condition between updating filters and navigating to Explore
+    if (window.location.pathname.includes('/superset/dashboard')) {
+      // The history API is part of React router and understands that a basename may exist.
+      // Internally it treats all paths as if they are relative to the root and appends
+      // it when necessary. We strip any prefix so that history.replace adds it back and doesn't
+      // double it up.
+      const appRoot = applicationRoot();
+      let replacement_pathname = window.location.pathname;
+      if (appRoot !== '/' && replacement_pathname.startsWith(appRoot)) {
+        replacement_pathname = replacement_pathname.substring(appRoot.length);
+      }
+      history.location.pathname = replacement_pathname;
+      history.replace({
+        search: newParams.toString(),
+      });
+    }
+  },
+  SLOW_DEBOUNCE,
+);
 
-  const tooltipFormatter =
-    xAxisDataType === GenericDataType.Temporal
-      ? getTooltipTimeFormatter(tooltipTimeFormat)
-      : String;
-  const xAxisFormatter =
-    xAxisDataType === GenericDataType.Temporal
-      ? getXAxisFormatter(xAxisTimeFormat)
-      : String;
+const FilterBar: FC<FiltersBarProps> = ({
+  orientation = FilterBarOrientation.Vertical,
+  verticalConfig,
+  hidden = false,
+}) => {
+  const history = useHistory();
+  const dataMaskApplied: DataMaskStateWithId = useNativeFiltersDataMask();
+  const [dataMaskSelected, setDataMaskSelected] =
+    useImmer<DataMaskStateWithId>(dataMaskApplied);
+  const dispatch = useDispatch();
+  const [updateKey, setUpdateKey] = useState(0);
+  const tabId = useTabId();
+  const filters = useFilters();
+  const previousFilters = usePrevious(filters);
+  const filterValues = useMemo(() => Object.values(filters), [filters]);
+  const nativeFilterValues = useMemo(
+    () => filterValues.filter(isNativeFilter),
+    [filterValues],
+  );
+  const dashboardId = useSelector<any, number>(
+    ({ dashboardInfo }) => dashboardInfo?.id,
+  );
+  const previousDashboardId = usePrevious(dashboardId);
+  const canEdit = useSelector<RootState, boolean>(
+    ({ dashboardInfo }) => dashboardInfo.dash_edit_perm,
+  );
+  const user: UserWithPermissionsAndRoles = useSelector<
+    RootState,
+    UserWithPermissionsAndRoles
+  >(state => state.user);
 
-  const {
-    setDataMask = () => {},
-    setControlValue = () => {},
-    onContextMenu,
-    onLegendStateChanged,
-  } = hooks;
+  const [filtersInScope] = useSelectFiltersInScope(nativeFilterValues);
 
-  const addYAxisLabelOffset = !!yAxisTitle;
-  const addXAxisLabelOffset = !!xAxisTitle;
-  const padding = getPadding(
-    showLegend,
-    legendOrientation,
-    addYAxisLabelOffset,
-    zoomable,
-    legendMargin,
-    addXAxisLabelOffset,
-    yAxisTitlePosition,
-    convertInteger(yAxisTitleMargin),
-    convertInteger(xAxisTitleMargin),
-    isHorizontal,
+  const dataMaskSelectedRef = useRef(dataMaskSelected);
+  dataMaskSelectedRef.current = dataMaskSelected;
+  const handleFilterSelectionChange = useCallback(
+    (
+      filter: Pick<Filter, 'id'> & Partial<Filter>,
+      dataMask: Partial<DataMask>,
+    ) => {
+      setDataMaskSelected(draft => {
+        // force instant updating on initialization for filters with `requiredFirst` is true or instant filters
+        if (
+          // filterState.value === undefined - means that value not initialized
+          dataMask.filterState?.value !== undefined &&
+          dataMaskSelectedRef.current[filter.id]?.filterState?.value ===
+            undefined &&
+          filter.requiredFirst
+        ) {
+          dispatch(updateDataMask(filter.id, dataMask));
+        }
+        draft[filter.id] = {
+          ...(getInitialDataMask(filter.id) as DataMaskWithId),
+          ...dataMask,
+        };
+      });
+    },
+    [dispatch, setDataMaskSelected],
   );
 
-  const legendData = rawSeries
-    .filter(
-      entry =>
-        extractForecastSeriesContext(entry.name || '').type ===
-        ForecastSeriesEnum.Observation,
-    )
-    .map(entry => entry.name || '')
-    .concat(extractAnnotationLabels(annotationLayers, annotationData));
+  useEffect(() => {
+    if (previousFilters && dashboardId === previousDashboardId) {
+      const updates: Record<string, DataMaskWithId> = {};
+      Object.values(filters).forEach(currentFilter => {
+        const previousFilter = previousFilters?.[currentFilter.id];
+        if (!previousFilter) {
+          return;
+        }
+        const currentType = currentFilter.filterType;
+        const currentTargets = currentFilter.targets;
+        const currentDataMask = currentFilter.defaultDataMask;
+        const previousType = previousFilter?.filterType;
+        const previousTargets = previousFilter?.targets;
+        const previousDataMask = previousFilter?.defaultDataMask;
+        const typeChanged = currentType !== previousType;
+        const targetsChanged = !isEqual(currentTargets, previousTargets);
+        const dataMaskChanged = !isEqual(currentDataMask, previousDataMask);
 
-  let xAxis: any = {
-    type: xAxisType,
-    name: xAxisTitle,
-    nameGap: convertInteger(xAxisTitleMargin),
-    nameLocation: 'middle',
-    axisLabel: {
-      hideOverlap: true,
-      formatter: xAxisFormatter,
-      rotate: xAxisLabelRotation,
-    },
-    minorTick: { show: minorTicks },
-    minInterval:
-      xAxisType === AxisType.Time && timeGrainSqla
-        ? TIMEGRAIN_TO_TIMESTAMP[
-            timeGrainSqla as keyof typeof TIMEGRAIN_TO_TIMESTAMP
-          ]
-        : 0,
-    ...getMinAndMaxFromBounds(
-      xAxisType,
-      truncateXAxis,
-      xAxisMin,
-      xAxisMax,
-      seriesType,
+        if (typeChanged || targetsChanged || dataMaskChanged) {
+          updates[currentFilter.id] = getInitialDataMask(
+            currentFilter.id,
+          ) as DataMaskWithId;
+        }
+      });
+
+      if (!isEmpty(updates)) {
+        setDataMaskSelected(draft => ({ ...draft, ...updates }));
+      }
+    }
+  }, [dashboardId, filters, previousDashboardId, setDataMaskSelected]);
+
+  const dataMaskAppliedText = JSON.stringify(dataMaskApplied);
+
+  useEffect(() => {
+    setDataMaskSelected(() => dataMaskApplied);
+  }, [dataMaskAppliedText, setDataMaskSelected]);
+
+  useEffect(() => {
+    // embedded users can't persist filter combinations
+    if (user?.userId) {
+      publishDataMask(history, dashboardId, updateKey, dataMaskApplied, tabId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dashboardId, dataMaskAppliedText, history, updateKey, tabId]);
+
+  const handleApply = useCallback(() => {
+    dispatch(logEvent(LOG_ACTIONS_CHANGE_DASHBOARD_FILTER, {}));
+    const filterIds = Object.keys(dataMaskSelected);
+    setUpdateKey(1);
+    filterIds.forEach(filterId => {
+      if (dataMaskSelected[filterId]) {
+        dispatch(updateDataMask(filterId, dataMaskSelected[filterId]));
+      }
+    });
+  }, [dataMaskSelected, dispatch]);
+
+  const handleClearAll = useCallback(() => {
+    const clearDataMaskIds: string[] = [];
+    let dispatchAllowed = false;
+    filtersInScope.filter(isNativeFilter).forEach(filter => {
+      const { id } = filter;
+      if (dataMaskSelected[id]) {
+        if (filter.controlValues?.enableEmptyFilter) {
+          dispatchAllowed = false;
+        }
+        clearDataMaskIds.push(id);
+        setDataMaskSelected(draft => {
+          if (draft[id].filterState?.value !== undefined) {
+            draft[id].filterState!.value = undefined;
+          }
+        });
+      }
+    });
+    if (dispatchAllowed) {
+      clearDataMaskIds.forEach(id => dispatch(clearDataMask(id)));
+    }
+  }, [dataMaskSelected, dispatch, filtersInScope, setDataMaskSelected]);
+
+  useFilterUpdates(dataMaskSelected, setDataMaskSelected);
+  const isApplyDisabled = checkIsApplyDisabled(
+    dataMaskSelected,
+    dataMaskApplied,
+    filtersInScope.filter(isNativeFilter),
+  );
+  const isInitialized = useInitialization();
+
+  const actions = useMemo(
+    () => (
+      <ActionButtons
+        filterBarOrientation={orientation}
+        width={verticalConfig?.width}
+        onApply={handleApply}
+        onClearAll={handleClearAll}
+        dataMaskSelected={dataMaskSelected}
+        dataMaskApplied={dataMaskApplied}
+        isApplyDisabled={isApplyDisabled}
+      />
     ),
-  };
+    [
+      orientation,
+      verticalConfig?.width,
+      handleApply,
+      handleClearAll,
+      dataMaskSelected,
+      dataMaskAppliedText,
+      isApplyDisabled,
+    ],
+  );
 
-  let yAxis: any = {
-    ...defaultYAxis,
-    type: logAxis ? AxisType.Log : AxisType.Value,
-    min: yAxisMin,
-    max: yAxisMax,
-    minorTick: { show: minorTicks },
-    minorSplitLine: { show: minorSplitLine },
-    axisLabel: {
-      formatter: getYAxisFormatter(
-        metrics,
-        forcePercentFormatter,
-        customFormatters,
-        defaultFormatter,
-        yAxisFormat,
-      ),
-    },
-    scale: truncateYAxis,
-    name: yAxisTitle,
-    nameGap: convertInteger(yAxisTitleMargin),
-    nameLocation: yAxisTitlePosition === 'Left' ? 'middle' : 'end',
-  };
+  const filterBarComponent =
+    orientation === FilterBarOrientation.Horizontal ? (
+      <Horizontal
+        actions={actions}
+        canEdit={canEdit}
+        dashboardId={dashboardId}
+        dataMaskSelected={dataMaskSelected}
+        filterValues={filterValues}
+        isInitialized={isInitialized}
+        onSelectionChange={handleFilterSelectionChange}
+      />
+    ) : verticalConfig ? (
+      <Vertical
+        actions={actions}
+        canEdit={canEdit}
+        dataMaskSelected={dataMaskSelected}
+        filtersOpen={verticalConfig.filtersOpen}
+        filterValues={filterValues}
+        isInitialized={isInitialized}
+        height={verticalConfig.height}
+        offset={verticalConfig.offset}
+        onSelectionChange={handleFilterSelectionChange}
+        toggleFiltersBar={verticalConfig.toggleFiltersBar}
+        width={verticalConfig.width}
+      />
+    ) : null;
 
-  if (isHorizontal) {
-    [xAxis, yAxis] = [yAxis, xAxis];
-    [padding.bottom, padding.left] = [padding.left, padding.bottom];
-  }
-
-  const echartOptions: EChartsCoreOption = {
-    useUTC: true,
-    grid: {
-      ...defaultGrid,
-      ...padding,
-    },
-    xAxis,
-    yAxis,
-    tooltip: {
-      ...getDefaultTooltip(refs),
-      show: !inContextMenu,
-      trigger: richTooltip ? 'axis' : 'item',
-      formatter: (params: any) => {
-        const [xIndex, yIndex] = isHorizontal ? [1, 0] : [0, 1];
-        const xValue: number = richTooltip
-          ? params[0].value[xIndex]
-          : params.value[xIndex];
-        const forecastValue: any[] = richTooltip ? params : [params];
-        const sortedKeys = extractTooltipKeys(
-          forecastValue,
-          yIndex,
-          richTooltip,
-          tooltipSortByMetric,
-        );
-        const forecastValues: Record<string, ForecastValue> =
-          extractForecastValuesFromTooltipParams(forecastValue, isHorizontal);
-
-        const isForecast = Object.values(forecastValues).some(
-          value =>
-            value.forecastTrend || value.forecastLower || value.forecastUpper,
-        );
-
-        const formatter = forcePercentFormatter
-          ? percentFormatter
-          : (getCustomFormatter(customFormatters, metrics) ?? defaultFormatter);
-
-        const rows: string[][] = [];
-        const total = Object.values(forecastValues).reduce(
-          (acc, value) =>
-            value.observation !== undefined ? acc + value.observation : acc,
-          0,
-        );
-        const allowTotal = Boolean(isMultiSeries) && richTooltip && !isForecast;
-        const showPercentage =
-          allowTotal && !forcePercentFormatter && showTooltipPercentage;
-        const keys = Object.keys(forecastValues);
-        let focusedRow;
-        sortedKeys
-          .filter(key => keys.includes(key))
-          .forEach(key => {
-            const value = forecastValues[key];
-            if (value.observation === 0 && stack) {
-              return;
-            }
-            const row = formatForecastTooltipSeries({
-              ...value,
-              seriesName: key,
-              formatter,
-            });
-            if (showPercentage && value.observation !== undefined) {
-              row.push(
-                percentFormatter.format(value.observation / (total || 1)),
-              );
-            }
-            rows.push(row);
-            if (key === focusedSeries) {
-              focusedRow = rows.length - 1;
-            }
-          });
-        if (stack) {
-          rows.reverse();
-          if (focusedRow !== undefined) {
-            focusedRow = rows.length - focusedRow - 1;
-          }
-        }
-        if (allowTotal && showTooltipTotal) {
-          const totalRow = ['Total', formatter.format(total)];
-          if (showPercentage) {
-            totalRow.push(percentFormatter.format(1));
-          }
-          rows.push(totalRow);
-        }
-        return tooltipHtml(rows, tooltipFormatter(xValue), focusedRow);
-      },
-    },
-    legend: {
-      ...getLegendProps(
-        legendType,
-        legendOrientation,
-        showLegend,
-        theme,
-        zoomable,
-        legendState,
-        padding,
-      ),
-      data: legendData as string[],
-    },
-    series: dedupSeries(reorderForecastSeries(series) as SeriesOption[]),
-    toolbox: {
-      show: zoomable,
-      top: TIMESERIES_CONSTANTS.toolboxTop,
-      right: TIMESERIES_CONSTANTS.toolboxRight,
-      feature: {
-        dataZoom: {
-          ...(stack ? { yAxisIndex: false } : {}), // disable y-axis zoom for stacked charts
-          title: {
-            zoom: t('zoom area'),
-            back: t('restore zoom'),
-          },
-        },
-      },
-    },
-    dataZoom: zoomable
-      ? [
-          {
-            type: 'slider',
-            start: TIMESERIES_CONSTANTS.dataZoomStart,
-            end: TIMESERIES_CONSTANTS.dataZoomEnd,
-            bottom: TIMESERIES_CONSTANTS.zoomBottom,
-            yAxisIndex: isHorizontal ? 0 : undefined,
-          },
-          {
-            type: 'inside',
-            yAxisIndex: 0,
-            zoomOnMouseWheel: false,
-            moveOnMouseWheel: true,
-          },
-          {
-            type: 'inside',
-            xAxisIndex: 0,
-            zoomOnMouseWheel: false,
-            moveOnMouseWheel: true,
-          },
-        ]
-      : [],
-  };
-
-  const onFocusedSeries = (seriesName: string | null) => {
-    focusedSeries = seriesName;
-  };
-
-  return {
-    echartOptions,
-    emitCrossFilters,
-    formData,
-    groupby: groupBy,
-    height,
-    labelMap,
-    selectedValues,
-    setDataMask,
-    setControlValue,
-    width,
-    legendData,
-    onContextMenu,
-    onLegendStateChanged,
-    onFocusedSeries,
-    xValueFormatter: tooltipFormatter,
-    xAxis: {
-      label: xAxisLabel,
-      type: xAxisType,
-    },
-    refs,
-    coltypeMapping: dataTypes,
-  };
-}
+  return hidden ? (
+    <HiddenFilterBar>{filterBarComponent}</HiddenFilterBar>
+  ) : (
+    filterBarComponent
+  );
+};
+export default memo(FilterBar);
