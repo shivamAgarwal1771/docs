@@ -802,11 +802,7 @@ function DashboardList(props: DashboardListProps) {
                     : isFeatureEnabled(FeatureFlag.Thumbnails)
                 }
                 renderCard={renderCard}
-                defaultViewMode={
-                  isFeatureEnabled(FeatureFlag.ListviewsDefaultCardView)
-                    ? 'card'
-                    : 'table'
-                }
+                defaultViewMode='card'
                 enableBulkTag
                 bulkTagResourceName="dashboard"
               />
