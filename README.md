@@ -1,15 +1,1 @@
-FEATURE_FLAGS = {
-    "ALERT_REPORTS": True,
-    "THUMBNAILS": True,
-}
-
-# Required for local thumbnail generation
-SCREENSHOT_LOCALLY = True
-WEBDRIVER_TYPE = "chrome"
-WEBDRIVER_OPTION_ARGS = [
-    "--headless",
-    "--disable-gpu",
-    "--no-sandbox",
-    "--disable-dev-shm-usage",
-]
-WEBDRIVER_BASEURL = "http://localhost:8088/"  # Use this if accessing Superset directly
+{"errors": [{"message": "404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.", "error_type": "GENERIC_BACKEND_ERROR", "level": "error", "extra": {"issue_codes": [{"code": 1011, "message": "Issue 1011 - Superset encountered an unexpected error."}]}}]}
