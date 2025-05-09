@@ -1,1 +1,8 @@
-{"errors": [{"message": "404 Not Found: The requested URL was not found on the server. If you entered the URL manually please check your spelling and try again.", "error_type": "GENERIC_BACKEND_ERROR", "level": "error", "extra": {"issue_codes": [{"code": 1011, "message": "Issue 1011 - Superset encountered an unexpected error."}]}}]}
+curl -X POST http://localhost:8088/api/v1/security/login \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "admin",
+    "password": "yourpassword",
+    "provider": "db",
+    "refresh": true
+}'
