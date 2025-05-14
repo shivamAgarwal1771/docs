@@ -1,11 +1,3 @@
-# Custom Superset config
-COPY custom/superset_config.py /app/pythonpath/
-
-# Custom static assets (logo, favicon, etc.)
-COPY custom/assets/images/ /app/superset/static/assets/images/
-COPY custom/assets/styles/ /app/superset/static/assets/styles/
-
-# Fix permissions
-USER root
-RUN chown -R superset:superset /app/superset/static/assets
-USER superset
+ => ERROR [python-common 11/18] COPY custom/superset_config.py /app/pythonpath/                                                  0.0s 
+ => ERROR [python-common 12/18] COPY custom/assets/images/ /app/superset/static/assets/images/                                   0.0s 
+ => ERROR [python-common 13/18] COPY custom/assets/styles/ /app/superset/static/assets/styles/  
