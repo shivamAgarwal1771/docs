@@ -1,16 +1,7 @@
- graphic: unit
-    ? [
-        {
-          type: 'text',
-          left: '95%',
-          top: '5%',
-          style: {
-            text: unit,
-            fill: '#999',
-            font: '14px sans-serif',
-            textAlign: 'right',
-          },
-          silent: true,
-        },
-      ]
-    : [],
+   grid: {
+      ...defaultGrid,
+      top: theme.gridUnit * 9,
+      bottom: theme.gridUnit * 7,
+      left: theme.gridUnit * 5,
+      right: theme.gridUnit * 7,
+    },
