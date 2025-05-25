@@ -124,6 +124,8 @@ export default function transformProps(
     emitCrossFilters,
   } = chartProps;
 
+  const {unit} = formData;
+
   let focusedSeries: string | null = null;
 
   const {
