@@ -89,7 +89,6 @@ export function formatTooltip({
   const percentFormatter = getNumberFormatter(NumberFormats.PERCENT_2_POINT);
 
   let formattedPercent = '';
-  // the last item is current node, here we should find the parent node
   const currentNode = treePathInfo[treePathInfo.length - 1];
   const parentNode = treePathInfo[treePathInfo.length - 2];
   if (parentNode) {
@@ -120,7 +119,10 @@ export default function transformProps(
     emitCrossFilters,
     datasource,
   } = chartProps;
-  const {treemapFont="14px sans-serif"} = formData
+  const { treemapFont = '14px sans-serif' } = formData;
+  const fontSize = parseInt(treemapFont, 10) || 14;
+  const fontFamily = treemapFont.split(' ').slice(1).join(' ') || 'sans-serif';
+
   const { data = [] } = queriesData[0];
   const { columnFormats = {}, currencyFormats = {} } = datasource;
   const { setDataMask = () => {}, onContextMenu } = hooks;
@@ -143,6 +145,7 @@ export default function transformProps(
     ...DEFAULT_TREEMAP_FORM_DATA,
     ...formData,
   };
+
   const refs: Refs = {};
   const colorFn = CategoricalColorNamespace.getScale(colorScheme as string);
   const numberFormatter = getValueFormatter(
@@ -164,6 +167,7 @@ export default function transformProps(
   const metricLabel = getMetricLabel(metric);
   const groupbyLabels = groupby.map(getColumnLabel);
   const treeData = treeBuilder(data, groupbyLabels, metricLabel);
+
   const traverse = (treeNodes: TreeNode[], path: string[]) =>
     treeNodes.map(treeNode => {
       const { name: nodeName, value, groupBy } = treeNode;
@@ -192,7 +196,6 @@ export default function transformProps(
         };
       } else {
         const joinedName = newPath.join(',');
-        // map(joined_name: [columnLabel_1, columnLabel_2, ...])
         columnsLabelMap.set(joinedName, newPath);
         if (
           filterState.selectedValues &&
@@ -229,7 +232,6 @@ export default function transformProps(
     },
   ];
 
-  // set a default color when metric values are 0 over all.
   const levels = [
     {
       upperLabel: {
@@ -266,13 +268,15 @@ export default function transformProps(
         position: labelPosition,
         formatter,
         color: theme.colors.grayscale.dark2,
-        fontSize: LABEL_FONTSIZE,
+        fontSize,
+        fontFamily,
       },
       upperLabel: {
         show: showUpperLabels,
         formatter,
         textBorderColor: 'transparent',
-        fontSize: LABEL_FONTSIZE,
+        fontSize,
+        fontFamily,
       },
       data: transformedData,
     },
