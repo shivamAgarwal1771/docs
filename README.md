@@ -1,11 +1,11 @@
 [
   {
-    name: 'treemapFont',
+    name: 'hideDimensionLabel',
     config: {
-      type: 'TextControl',
-      label: t('Font'),
-      description: t('Set the font style for labels (e.g., 14px sans-serif)'),
-      default: '14px sans-serif',
+      type: 'CheckboxControl',
+      label: t('Hide Dimension Label'),
+      description: t('Hide the label of the dimension below the gauge'),
+      default: false,
       renderTrigger: true,
     },
   },
