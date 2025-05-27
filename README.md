@@ -3,26 +3,22 @@ title: {
   offsetCenter: [
     '0%',
     `${
-      label_position === 'top'
-        ? -1 * (index * titleOffsetFromTitle + OFFSETS.titleFromCenter)
-        : index * titleOffsetFromTitle + OFFSETS.titleFromCenter
+      (label_position === 'top' ? -1 : 1) * (
+        index * titleOffsetFromTitle + OFFSETS.titleFromCenter
+      )
     }%`,
   ],
   fontSize,
 },
-
-
-
 detail: {
   offsetCenter: [
     '0%',
     `${
-      (label_position === 'top'
-        ? -1
-        : 1) *
-      (index * titleOffsetFromTitle +
+      (label_position === 'top' ? -1 : 1) * (
+        index * titleOffsetFromTitle +
         OFFSETS.titleFromCenter +
-        detailOffsetFromTitle)
+        detailOffsetFromTitle
+      )
     }%`,
   ],
   fontSize: FONT_SIZE_MULTIPLIERS.detailFontSize * fontSize,
