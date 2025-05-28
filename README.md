@@ -107,8 +107,8 @@ export default function transformProps(
     datasource,
   } = chartProps;
 
-  const {hideDimensionLabel = false} = formData
-  const {label_position = 'bottom'} = formData
+  const { hideDimensionLabel = false } = formData;
+  const { label_position = 'bottom' } = formData;
   const gaugeSeriesOptions = defaultGaugeSeriesOption(theme);
   const {
     verboseMap = {},
@@ -163,48 +163,60 @@ export default function transformProps(
   const columnsLabelMap = new Map<string, string[]>();
   const metricLabel = getMetricLabel(metric as QueryFormMetric);
 
-  const transformedData: GaugeDataItemOption[] = data.map(
-    (data_point, index) => {
-      const name = groupbyLabels
-        .map(column => `${verboseMap[column] || column}: ${data_point[column]}`)
-        .join(', ');
-      const colorLabel = groupbyLabels.map(col => data_point[col] as string);
-      columnsLabelMap.set(
-        name,
-        groupbyLabels.map(col => data_point[col] as string),
-      );
+  const transformedData: GaugeDataItemOption[] = [];
+
+  data.forEach((data_point, index) => {
+    const name = groupbyLabels
+      .map(column => `${verboseMap[column] || column}: ${data_point[column]}`)
+      .join(', ');
+    const colorLabel = groupbyLabels.map(col => data_point[col] as string);
+    columnsLabelMap.set(
+      name,
+      groupbyLabels.map(col => data_point[col] as string),
+    );
+
+    const baseItem: Partial<GaugeDataItemOption> = {
+      value: data_point[metricLabel] as number,
+      name,
+      itemStyle: {
+        color: colorFn(colorLabel, sliceId),
+      },
+      detail: {
+        fontSize: FONT_SIZE_MULTIPLIERS.detailFontSize * fontSize,
+      },
+      title: {
+        fontSize,
+      },
+    };
+
+    const labelPositions: Array<'top' | 'bottom'> =
+      label_position === 'both' ? ['top', 'bottom'] : [label_position as 'top' | 'bottom'];
+
+    labelPositions.forEach((position, posIndex) => {
+      const offsetMultiplier = position === 'top' ? -1 : 1;
       let item: GaugeDataItemOption = {
-        value: data_point[metricLabel] as number,
-        name,
-        itemStyle: {
-          color: colorFn(colorLabel, sliceId),
-        },
+        ...baseItem,
         title: {
+          ...baseItem.title,
           show: !hideDimensionLabel,
           offsetCenter: [
             '0%',
-            `${
-              (label_position === 'top' ? -1 : 1) * (
-                index * titleOffsetFromTitle + OFFSETS.titleFromCenter
-              )
-            }%`,
+            `${offsetMultiplier * (index * titleOffsetFromTitle + OFFSETS.titleFromCenter)}%`,
           ],
-          fontSize,
         },
         detail: {
+          ...baseItem.detail,
           offsetCenter: [
             '0%',
-            `${
-              (label_position === 'top' ? -1 : 1) * (
-                index * titleOffsetFromTitle +
-                OFFSETS.titleFromCenter +
-                detailOffsetFromTitle
-              )
-            }%`,
+            `${offsetMultiplier * (
+              index * titleOffsetFromTitle +
+              OFFSETS.titleFromCenter +
+              detailOffsetFromTitle
+            )}%`,
           ],
-          fontSize: FONT_SIZE_MULTIPLIERS.detailFontSize * fontSize,
-        },        
+        },
       };
+
       if (
         filterState.selectedValues &&
         !filterState.selectedValues.includes(name)
@@ -216,16 +228,19 @@ export default function transformProps(
             opacity: OpacityEnum.SemiTransparent,
           },
           detail: {
+            ...item.detail,
             show: false,
           },
           title: {
+            ...item.title,
             show: !hideDimensionLabel,
           },
         };
       }
-      return item;
-    },
-  );
+
+      transformedData.push(item);
+    });
+  });
 
   const { setDataMask = () => {}, onContextMenu } = hooks;
 
@@ -343,7 +358,7 @@ export default function transformProps(
       tooltip,
       radius:
         Math.min(width, height) / 2 - axisLabelDistance - axisTickDistance,
-      center: ['50%', label_position==='top'?'45%':'55%'],
+      center: ['50%', '50%'],
       data: transformedData,
     },
   ];
