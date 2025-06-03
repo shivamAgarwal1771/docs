@@ -1,1 +1,2 @@
-https://ucgithub.exlservice.com/Unified-Cloud-DevOps/bu-digital-insightshub-backend.git
+git config --global user.name "Your Name"
+git config --global user.email "your@email.com"
