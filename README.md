@@ -1,284 +1,107 @@
-#
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
+when doing docker compose  up -d 
 
-# -----------------------------------------------------------------------
-# We don't support docker compose for production environments.
-# If you choose to use this type of deployment make sure to
-# create you own docker environment file (docker/.env) with your own
-# unique random secure passwords and SECRET_KEY.
-# -----------------------------------------------------------------------
-x-superset-user: &superset-user root
-x-superset-volumes: &superset-volumes
-  # /app/pythonpath_docker will be appended to the PYTHONPATH in the final container
-  - ./docker:/app/docker
-  - ./superset:/app/superset
-  - ./superset-frontend:/app/superset-frontend
-  - superset_home:/app/superset_home
-  - ./tests:/app/tests
-x-common-build: &common-build
-  context: .
-  target: ${SUPERSET_BUILD_TARGET:-dev} # can use `dev` (default) or `lean`
-  cache_from:
-    - apache/superset-cache:3.10-slim-bookworm
-  args:
-    DEV_MODE: "true"
-    INCLUDE_CHROMIUM: ${INCLUDE_CHROMIUM:-false}
-    INCLUDE_FIREFOX: ${INCLUDE_FIREFOX:-false}
-    BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
 
-services:
-  nginx:
-    env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
-    image: nginx:latest
-    container_name: superset_nginx
-    restart: unless-stopped
-    ports:
-      - "80:80"
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
-      - ./docker/nginx/templates:/etc/nginx/templates:ro
-
-  redis:
-    image: redis:7
-    container_name: superset_cache
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:6379:6379"
-    volumes:
-      - redis:/data
-
-  db:
-    env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
-    image: postgres:16
-    container_name: superset_db
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:5432:5432"
-    volumes:
-      - db_home:/var/lib/postgresql/data
-      - ./docker/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
-
-  superset:
-    env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
-    build:
-      <<: *common-build
-    container_name: superset_app
-    command: ["/app/docker/docker-bootstrap.sh", "app"]
-    restart: unless-stopped
-    ports:
-      - 8088:8088
-      # When in cypress-mode ->
-      - 8081:8081
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    user: *superset-user
-    depends_on:
-      superset-init:
-        condition: service_completed_successfully
-    volumes: *superset-volumes
-    environment:
-      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
-      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
-
-  superset-websocket:
-    container_name: superset_websocket
-    build: ./superset-websocket
-    ports:
-      - 8080:8080
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    depends_on:
-      - redis
-    # Mount everything in superset-websocket into container and
-    # then exclude node_modules and dist with bogus volume mount.
-    # This is necessary because host and container need to have
-    # their own, separate versions of these files. .dockerignore
-    # does not seem to work when starting the service through
-    # docker compose.
-    #
-    # For example, node_modules may contain libs with native bindings.
-    # Those bindings need to be compiled for each OS and the container
-    # OS is not necessarily the same as host OS.
-    volumes:
-      - ./superset-websocket:/home/superset-websocket
-      - /home/superset-websocket/node_modules
-      - /home/superset-websocket/dist
-
-      # Mounting a config file that contains a dummy secret required to boot up.
-      # do not use this docker compose in production
-      - ./docker/superset-websocket/config.json:/home/superset-websocket/config.json
-    environment:
-      - PORT=8080
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_SSL=false
-
-  superset-init:
-    build:
-      <<: *common-build
-    container_name: superset_init
-    command: ["/app/docker/docker-init.sh"]
-    env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
-    depends_on:
-      db:
-        condition: service_started
-      redis:
-        condition: service_started
-    user: *superset-user
-    volumes: *superset-volumes
-    environment:
-      PYTHONHTTPSVERIFY: 0
-      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
-      SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES:-no}"
-      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
-      https_proxy: "http://163.116.128.80:8080"
-      http_proxy: "http://163.116.128.80:8080"
-    healthcheck:
-      disable: true
-
-  superset-node:
-    build:
-      context: .
-      target: superset-node
-      args:
-        # This prevents building the frontend bundle since we'll mount local folder
-        # and build it on startup while firing docker-frontend.sh in dev mode, where
-        # it'll mount and watch local files and rebuild as you update them
-        DEV_MODE: "true"
-        BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
-    environment:
-      # set this to false if you have perf issues running the npm i; npm run dev in-docker
-      # if you do so, you have to run this manually on the host, which should perform better!
-      BUILD_SUPERSET_FRONTEND_IN_DOCKER: true
-      NPM_RUN_PRUNE: false
-      SCARF_ANALYTICS: "${SCARF_ANALYTICS:-}"
-      # configuring the dev-server to use the host.docker.internal to connect to the backend
-      superset: "http://superset:8088"
-    ports:
-      - "127.0.0.1:9000:9000"  # exposing the dynamic webpack dev server
-    container_name: superset_node
-    command: ["/app/docker/docker-frontend.sh"]
-    env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
-    volumes: *superset-volumes
-
-  superset-worker:
-    build:
-      <<: *common-build
-    container_name: superset_worker
-    command: ["/app/docker/docker-bootstrap.sh", "worker"]
-    env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
-    environment:
-      CELERYD_CONCURRENCY: 2
-      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
-      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
-    restart: unless-stopped
-    depends_on:
-      superset-init:
-        condition: service_completed_successfully
-    user: *superset-user
-    volumes: *superset-volumes
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: ["CMD-SHELL", "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME"]
-    # Bump memory limit if processing selenium / thumbnails on superset-worker
-    # mem_limit: 2038m
-    # mem_reservation: 128M
-
-  superset-worker-beat:
-    build:
-      <<: *common-build
-    container_name: superset_worker_beat
-    command: ["/app/docker/docker-bootstrap.sh", "beat"]
-    env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
-    restart: unless-stopped
-    depends_on:
-      - superset-worker
-    user: *superset-user
-    volumes: *superset-volumes
-    healthcheck:
-      disable: true
-    environment:
-      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
-      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
-
-  superset-tests-worker:
-    build:
-      <<: *common-build
-    container_name: superset_tests_worker
-    command: ["/app/docker/docker-bootstrap.sh", "worker"]
-    env_file:
-      - path: docker/.env # default
-        required: true
-      - path: docker/.env-local # optional override
-        required: false
-    profiles:
-      - optional
-    environment:
-      DATABASE_HOST: localhost
-      DATABASE_DB: test
-      REDIS_CELERY_DB: 2
-      REDIS_RESULTS_DB: 3
-      REDIS_HOST: localhost
-      CELERYD_CONCURRENCY: 8
-      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
-    network_mode: host
-    depends_on:
-      superset-init:
-        condition: service_completed_successfully
-    user: *superset-user
-    volumes: *superset-volumes
-    healthcheck:
-      test: ["CMD-SHELL", "celery inspect ping -A superset.tasks.celery_app:app -d celery@$$HOSTNAME"]
-
-volumes:
-  superset_home:
-    external: false
-  db_home:
-    external: false
-  redis:
-    external: false
+1.534 npm WARN EBADENGINE Unsupported engine {
+1.534 npm WARN EBADENGINE   package: 'eslint-visitor-keys@4.2.0',
+1.534 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.534 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.534 npm WARN EBADENGINE }
+1.534 npm WARN EBADENGINE Unsupported engine {
+1.534 npm WARN EBADENGINE   package: 'ts-api-utils@2.0.1',
+1.534 npm WARN EBADENGINE   required: { node: '>=18.12' },
+1.534 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.534 npm WARN EBADENGINE }
+1.534 npm WARN EBADENGINE Unsupported engine {
+1.534 npm WARN EBADENGINE   package: '@typescript-eslint/types@8.19.0',
+1.535 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.535 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.535 npm WARN EBADENGINE }
+1.535 npm WARN EBADENGINE Unsupported engine {
+1.535 npm WARN EBADENGINE   package: '@typescript-eslint/typescript-estree@8.19.0',
+1.535 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.535 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.535 npm WARN EBADENGINE }
+1.536 npm WARN EBADENGINE Unsupported engine {
+1.536 npm WARN EBADENGINE   package: '@typescript-eslint/utils@8.19.0',
+1.536 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.536 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.536 npm WARN EBADENGINE }
+1.536 npm WARN EBADENGINE Unsupported engine {
+1.536 npm WARN EBADENGINE   package: '@typescript-eslint/visitor-keys@8.19.0',
+1.536 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.536 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.536 npm WARN EBADENGINE }
+1.537 npm WARN EBADENGINE Unsupported engine {
+1.537 npm WARN EBADENGINE   package: 'eslint-visitor-keys@4.2.0',
+1.537 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.537 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.537 npm WARN EBADENGINE }
+1.538 npm WARN EBADENGINE Unsupported engine {
+1.538 npm WARN EBADENGINE   package: 'eslint@9.17.0',
+1.539 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.539 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.539 npm WARN EBADENGINE }
+1.539 npm WARN EBADENGINE Unsupported engine {
+1.539 npm WARN EBADENGINE   package: 'eslint-scope@8.2.0',
+1.541 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.541 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.541 npm WARN EBADENGINE }
+1.541 npm WARN EBADENGINE Unsupported engine {
+1.541 npm WARN EBADENGINE   package: '@eslint/js@9.17.0',
+1.541 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.541 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.541 npm WARN EBADENGINE }
+1.541 npm WARN EBADENGINE Unsupported engine {
+1.541 npm WARN EBADENGINE   package: 'eslint-visitor-keys@4.2.0',
+1.541 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.541 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.541 npm WARN EBADENGINE }
+1.541 npm WARN EBADENGINE Unsupported engine {
+1.541 npm WARN EBADENGINE   package: 'espree@10.3.0',
+1.541 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.541 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.541 npm WARN EBADENGINE }
+1.541 npm WARN EBADENGINE Unsupported engine {
+1.541 npm WARN EBADENGINE   package: 'eslint-visitor-keys@4.2.0',
+1.541 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.541 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.541 npm WARN EBADENGINE }
+1.542 npm WARN EBADENGINE Unsupported engine {
+1.542 npm WARN EBADENGINE   package: 'globals@16.0.0',
+1.542 npm WARN EBADENGINE   required: { node: '>=18' },
+1.542 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.542 npm WARN EBADENGINE }
+1.545 npm WARN EBADENGINE Unsupported engine {
+1.545 npm WARN EBADENGINE   package: 'typescript-eslint@8.19.0',
+1.547 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.548 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.548 npm WARN EBADENGINE }
+1.549 npm WARN EBADENGINE Unsupported engine {
+1.549 npm WARN EBADENGINE   package: '@typescript-eslint/eslint-plugin@8.19.0',
+1.549 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.549 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.549 npm WARN EBADENGINE }
+1.550 npm WARN EBADENGINE Unsupported engine {
+1.550 npm WARN EBADENGINE   package: '@typescript-eslint/parser@8.19.0',
+1.550 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.552 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.552 npm WARN EBADENGINE }
+1.552 npm WARN EBADENGINE Unsupported engine {
+1.552 npm WARN EBADENGINE   package: '@typescript-eslint/type-utils@8.19.0',
+1.552 npm WARN EBADENGINE   required: { node: '^18.18.0 || ^20.9.0 || >=21.1.0' },
+1.552 npm WARN EBADENGINE   current: { node: 'v16.20.2', npm: '8.19.4' }
+1.552 npm WARN EBADENGINE }
+225.7 npm ERR! code ECONNRESET
+225.7 npm ERR! syscall read
+225.7 npm ERR! errno ECONNRESET
+225.7 npm ERR! network request to https://registry.npmjs.org/yocto-queue/-/yocto-queue-0.1.0.tgz failed, reason: read ECONNRESET
+225.7 npm ERR! network This is a problem related to network connectivity.
+225.7 npm ERR! network In most cases you are behind a proxy or have bad network settings.
+225.7 npm ERR! network
+225.7 npm ERR! network If you are behind a proxy, please make sure that the
+225.7 npm ERR! network 'proxy' config is set properly.  See: 'npm help config'
+225.7
+225.7 npm ERR! A complete log of this run can be found in:
+225.7 npm ERR!     /root/.npm/_logs/2025-06-05T13_48_30_753Z-debug-0.log
+------
+failed to solve: process "/bin/sh -c npm ci &&   npm run build" did not complete successfully: exit code: 1
