@@ -15,270 +15,269 @@
 # limitations under the License.
 #
 
-######################################################################
-# Node stage to deal with static asset construction
-######################################################################
-ARG PY_VER=3.11.11-slim-bookworm
+# -----------------------------------------------------------------------
+# We don't support docker compose for production environments.
+# If you choose to use this type of deployment make sure to
+# create you own docker environment file (docker/.env) with your own
+# unique random secure passwords and SECRET_KEY.
+# -----------------------------------------------------------------------
+x-superset-user: &superset-user root
+x-superset-volumes: &superset-volumes
+  # /app/pythonpath_docker will be appended to the PYTHONPATH in the final container
+  - ./docker:/app/docker
+  - ./superset:/app/superset
+  - ./superset-frontend:/app/superset-frontend
+  - superset_home:/app/superset_home
+  - ./tests:/app/tests
+x-common-build: &common-build
+  context: .
+  target: ${SUPERSET_BUILD_TARGET:-dev} # can use `dev` (default) or `lean`
+  cache_from:
+    - apache/superset-cache:3.10-slim-bookworm
+  args:
+    DEV_MODE: "true"
+    INCLUDE_CHROMIUM: ${INCLUDE_CHROMIUM:-false}
+    INCLUDE_FIREFOX: ${INCLUDE_FIREFOX:-false}
+    BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
 
-# If BUILDPLATFORM is null, set it to 'amd64' (or leave as is otherwise).
-ARG BUILDPLATFORM=${BUILDPLATFORM:-amd64}
+services:
+  nginx:
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    image: nginx:latest
+    container_name: superset_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./docker/nginx/templates:/etc/nginx/templates:ro
 
-# Include translations in the final build
-ARG BUILD_TRANSLATIONS="false"
+  redis:
+    image: redis:7
+    container_name: superset_cache
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis:/data
 
+  db:
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    image: postgres:16
+    container_name: superset_db
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - db_home:/var/lib/postgresql/data
+      - ./docker/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
 
-######################################################################
-# superset-node-ci used as a base for building frontend assets and CI
-######################################################################
-FROM --platform=${BUILDPLATFORM} node:20-bookworm-slim AS superset-node-ci
-ARG BUILD_TRANSLATIONS
-ENV BUILD_TRANSLATIONS=${BUILD_TRANSLATIONS}
-ARG DEV_MODE="false"           # Skip frontend build in dev mode
-ENV DEV_MODE=${DEV_MODE}
+  superset:
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    image: my-superset-custom
+    container_name: superset_app
+    command: ["/app/docker/docker-bootstrap.sh", "app"]
+    restart: unless-stopped
+    ports:
+      - 8088:8088
+      # When in cypress-mode ->
+      - 8081:8081
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    user: *superset-user
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    volumes: *superset-volumes
+    environment:
+      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
+      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
 
-ENV https_proxy="http://163.116.128.80:8080"
-ENV http_proxy="http://163.116.128.80:8080"
+  superset-websocket:
+    container_name: superset_websocket
+    build: ./superset-websocket
+    ports:
+      - 8080:8080
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - redis
+    # Mount everything in superset-websocket into container and
+    # then exclude node_modules and dist with bogus volume mount.
+    # This is necessary because host and container need to have
+    # their own, separate versions of these files. .dockerignore
+    # does not seem to work when starting the service through
+    # docker compose.
+    #
+    # For example, node_modules may contain libs with native bindings.
+    # Those bindings need to be compiled for each OS and the container
+    # OS is not necessarily the same as host OS.
+    volumes:
+      - ./superset-websocket:/home/superset-websocket
+      - /home/superset-websocket/node_modules
+      - /home/superset-websocket/dist
 
-COPY docker/ /app/docker/
-# Arguments for build configuration
-ARG NPM_BUILD_CMD="build"
+      # Mounting a config file that contains a dummy secret required to boot up.
+      # do not use this docker compose in production
+      - ./docker/superset-websocket/config.json:/home/superset-websocket/config.json
+    environment:
+      - PORT=8080
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_SSL=false
 
-# Install system dependencies required for node-gyp
-RUN /app/docker/apt-install.sh build-essential python3 zstd
+  superset-init:
+    build:
+      <<: *common-build
+    container_name: superset_init
+    command: ["/app/docker/docker-init.sh"]
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    depends_on:
+      db:
+        condition: service_started
+      redis:
+        condition: service_started
+    user: *superset-user
+    volumes: *superset-volumes
+    environment:
+      PYTHONHTTPSVERIFY: 0
+      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
+      SUPERSET_LOAD_EXAMPLES: "${SUPERSET_LOAD_EXAMPLES:-no}"
+      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
+      https_proxy: "http://163.116.128.80:8080"
+      http_proxy: "http://163.116.128.80:8080"
+    healthcheck:
+      disable: true
 
-# Define environment variables for frontend build
-ENV BUILD_CMD=${NPM_BUILD_CMD} \
-    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
+  superset-node:
+    build:
+      context: .
+      target: superset-node
+      args:
+        # This prevents building the frontend bundle since we'll mount local folder
+        # and build it on startup while firing docker-frontend.sh in dev mode, where
+        # it'll mount and watch local files and rebuild as you update them
+        DEV_MODE: "true"
+        BUILD_TRANSLATIONS: ${BUILD_TRANSLATIONS:-false}
+    environment:
+      # set this to false if you have perf issues running the npm i; npm run dev in-docker
+      # if you do so, you have to run this manually on the host, which should perform better!
+      BUILD_SUPERSET_FRONTEND_IN_DOCKER: true
+      NPM_RUN_PRUNE: false
+      SCARF_ANALYTICS: "${SCARF_ANALYTICS:-}"
+      # configuring the dev-server to use the host.docker.internal to connect to the backend
+      superset: "http://superset:8088"
+    ports:
+      - "127.0.0.1:9000:9000"  # exposing the dynamic webpack dev server
+    container_name: superset_node
+    command: ["/app/docker/docker-frontend.sh"]
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    volumes: *superset-volumes
 
-# Run the frontend memory monitoring script
-RUN /app/docker/frontend-mem-nag.sh
+  superset-worker:
+    build:
+      <<: *common-build
+    container_name: superset_worker
+    command: ["/app/docker/docker-bootstrap.sh", "worker"]
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    environment:
+      CELERYD_CONCURRENCY: 2
+      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
+      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
+    restart: unless-stopped
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    user: *superset-user
+    volumes: *superset-volumes
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A superset.tasks.celery_app:app inspect ping -d celery@$$HOSTNAME"]
+    # Bump memory limit if processing selenium / thumbnails on superset-worker
+    # mem_limit: 2038m
+    # mem_reservation: 128M
 
-WORKDIR /app/superset-frontend
+  superset-worker-beat:
+    build:
+      <<: *common-build
+    container_name: superset_worker_beat
+    command: ["/app/docker/docker-bootstrap.sh", "beat"]
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    restart: unless-stopped
+    depends_on:
+      - superset-worker
+    user: *superset-user
+    volumes: *superset-volumes
+    healthcheck:
+      disable: true
+    environment:
+      CYPRESS_CONFIG: "${CYPRESS_CONFIG:-}"
+      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
 
-# Create necessary folders to avoid errors in subsequent steps
-RUN mkdir -p /app/superset/static/assets \
-             /app/superset/translations
+  superset-tests-worker:
+    build:
+      <<: *common-build
+    container_name: superset_tests_worker
+    command: ["/app/docker/docker-bootstrap.sh", "worker"]
+    env_file:
+      - path: docker/.env # default
+        required: true
+      - path: docker/.env-local # optional override
+        required: false
+    profiles:
+      - optional
+    environment:
+      DATABASE_HOST: localhost
+      DATABASE_DB: test
+      REDIS_CELERY_DB: 2
+      REDIS_RESULTS_DB: 3
+      REDIS_HOST: localhost
+      CELERYD_CONCURRENCY: 8
+      SUPERSET_LOG_LEVEL: "${SUPERSET_LOG_LEVEL:-info}"
+    network_mode: host
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+    user: *superset-user
+    volumes: *superset-volumes
+    healthcheck:
+      test: ["CMD-SHELL", "celery inspect ping -A superset.tasks.celery_app:app -d celery@$$HOSTNAME"]
 
-ENV https_proxy="http://163.116.128.80:8080"
-ENV http_proxy="http://163.116.128.80:8080"
-
-# Other setup...
-
-RUN npm config set proxy http://163.116.128.80:8080 && npm config set https-proxy http://163.116.128.80:8080
-
-# Mount package files and install dependencies if not in dev mode
-# NOTE: we mount packages and plugins as they are referenced in package.json as workspaces
-# ideally we'd COPY only their package.json. Here npm ci will be cached as long
-# as the full content of these folders don't change, yielding a decent cache reuse rate.
-# Note that's it's not possible selectively COPY of mount using blobs.
-RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json \
-    --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
-    --mount=type=cache,target=/root/.cache \
-    --mount=type=cache,target=/root/.npm \
-    if [ "$DEV_MODE" = "false" ]; then \
-        PUPPETEER_SKIP_DOWNLOAD=true npm ci; \
-    else \
-        echo "Skipping 'npm ci' in dev mode"; \
-    fi
-
-# Runs the webpack build process
-COPY superset-frontend /app/superset-frontend
-
-######################################################################
-# superset-node used for compile frontend assets
-######################################################################
-FROM superset-node-ci AS superset-node
-
-# Build the frontend if not in dev mode
-RUN --mount=type=cache,target=/root/.npm \
-    if [ "$DEV_MODE" = "false" ]; then \
-        echo "Running 'npm run ${BUILD_CMD}'"; \
-        npm run ${BUILD_CMD}; \
-    else \
-        echo "Skipping 'npm run ${BUILD_CMD}' in dev mode"; \
-    fi;
-
-# Copy translation files
-COPY superset/translations /app/superset/translations
-
-# Build the frontend if not in dev mode
-RUN if [ "$BUILD_TRANSLATIONS" = "true" ]; then \
-        npm run build-translation; \
-    fi; \
-    rm -rf /app/superset/translations/*/*/*.po; \
-    rm -rf /app/superset/translations/*/*/*.mo;
-
-
-######################################################################
-# Base python layer
-######################################################################
-FROM python:${PY_VER} AS python-base
-
-ARG SUPERSET_HOME="/app/superset_home"
-ENV SUPERSET_HOME=${SUPERSET_HOME}
-
-RUN mkdir -p $SUPERSET_HOME
-RUN useradd --user-group -d ${SUPERSET_HOME} -m --no-log-init --shell /bin/bash superset \
-    && chmod -R 1777 $SUPERSET_HOME \
-    && chown -R superset:superset $SUPERSET_HOME
-
-# Some bash scripts needed throughout the layers
-COPY --chmod=755 docker/*.sh /app/docker/
-
-# Add proxy setup
-ENV http_proxy="http://163.116.128.80:8080"
-ENV https_proxy="http://163.116.128.80:8080"
-
-# Install curl if not already available
-RUN apt-get update && apt-get install -y curl
-
-# Install uv using Astral's official installer (it downloads a binary, not via pip)
-RUN curl -Ls https://astral.sh/uv/install.sh | sh
-
-# Add uv to PATH
-ENV PATH="/root/.cargo/bin:/root/.local/bin:/app/.local/bin:/root/.uv/bin:$PATH"
-
-# Using uv as it's faster/simpler than pip
-RUN uv venv /app/.venv
-ENV PATH="/app/.venv/bin:${PATH}"
-
-######################################################################
-# Python translation compiler layer
-######################################################################
-FROM python-base AS python-translation-compiler
-
-ARG BUILD_TRANSLATIONS
-ENV BUILD_TRANSLATIONS=${BUILD_TRANSLATIONS}
-
-# Install Python dependencies using docker/pip-install.sh
-COPY requirements/translations.txt requirements/
-RUN --mount=type=cache,target=/root/.cache/uv \
-    . /app/.venv/bin/activate && /app/docker/pip-install.sh --requires-build-essential -r requirements/translations.txt
-
-COPY superset/translations/ /app/translations_mo/
-RUN if [ "$BUILD_TRANSLATIONS" = "true" ]; then \
-        pybabel compile -d /app/translations_mo | true; \
-    fi; \
-    rm -f /app/translations_mo/*/*/*.po; \
-    rm -f /app/translations_mo/*/*/*.json;
-
-######################################################################
-# Python APP common layer
-######################################################################
-FROM python-base AS python-common
-
-ENV SUPERSET_HOME="/app/superset_home" \
-    HOME="/app/superset_home" \
-    SUPERSET_ENV="production" \
-    FLASK_APP="superset.app:create_app()" \
-    PYTHONPATH="/app/pythonpath" \
-    SUPERSET_PORT="8088"
-
-# Copy the entrypoints, make them executable in userspace
-COPY --chmod=755 docker/entrypoints /app/docker/entrypoints
-
-WORKDIR /app
-# Set up necessary directories and user
-RUN mkdir -p \
-      ${PYTHONPATH} \
-      superset/static \
-      requirements \
-      superset-frontend \
-      apache_superset.egg-info \
-      requirements \
-    && touch superset/static/version_info.json
-
-# Install Playwright and optionally setup headless browsers
-ARG INCLUDE_CHROMIUM="true"
-ARG INCLUDE_FIREFOX="false"
-RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    if [ "$INCLUDE_CHROMIUM" = "true" ] || [ "$INCLUDE_FIREFOX" = "true" ]; then \
-        uv pip install playwright && \
-        playwright install-deps && \
-        if [ "$INCLUDE_CHROMIUM" = "true" ]; then playwright install chromium; fi && \
-        if [ "$INCLUDE_FIREFOX" = "true" ]; then playwright install firefox; fi; \
-    else \
-        echo "Skipping browser installation"; \
-    fi
-
-# Copy required files for Python build
-COPY pyproject.toml setup.py MANIFEST.in README.md ./
-COPY superset-frontend/package.json superset-frontend/
-COPY scripts/check-env.py scripts/
-
-# keeping for backward compatibility
-COPY --chmod=755 ./docker/entrypoints/run-server.sh /usr/bin/
-
-# Some debian libs
-RUN /app/docker/apt-install.sh \
-      curl \
-      libsasl2-dev \
-      libsasl2-modules-gssapi-mit \
-      libpq-dev \
-      libecpg-dev \
-      libldap2-dev
-
-# Copy compiled things from previous stages
-COPY --from=superset-node /app/superset/static/assets superset/static/assets
-
-# TODO, when the next version comes out, use --exclude superset/translations
-COPY superset superset
-# TODO in the meantime, remove the .po files
-RUN rm superset/translations/*/*/*.po
-
-# Merging translations from backend and frontend stages
-COPY --from=superset-node /app/superset/translations superset/translations
-COPY --from=python-translation-compiler /app/translations_mo superset/translations
-
-HEALTHCHECK CMD /app/docker/docker-healthcheck.sh
-CMD ["/app/docker/entrypoints/run-server.sh"]
-EXPOSE ${SUPERSET_PORT}
-
-######################################################################
-# Final lean image...
-######################################################################
-FROM python-common AS lean
-
-# Install Python dependencies using docker/pip-install.sh
-COPY requirements/base.txt requirements/
-RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    /app/docker/pip-install.sh --requires-build-essential -r requirements/base.txt
-# Install the superset package
-RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    uv pip install .
-RUN python -m compileall /app/superset
-
-USER superset
-
-######################################################################
-# Dev image...
-######################################################################
-FROM python-common AS dev
-
-# Debian libs needed for dev
-RUN /app/docker/apt-install.sh \
-    git \
-    pkg-config \
-    default-libmysqlclient-dev
-
-# Copy development requirements and install them
-COPY requirements/*.txt requirements/
-# Install Python dependencies using docker/pip-install.sh
-RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    /app/docker/pip-install.sh --requires-build-essential -r requirements/development.txt
-# Install the superset package
-RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    uv pip install .
-
-RUN uv pip install .[postgres]
-RUN python -m compileall /app/superset
-
-USER superset
-
-######################################################################
-# CI image...
-######################################################################
-FROM lean AS ci
-USER root
-RUN uv pip install .[postgres]
-USER superset
+volumes:
+  superset_home:
+    external: false
+  db_home:
+    external: false
+  redis:
+    external: false
