@@ -1,2 +1,1 @@
-shivam220802@EC03-B17-UBAPP2:~/superset-final/bu-digital-insightshub-backend$ sudo docker exec -it superset_websocket node -v
-Error response from daemon: No such container: superset_websocket
+sudo docker build --build-arg http_proxy=http://163.116.128.80:8080 --build-arg https_proxy=http://163.116.128.80:8080 -t your-image-name .
