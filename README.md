@@ -1,42 +1,10 @@
-SELECT
-    A."Emp_ID",
-    A."Conversation_start_Date",
-    A."Channel",
-    A."BU_Name",
-    A."Intent",
-    A."Total_Handle_and_Work_Time",
-    A."Total_Shift_Hours",
-    A."Conversations",
-    COUNT(DISTINCT B."Emp_ID") AS "Agents",
-    COUNT(DISTINCT B."Conversation_start_Date") AS "Days"
-FROM
-(
-    SELECT 
-        "Emp_ID",
-        "Conversation_start_Date",
-        "Channel",
-        "BU_Name",
-        "Intent",
-        SUM("AHT") + SUM("ACW") AS "Total_Handle_and_Work_Time",
-        SUM("Agent_Shift_Time") AS "Total_Shift_Hours",
-        COUNT("Conversation_id") AS "Conversations"
-    FROM 
-        public."Key-insight-data-2"
-    GROUP BY 
-        "Emp_ID", "Conversation_start_Date", "Channel", "BU_Name", "Intent"
-) AS A
-LEFT JOIN public."Key-insight-data-2" AS B
-    ON A."Emp_ID" = B."Emp_ID" 
-    AND A."Conversation_start_Date" = B."Conversation_start_Date" 
-    AND A."Channel" = B."Channel" 
-    AND A."BU_Name" = B."BU_Name" 
-    AND A."Intent" = B."Intent"
-GROUP BY 
-    A."Emp_ID",
-    A."Conversation_start_Date",
-    A."Channel",
-    A."BU_Name",
-    A."Intent",
-    A."Total_Handle_and_Work_Time",
-    A."Total_Shift_Hours",
-    A."Conversations"
+shivam220802@EC03-B17-UBAPP2:~/superset-final/bu-digital-insightshub-backend$ sudo docker ps
+CONTAINER ID   IMAGE                                                 COMMAND                  CREATED         STATUS                          PORTS                                                                                      NAMES
+32bbe2229d22   bu-digital-insightshub-backend-superset-worker-beat   "/app/docker/docker-…"   3 minutes ago   Up About a minute               8088/tcp                                                                                   superset_worker_beat
+2e10b8ec268f   your-image-name                                       "/app/docker/docker-…"   3 minutes ago   Up About a minute (unhealthy)   0.0.0.0:8081->8081/tcp, [::]:8081->8081/tcp, 0.0.0.0:8088->8088/tcp, [::]:8088->8088/tcp   superset_app
+1d06347704ac   bu-digital-insightshub-backend-superset-worker        "/app/docker/docker-…"   3 minutes ago   Up About a minute (healthy)     8088/tcp                                                                                   superset_worker
+210d3049f3c3   your-image-name                                       "/app/docker/entrypo…"   3 minutes ago   Up 3 minutes (unhealthy)        0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp, 8088/tcp                                      superset_websocket
+2e8a3901823b   bu-digital-insightshub-backend-superset-node          "docker-entrypoint.s…"   3 minutes ago   Up 3 minutes                    127.0.0.1:9000->9000/tcp                                                                   superset_node
+cb4be364585a   postgres:16                                           "docker-entrypoint.s…"   3 minutes ago   Up 3 minutes                    127.0.0.1:5432->5432/tcp                                                                   superset_db
+2f008941d128   nginx:latest                                          "/docker-entrypoint.…"   3 minutes ago   Up 3 minutes                    0.0.0.0:80->80/tcp, [::]:80->80/tcp                                                        superset_nginx
+c0b0074bba43   redis:7                                               "docker-entrypoint.s…"   3 minutes ago   Up 3 minutes                    127.0.0.1:6379->6379/tcp                                                                   superset_cache
