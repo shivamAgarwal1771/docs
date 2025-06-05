@@ -1,234 +1,64 @@
-#
-# Licensed to the Apache Software Foundation (ASF) under one or more
-# contributor license agreements.  See the NOTICE file distributed with
-# this work for additional information regarding copyright ownership.
-# The ASF licenses this file to You under the Apache License, Version 2.0
-# (the "License"); you may not use this file except in compliance with
-# the License.  You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-#
-
-######################################################################
-# Node stage to deal with static asset construction
-######################################################################
-ARG PY_VER=3.11.11-slim-bookworm
-ARG BUILDPLATFORM=${BUILDPLATFORM:-amd64}
-ARG BUILD_TRANSLATIONS="false"
-
-# Global proxy settings
-ENV http_proxy=http://163.116.128.80:8080 \
-    https_proxy=http://163.116.128.80:8080 \
-    HTTP_PROXY=http://163.116.128.80:8080 \
-    HTTPS_PROXY=http://163.116.128.80:8080 \
-    no_proxy=localhost,127.0.0.1
-
-######################################################################
-# superset-node-ci used as a base for building frontend assets and CI
-######################################################################
-FROM --platform=${BUILDPLATFORM} node:20-bookworm-slim AS superset-node-ci
-ARG BUILD_TRANSLATIONS
-ENV BUILD_TRANSLATIONS=${BUILD_TRANSLATIONS}
-ARG DEV_MODE="false"
-ENV DEV_MODE=${DEV_MODE}
-
-COPY docker/ /app/docker/
-ARG NPM_BUILD_CMD="build"
-
-RUN echo 'Acquire::http::Proxy "http://163.116.128.80:8080";' >> /etc/apt/apt.conf.d/01proxy \
-    && apt-get update && apt-get install -y curl build-essential python3 zstd
-
-ENV BUILD_CMD=${NPM_BUILD_CMD} \
-    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
-
-RUN /app/docker/frontend-mem-nag.sh
-
-WORKDIR /app/superset-frontend
-
-RUN mkdir -p /app/superset/static/assets \
-             /app/superset/translations
-
-RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json \
-    --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
-    --mount=type=cache,target=/root/.cache \
-    --mount=type=cache,target=/root/.npm \
-    if [ "$DEV_MODE" = "false" ]; then \
-        npm ci; \
-    else \
-        echo "Skipping 'npm ci' in dev mode"; \
-    fi
-
-COPY superset-frontend /app/superset-frontend
-
-######################################################################
-# superset-node used for compile frontend assets
-######################################################################
-FROM superset-node-ci AS superset-node
-
-RUN --mount=type=cache,target=/root/.npm \
-    if [ "$DEV_MODE" = "false" ]; then \
-        echo "Running 'npm run ${BUILD_CMD}'"; \
-        npm run ${BUILD_CMD}; \
-    else \
-        echo "Skipping 'npm run ${BUILD_CMD}' in dev mode"; \
-    fi;
-
-COPY superset/translations /app/superset/translations
-
-RUN if [ "$BUILD_TRANSLATIONS" = "true" ]; then \
-        npm run build-translation; \
-    fi; \
-    rm -rf /app/superset/translations/*/*/*.po; \
-    rm -rf /app/superset/translations/*/*/*.mo;
-
-######################################################################
-# Base python layer
-######################################################################
-FROM python:${PY_VER} AS python-base
-
-ARG SUPERSET_HOME="/app/superset_home"
-ENV SUPERSET_HOME=${SUPERSET_HOME}
-
-RUN mkdir -p $SUPERSET_HOME \
-    && useradd --user-group -d ${SUPERSET_HOME} -m --no-log-init --shell /bin/bash superset \
-    && chmod -R 1777 $SUPERSET_HOME \
-    && chown -R superset:superset $SUPERSET_HOME
-
-COPY --chmod=755 docker/*.sh /app/docker/
-
-RUN echo 'Acquire::http::Proxy "http://163.116.128.80:8080";' >> /etc/apt/apt.conf.d/01proxy \
-    && apt-get update && apt-get install -y curl build-essential pkg-config libssl-dev
-
-RUN curl -Ls https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.cargo/bin:$PATH"
-
-RUN uv --version
-
-ENV PIP_INDEX_URL=https://pypi.org/simple
-ENV UV_PIP_TRUSTED_HOST=pypi.org
-
-RUN uv venv /app/.venv
-ENV PATH="/app/.venv/bin:${PATH}"
-
-######################################################################
-# Python translation compiler layer
-######################################################################
-FROM python-base AS python-translation-compiler
-
-ARG BUILD_TRANSLATIONS
-ENV BUILD_TRANSLATIONS=${BUILD_TRANSLATIONS}
-
-COPY requirements/translations.txt requirements/
-RUN --mount=type=cache,target=/root/.cache/uv \
-    . /app/.venv/bin/activate && /app/docker/pip-install.sh --requires-build-essential -r requirements/translations.txt
-
-COPY superset/translations/ /app/translations_mo/
-RUN if [ "$BUILD_TRANSLATIONS" = "true" ]; then \
-        pybabel compile -d /app/translations_mo | true; \
-    fi; \
-    rm -f /app/translations_mo/*/*/*.po; \
-    rm -f /app/translations_mo/*/*/*.json;
-
-######################################################################
-# Python APP common layer
-######################################################################
-FROM python-base AS python-common
-
-ENV SUPERSET_HOME="/app/superset_home" \
-    HOME="/app/superset_home" \
-    SUPERSET_ENV="production" \
-    FLASK_APP="superset.app:create_app()" \
-    PYTHONPATH="/app/pythonpath" \
-    SUPERSET_PORT="8088"
-
-COPY --chmod=755 docker/entrypoints /app/docker/entrypoints
-
-WORKDIR /app
-RUN mkdir -p \
-      ${PYTHONPATH} \
-      superset/static \
-      requirements \
-      superset-frontend \
-      apache_superset.egg-info \
-      requirements \
-    && touch superset/static/version_info.json
-
-ARG INCLUDE_CHROMIUM="true"
-ARG INCLUDE_FIREFOX="false"
-RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    if [ "$INCLUDE_CHROMIUM" = "true" ] || [ "$INCLUDE_FIREFOX" = "true" ]; then \
-        uv pip install playwright && \
-        playwright install-deps && \
-        if [ "$INCLUDE_CHROMIUM" = "true" ]; then playwright install chromium; fi && \
-        if [ "$INCLUDE_FIREFOX" = "true" ]; then playwright install firefox; fi; \
-    else \
-        echo "Skipping browser installation"; \
-    fi
-
-COPY pyproject.toml setup.py MANIFEST.in README.md ./
-COPY superset-frontend/package.json superset-frontend/
-COPY scripts/check-env.py scripts/
-COPY --chmod=755 ./docker/entrypoints/run-server.sh /usr/bin/
-
-RUN /app/docker/apt-install.sh \
-      curl \
-      libsasl2-dev \
-      libsasl2-modules-gssapi-mit \
-      libpq-dev \
-      libecpg-dev \
-      libldap2-dev
-
-COPY --from=superset-node /app/superset/static/assets superset/static/assets
-COPY superset superset
-RUN rm superset/translations/*/*/*.po
-
-COPY --from=superset-node /app/superset/translations superset/translations
-COPY --from=python-translation-compiler /app/translations_mo superset/translations
-
-HEALTHCHECK CMD /app/docker/docker-healthcheck.sh
-CMD ["/app/docker/entrypoints/run-server.sh"]
-EXPOSE ${SUPERSET_PORT}
-
-######################################################################
-# Final lean image...
-######################################################################
-FROM python-common AS lean
-COPY requirements/base.txt requirements/
-RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    /app/docker/pip-install.sh --requires-build-essential -r requirements/base.txt
-RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    uv pip install .
-RUN python -m compileall /app/superset
-USER superset
-
-######################################################################
-# Dev image...
-######################################################################
-FROM python-common AS dev
-RUN /app/docker/apt-install.sh \
-    git \
-    pkg-config \
-    default-libmysqlclient-dev
-COPY requirements/*.txt requirements/
-RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    /app/docker/pip-install.sh --requires-build-essential -r requirements/development.txt
-RUN --mount=type=cache,target=${SUPERSET_HOME}/.cache/uv \
-    uv pip install .
-RUN uv pip install .[postgres]
-RUN python -m compileall /app/superset
-USER superset
-
-######################################################################
-# CI image...
-######################################################################
-FROM lean AS ci
-USER root
-RUN uv pip install .[postgres]
-USER superset
-CMD ["/app/docker/entrypoints/docker-ci.sh"]
+ > [superset-node-ci 7/8] RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json     --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json     --mount=type=cache,target=/root/.cache     --mount=type=cache,target=/root/.npm     if [ "false" = "false" ]; then         npm ci;     else         echo "Skipping 'npm ci' in dev mode";     fi:
+20.79 npm warn deprecated viewport-mercator-project@7.0.4: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
+26.28 npm warn deprecated querystring@0.2.1: The querystring API is considered Legacy. new code should use the URLSearchParams API instead.
+27.69 npm warn deprecated topojson@1.6.27: Use topojson-client, topojson-server or topojson-simplify directly.
+29.52 npm warn deprecated nomnom@1.8.1: Package no longer supported. Contact support@npmjs.com for more info.
+33.49 npm warn deprecated inflight@1.0.6: This module is not supported, and leaks memory. Do not use it. Check out lru-cache if you want a good and tested way to coalesce async requests by a key value, which is much more comprehensive and powerful.
+34.42 npm warn deprecated glob@7.2.3: Glob versions prior to v9 are no longer supported
+40.87 npm warn deprecated abab@2.0.6: Use your platform's native atob() and btoa() methods instead
+48.04 npm warn deprecated @humanwhocodes/config-array@0.13.0: Use @eslint/config-array instead
+48.07 npm warn deprecated @humanwhocodes/object-schema@2.0.3: Use @eslint/object-schema instead
+50.68 npm warn deprecated @babel/plugin-proposal-nullish-coalescing-operator@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-nullish-coalescing-operator instead.
+50.79 npm warn deprecated @babel/plugin-proposal-class-properties@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-class-properties instead.
+50.79 npm warn deprecated @babel/plugin-proposal-private-methods@7.18.6: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-private-methods instead.
+50.80 npm warn deprecated @babel/plugin-proposal-optional-chaining@7.21.0: This proposal has been merged to the ECMAScript standard and thus this plugin is no longer maintained. Please use @babel/plugin-transform-optional-chaining instead.
+52.33 npm warn deprecated @babel/polyfill@7.12.1: 🚨 This package has been deprecated in favor of separate inclusion of a polyfill and regenerator-runtime (when needed). See the @babel/polyfill docs (https://babeljs.io/docs/en/babel-polyfill) for more information.
+52.93 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+53.61 npm warn deprecated rimraf@2.6.3: Rimraf versions prior to v4 are no longer supported
+54.25 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+57.31 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+59.45 npm warn deprecated domexception@4.0.0: Use your platform's native DOMException instead
+59.52 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+61.00 npm warn deprecated rimraf@3.0.2: Rimraf versions prior to v4 are no longer supported
+61.92 npm warn deprecated lodash.isequal@3.0.4: This package is deprecated. Use require('node:util').isDeepStrictEqual instead.
+63.95 npm warn deprecated glob@8.1.0: Glob versions prior to v9 are no longer supported
+75.24 npm warn deprecated eslint@8.57.1: This version is no longer supported. Please see https://eslint.org/version-support for other options.
+215.7 npm error code 1
+215.7 npm error path /app/superset-frontend/node_modules/puppeteer
+215.7 npm error command failed
+215.7 npm error command sh -c node install.mjs
+215.7 npm error Error: ERROR: Failed to set up chrome-headless-shell v127.0.6533.88! Set "PUPPETEER_SKIP_DOWNLOAD" env variable to skip download.
+215.7 npm error     at file:///app/superset-frontend/node_modules/puppeteer/lib/esm/puppeteer/node/install.js:84:27
+215.7 npm error     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+215.7 npm error     at async Promise.all (index 1)
+215.7 npm error     at async downloadBrowser (file:///app/superset-frontend/node_modules/puppeteer/lib/esm/puppeteer/node/install.js:90:9) {
+215.7 npm error   [cause]: Error: self-signed certificate in certificate chain
+215.7 npm error       at TLSSocket.onConnectSecure (node:_tls_wrap:1677:34)
+215.7 npm error       at TLSSocket.emit (node:events:524:28)
+215.7 npm error       at TLSSocket._finishInit (node:_tls_wrap:1076:8)
+215.7 npm error       at ssl.onhandshakedone (node:_tls_wrap:862:12) {
+215.7 npm error     code: 'SELF_SIGNED_CERT_IN_CHAIN'
+215.7 npm error   }
+215.7 npm error }
+215.7 npm notice
+215.7 npm notice New major version of npm available! 10.8.2 -> 11.4.1
+215.7 npm notice Changelog: https://github.com/npm/cli/releases/tag/v11.4.1
+215.7 npm notice To update run: npm install -g npm@11.4.1
+215.7 npm notice
+215.7 npm error A complete log of this run can be found in: /root/.npm/_logs/2025-06-05T12_04_48_850Z-debug-0.log
+------
+Dockerfile:66
+--------------------
+  65 |     # Note that's it's not possible selectively COPY of mount using blobs.
+  66 | >>> RUN --mount=type=bind,source=./superset-frontend/package.json,target=./package.json \
+  67 | >>>     --mount=type=bind,source=./superset-frontend/package-lock.json,target=./package-lock.json \
+  68 | >>>     --mount=type=cache,target=/root/.cache \
+  69 | >>>     --mount=type=cache,target=/root/.npm \
+  70 | >>>     if [ "$DEV_MODE" = "false" ]; then \
+  71 | >>>         npm ci; \
+  72 | >>>     else \
+  73 | >>>         echo "Skipping 'npm ci' in dev mode"; \
+  74 | >>>     fi
+  75 |
+--------------------
+ERROR: failed to solve: process "/bin/sh -c if [ \"$DEV_MODE\" = \"false\" ]; then         npm ci;     else         echo \"Skipping 'npm ci' in dev mode\";     fi" did not complete successfully: exit code: 1
