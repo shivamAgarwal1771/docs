@@ -1,2 +1,1 @@
-npm config set proxy http://163.116.128.80:8080
-npm config set https-proxy http://163.116.128.80:8080
+curl -x http://163.116.128.80:8080 https://www.google.com -I
