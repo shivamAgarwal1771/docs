@@ -1,73 +1,89 @@
-shivam220802@EC03-B17-UBAPP2:~/superset-project-final/superset/bu-digital-insightshub-backend$ sudo docker logs superset_init
-Reinstalling the app in editable mode
-Resolved 147 packages in 2.92s
-   Building apache-superset @ file:///app
-      Built apache-superset @ file:///app
-Prepared 1 package in 2.09s
-Uninstalled 1 package in 559ms
-warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
-         If the cache and target directories are on different filesystems, hardlinking may not be supported.
-         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
-Installed 1 package in 6ms
- ~ apache-superset==0.0.0.dev0 (from file:///app)
-Installing postgres requirements
-Resolved 148 packages in 1.88s
-   Building apache-superset @ file:///app
-      Built apache-superset @ file:///app
-Prepared 1 package in 2.61s
-Uninstalled 1 package in 1ms
-warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
-         If the cache and target directories are on different filesystems, hardlinking may not be supported.
-         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
-Installed 1 package in 3ms
- ~ apache-superset==0.0.0.dev0 (from file:///app)
-Skipping local overrides
-Unknown Operation!!!
-######################################################################
-Init Step 1/3 [Starting] -- Applying DB migrations
-######################################################################
-Loaded your LOCAL configuration at [/app/docker/pythonpath_dev/superset_config.py]
-2025-06-10 11:01:30,411:INFO:superset.initialization:Setting database isolation level to READ COMMITTED
-INFO  [alembic.env] Starting the migration scripts.
-INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
-INFO  [alembic.runtime.migration] Will assume transactional DDL.
-INFO  [alembic.env] Migration scripts completed. Duration: 00:00:01
-######################################################################
-Init Step 1/3 [Complete] -- Applying DB migrations
-######################################################################
-######################################################################
-Init Step 2/3 [Starting] -- Setting up admin user ( admin / admin )
-######################################################################
-Loaded your LOCAL configuration at [/app/docker/pythonpath_dev/superset_config.py]
-2025-06-10 11:01:38,429:INFO:superset.initialization:Setting database isolation level to READ COMMITTED
-Recognized Database Authentications.
-Error! User already exists admin
-######################################################################
-Init Step 2/3 [Complete] -- Setting up admin user
-######################################################################
-######################################################################
-Init Step 3/3 [Starting] -- Setting up roles and perms
-######################################################################
-Loaded your LOCAL configuration at [/app/docker/pythonpath_dev/superset_config.py]
-2025-06-10 11:01:44,123:INFO:superset.initialization:Setting database isolation level to READ COMMITTED
-2025-06-10 11:01:47,807:INFO:superset.security.manager:Syncing role definition
-2025-06-10 11:01:47,848:INFO:superset.security.manager:Syncing Admin perms
-2025-06-10 11:01:47,857:INFO:superset.security.manager:Syncing Alpha perms
-2025-06-10 11:01:47,864:INFO:superset.security.manager:Syncing Gamma perms
-2025-06-10 11:01:47,869:INFO:superset.security.manager:Syncing sql_lab perms
-2025-06-10 11:01:47,873:INFO:superset.security.manager:Fetching a set of all perms to lookup which ones are missing
-2025-06-10 11:01:47,878:INFO:superset.security.manager:Creating missing datasource permissions.
-2025-06-10 11:01:47,900:INFO:superset.security.manager:Creating missing database permissions.
-2025-06-10 11:01:47,911:INFO:superset.security.manager:Cleaning faulty perms
-######################################################################
-Init Step 3/3 [Complete] -- Setting up roles and perms
-######################################################################
-shivam220802@EC03-B17-UBAPP2:~/superset-project-final/superset/bu-digital-insightshub-backend$ sudo docker ps
-CONTAINER ID   IMAGE                                                 COMMAND                  CREATED         STATUS                   PORTS                                                                                      NAMES
-6d932233f552   bu-digital-insightshub-backend-superset-worker-beat   "/app/docker/docker-…"   4 minutes ago   Up 4 minutes             8088/tcp                                                                                   superset_worker_beat
-436bb29db712   bu-digital-insightshub-backend-superset-worker        "/app/docker/docker-…"   4 minutes ago   Up 4 minutes (healthy)   8088/tcp                                                                                   superset_worker
-30a949006d32   bu-digital-insightshub-backend-superset               "/app/docker/docker-…"   4 minutes ago   Up 4 minutes (healthy)   0.0.0.0:8081->8081/tcp, [::]:8081->8081/tcp, 0.0.0.0:8088->8088/tcp, [::]:8088->8088/tcp   superset_app
-7af9b15f4b47   bu-digital-insightshub-backend-superset-websocket     "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes             0.0.0.0:8080->8080/tcp, [::]:8080->8080/tcp                                                superset_websocket
-c1247f0821aa   redis:7                                               "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes             127.0.0.1:6379->6379/tcp                                                                   superset_cache
-f7877ab978ab   nginx:latest                                          "/docker-entrypoint.…"   4 minutes ago   Up 4 minutes             0.0.0.0:80->80/tcp, [::]:80->80/tcp                                                        superset_nginx
-664e8a228aa3   postgres:16                                           "docker-entrypoint.s…"   4 minutes ago   Up 4 minutes  
+shivam220802@EC03-B17-UBAPP2:~/superset-project-final/superset/bu-digital-insightshub-backend$ sudo docker exec -it superset_nginx bash
+root@f7877ab978ab:/# apt update && apt install nano -y
+Ign:1 http://deb.debian.org/debian bookworm InRelease
+Ign:2 http://deb.debian.org/debian bookworm-updates InRelease
+Ign:3 http://deb.debian.org/debian-security bookworm-security InRelease
+Ign:1 http://deb.debian.org/debian bookworm InRelease
+Ign:2 http://deb.debian.org/debian bookworm-updates InRelease
+Ign:3 http://deb.debian.org/debian-security bookworm-security InRelease
+Ign:1 http://deb.debian.org/debian bookworm InRelease
+Ign:2 http://deb.debian.org/debian bookworm-updates InRelease
+Ign:3 http://deb.debian.org/debian-security bookworm-security InRelease
+Err:1 http://deb.debian.org/debian bookworm InRelease
+  Connection failed [IP: 199.232.30.132 80]
+Err:2 http://deb.debian.org/debian bookworm-updates InRelease
+  Connection failed [IP: 199.232.30.132 80]
+Err:3 http://deb.debian.org/debian-security bookworm-security InRelease
+  Connection failed [IP: 199.232.30.132 80]
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+All packages are up to date.
+W: Failed to fetch http://deb.debian.org/debian/dists/bookworm/InRelease  Connection failed [IP: 199.232.30.132 80]
+W: Failed to fetch http://deb.debian.org/debian/dists/bookworm-updates/InRelease  Connection failed [IP: 199.232.30.132 80]
+W: Failed to fetch http://deb.debian.org/debian-security/dists/bookworm-security/InRelease  Connection failed [IP: 199.232.30.132 80]
+W: Some index files failed to download. They have been ignored, or old ones used instead.
+Reading package lists... Done
+Building dependency tree... Done
+Reading state information... Done
+Package nano is not available, but is referred to by another package.
+This may mean that the package is missing, has been obsoleted, or
+is only available from another source
+
+E: Package 'nano' has no installation candidate
+root@f7877ab978ab:/# cat /etc/nginx/conf.d/superset.conf
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements.  See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership.  The ASF licenses this file
+# to you under the Apache License, Version 2.0 (the
+# "License"); you may not use this file except in compliance
+# with the License.  You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing,
+# software distributed under the License is distributed on an
+# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+# KIND, either express or implied.  See the License for the
+# specific language governing permissions and limitations
+# under the License.
+
+upstream superset_app {
+    server host.docker.internal:8088;
+    keepalive 100;
+}
+
+upstream superset_websocket {
+    server host.docker.internal:8080;
+    keepalive 100;
+}
+
+server {
+    listen 80 default_server;
+    server_name  _;
+
+    location /ws {
+        proxy_pass http://superset_websocket;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host $host;
+    }
+
+    location //static {
+        proxy_pass http://host.docker.internal:9000;  # Proxy to superset-node
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+    }
+
+    location / {
+        proxy_pass http://superset_app;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_http_version 1.1;
+        port_in_redirect off;
+        proxy_connect_timeout 300;
+    }
