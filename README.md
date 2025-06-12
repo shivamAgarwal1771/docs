@@ -1,89 +1,27 @@
-shivam220802@EC03-B17-UBAPP2:~/superset-project-final/superset/bu-digital-insightshub-backend$ sudo docker exec -it superset_nginx bash
-root@f7877ab978ab:/# apt update && apt install nano -y
-Ign:1 http://deb.debian.org/debian bookworm InRelease
-Ign:2 http://deb.debian.org/debian bookworm-updates InRelease
-Ign:3 http://deb.debian.org/debian-security bookworm-security InRelease
-Ign:1 http://deb.debian.org/debian bookworm InRelease
-Ign:2 http://deb.debian.org/debian bookworm-updates InRelease
-Ign:3 http://deb.debian.org/debian-security bookworm-security InRelease
-Ign:1 http://deb.debian.org/debian bookworm InRelease
-Ign:2 http://deb.debian.org/debian bookworm-updates InRelease
-Ign:3 http://deb.debian.org/debian-security bookworm-security InRelease
-Err:1 http://deb.debian.org/debian bookworm InRelease
-  Connection failed [IP: 199.232.30.132 80]
-Err:2 http://deb.debian.org/debian bookworm-updates InRelease
-  Connection failed [IP: 199.232.30.132 80]
-Err:3 http://deb.debian.org/debian-security bookworm-security InRelease
-  Connection failed [IP: 199.232.30.132 80]
-Reading package lists... Done
-Building dependency tree... Done
-Reading state information... Done
-All packages are up to date.
-W: Failed to fetch http://deb.debian.org/debian/dists/bookworm/InRelease  Connection failed [IP: 199.232.30.132 80]
-W: Failed to fetch http://deb.debian.org/debian/dists/bookworm-updates/InRelease  Connection failed [IP: 199.232.30.132 80]
-W: Failed to fetch http://deb.debian.org/debian-security/dists/bookworm-security/InRelease  Connection failed [IP: 199.232.30.132 80]
-W: Some index files failed to download. They have been ignored, or old ones used instead.
-Reading package lists... Done
-Building dependency tree... Done
-Reading state information... Done
-Package nano is not available, but is referred to by another package.
-This may mean that the package is missing, has been obsoleted, or
-is only available from another source
-
-E: Package 'nano' has no installation candidate
-root@f7877ab978ab:/# cat /etc/nginx/conf.d/superset.conf
-# Licensed to the Apache Software Foundation (ASF) under one
-# or more contributor license agreements.  See the NOTICE file
-# distributed with this work for additional information
-# regarding copyright ownership.  The ASF licenses this file
-# to you under the Apache License, Version 2.0 (the
-# "License"); you may not use this file except in compliance
-# with the License.  You may obtain a copy of the License at
-#
-#   http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing,
-# software distributed under the License is distributed on an
-# "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-# KIND, either express or implied.  See the License for the
-# specific language governing permissions and limitations
-# under the License.
-
-upstream superset_app {
-    server host.docker.internal:8088;
-    keepalive 100;
-}
-
-upstream superset_websocket {
-    server host.docker.internal:8080;
-    keepalive 100;
-}
-
-server {
-    listen 80 default_server;
-    server_name  _;
-
-    location /ws {
-        proxy_pass http://superset_websocket;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "Upgrade";
-        proxy_set_header Host $host;
-    }
-
-    location //static {
-        proxy_pass http://host.docker.internal:9000;  # Proxy to superset-node
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-    }
-
-    location / {
-        proxy_pass http://superset_app;
-        proxy_set_header Host $http_host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_http_version 1.1;
-        port_in_redirect off;
-        proxy_connect_timeout 300;
-    }
+Sr No.	Conversation_id	Time_interval	Intent	Intent_Class	Conversation_Sentiment	Agent_id	Product	AHT	CSAT	CSAT_Survey	CSAT_Predicted	CSAT_Bucket_Survey	CSAT_Bucket	Date	Escalation	Call_Category	Sentiment_Score	Sentiments	Stage	Summary	CSAT_Reasoning	Transcript
+1	12345666	0	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000009	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"Hi, Thanks for contacting British Gas Lite.
+Bot
+How can I help you today? <em>A copy of this chat will be saved for training and quality purposes.</em>
+"
+2	12345666	40	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000003	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"Good Morning BG Lite Accounmt number XXXX
+Bot
+Can you please tell us your full name?
+"
+3	12345666	60	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000002	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"Can you please give us your business name?
+"
+4	12345666	70	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000002	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"XYZ LTD
+Bot
+Can you please provide the site address including post code?
+"
+5	12345666	80	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	-0.0001327	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"XXXX
+Bot
+Can you please provide us with your business account number? It will start with XXXX. If you don't have your account number to hand, login to your online portal to see your account number. If you are having trouble logging in, please click on ""I can't find it"".
+"
+6	12345666	110	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000006	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"Please wait while we connect you to our  service advisor
+System Message
+// You are being transferred to an  //
+ has joined the conversation
+"
+7	12345666	120	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000070	Neutral	2. Intent Recognition	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"Hello, Welcome to British Gas Lite, my name is Suraj.
+"
+![Uploading image.png…]()
