@@ -1,27 +1,82 @@
-Sr No.	Conversation_id	Time_interval	Intent	Intent_Class	Conversation_Sentiment	Agent_id	Product	AHT	CSAT	CSAT_Survey	CSAT_Predicted	CSAT_Bucket_Survey	CSAT_Bucket	Date	Escalation	Call_Category	Sentiment_Score	Sentiments	Stage	Summary	CSAT_Reasoning	Transcript
-1	12345666	0	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000009	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"Hi, Thanks for contacting British Gas Lite.
-Bot
-How can I help you today? <em>A copy of this chat will be saved for training and quality purposes.</em>
-"
-2	12345666	40	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000003	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"Good Morning BG Lite Accounmt number XXXX
-Bot
-Can you please tell us your full name?
-"
-3	12345666	60	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000002	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"Can you please give us your business name?
-"
-4	12345666	70	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000002	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"XYZ LTD
-Bot
-Can you please provide the site address including post code?
-"
-5	12345666	80	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	-0.0001327	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"XXXX
-Bot
-Can you please provide us with your business account number? It will start with XXXX. If you don't have your account number to hand, login to your online portal to see your account number. If you are having trouble logging in, please click on ""I can't find it"".
-"
-6	12345666	110	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000006	Neutral	1. Contact Initiation	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"Please wait while we connect you to our  service advisor
-System Message
-// You are being transferred to an  //
- has joined the conversation
-"
-7	12345666	120	Bill Not Received	Billing & Reads	Neutral	45666	Gas 	1120	4		4		Middle Box	1/1/2024	Yes	Long	0.0000070	Neutral	2. Intent Recognition	The customer was not receiving bills for their energy usage, only standing charges. The agent investigated the issue and requested the customer to provide meter readings and photos. The agent raised the issue with the metering team to update the account and ensure the customer is billed correctly going forward. The agent will follow up with the customer once the updates are made.	The agent was very helpful and patient, raising the issue with the metering team and providing a clear resolution. The agent also offered to follow up via email and message to confirm the billing is in order.	"Hello, Welcome to British Gas Lite, my name is Suraj.
-"
-![Uploading image.png…]()
+     
+type Column = { column_name: string };
+
+[
+          {
+            name: 'extra_tooltip_field',
+            config: {
+              type: 'SelectControl',
+              label: t('Additional Tooltip Field'),
+              default: null,
+              renderTrigger: true,
+              clearable: true,
+              description: t('Pick a column to show in tooltip.'),
+              mapStateToProps: (state: any) => {
+                const columns = state?.datasource?.columns ?? [];
+                const choices = Array.isArray(columns)
+                  ? columns
+                    .filter(col => typeof col?.column_name === 'string')
+                    .map(col => [col.column_name, col.column_name])
+                  : [];
+
+                return {
+                  choices,
+                };
+              },
+
+            },
+          }
+
+        ],
+
+
+
+const xValueRaw = richTooltip ? params[0].name : params.name;
+        const xValue: number | null =
+          typeof xValueRaw === 'number' ? xValueRaw : Number(xValueRaw);
+
+
+
+        // 🧪 Debug info
+        console.log('🔍 Tooltip xValue:', xValue);
+        console.log('📊 Data sample:', data?.[0]);
+        console.log('🪓 xAxisLabel:', xAxisLabel);
+        console.log('🪓 xAxisOrig:', xAxisOrig);
+
+        // ✅ Extra field logic
+        const customField = formData.extraTooltipField;
+        if (customField && data?.length > 0 && xValue !== null) {
+          const currentX = String(xValue);
+
+          const matchingRow = data.find(d =>
+            String(d?.[xAxisLabel]) === currentX ||
+            String(d?.[xAxisOrig]) === currentX
+          );
+
+          if (matchingRow && matchingRow[customField] != null) {
+            const fieldLabel = customField
+              .replace(/_/g, ' ')
+              .replace(/\b\w/g, (l: string) => l.toUpperCase())
+            rows.push([fieldLabel, String(matchingRow[customField])]);
+            console.log('✅ Extra field in tooltip:', fieldLabel, matchingRow[customField]);
+          } else {
+            console.warn('⚠️ No matching row or missing extra field value');
+          }
+        }
+        if (formData.custom_sql_unit) {
+          (echartOptions as any).graphic = [
+            {
+              type: 'text',
+              left: '95%',
+              top: '5%',
+              style: {
+                text: formData.custom_sql_unit,
+                fill: '#999',
+                font: '14px sans-serif',
+                textAlign: 'right',
+              },
+              silent: true,
+            },
+          ];
+        }
+
