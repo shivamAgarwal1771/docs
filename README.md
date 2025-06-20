@@ -1,281 +1,159 @@
-/**
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-import { t } from '@superset-ui/core';
 import {
-  ControlPanelConfig,
-  ControlPanelsContainerProps,
-  ControlSubSectionHeader,
-  D3_TIME_FORMAT_DOCS,
-  getStandardizedControls,
-  sections,
-  sharedControls,
+  buildQueryContext,
+  ensureIsArray,
+  getXAxisColumn,
+  isXAxisSet,
+  normalizeOrderBy,
+  PostProcessingPivot,
+  QueryFormData,
+  getMetricLabel,
+  NumpyFunction,
+} from '@superset-ui/core';
+import {
+  contributionOperator,
+  extractExtraMetrics,
+  flattenOperator,
+  isTimeComparison,
+  pivotOperator,
+  prophetOperator,
+  renameOperator,
+  resampleOperator,
+  rollingWindowOperator,
+  sortOperator,
+  timeComparePivotOperator,
+  timeCompareOperator,
 } from '@superset-ui/chart-controls';
 
-import { EchartsTimeseriesSeriesType } from '../../types';
-import {
-  DEFAULT_FORM_DATA,
-  TIME_SERIES_DESCRIPTION_TEXT,
-} from '../../constants';
-import {
-  legendSection,
-  minorTicks,
-  richTooltipSection,
-  seriesOrderSection,
-  showValueSection,
-  truncateXAxis,
-  xAxisBounds,
-  xAxisLabelRotation,
-  xAxisLabelInterval,
-} from '../../../controls';
+export default function buildQuery(formData: QueryFormData) {
+  const {
+    groupby,
+    extra_tooltip_field,
+    custom_unit_metric
+  } = formData;
+const customMetric = formData.custom_unit_metric;
+console.log("kaki",customMetric)
 
-const {
-  area,
-  logAxis,
-  markerEnabled,
-  markerSize,
-  minorSplitLine,
-  opacity,
-  rowLimit,
-  seriesType,
-  truncateYAxis,
-  yAxisBounds,
-  zoomable,
-} = DEFAULT_FORM_DATA;
+  const customUnitMetric = formData.custom_sql_unit_metric;
+  let customMetricLabel: string | null = null;
 
-const config: ControlPanelConfig = {
-  controlPanelSections: [
-    sections.echartsTimeSeriesQueryWithXAxisSort,
-    sections.advancedAnalyticsControls,
-    sections.annotationsAndLayersControls,
-    sections.forecastIntervalControls,
-    sections.titleControls,
-    {
-      label: t('Chart Options'),
-      expanded: true,
-      controlSetRows: [
-        ...seriesOrderSection,
-        ['color_scheme'],
-        ['time_shift_color'],
-        [
-          {
-            name: 'seriesType',
-            config: {
-              type: 'SelectControl',
-              label: t('Series Style'),
-              renderTrigger: true,
-              default: seriesType,
-              choices: [
-                [EchartsTimeseriesSeriesType.Line, t('Line')],
-                [EchartsTimeseriesSeriesType.Scatter, t('Scatter')],
-                [EchartsTimeseriesSeriesType.Smooth, t('Smooth Line')],
-                [EchartsTimeseriesSeriesType.Bar, t('Bar')],
-                [EchartsTimeseriesSeriesType.Start, t('Step - start')],
-                [EchartsTimeseriesSeriesType.Middle, t('Step - middle')],
-                [EchartsTimeseriesSeriesType.End, t('Step - end')],
-              ],
-              description: t('Series chart type (line, bar etc)'),
-            },
+  if (customUnitMetric) {
+    try {
+      customMetricLabel = getMetricLabel(customUnitMetric);
+      console.log('✅ Custom SQL Unit Metric label:', customMetricLabel);
+      console.log('🧠 Raw custom_sql_unit_metric object:', customUnitMetric);
+    } catch (e) {
+      console.warn('❌ Invalid custom metric provided:', customUnitMetric);
+    }
+  }
+
+  return buildQueryContext(formData, baseQueryObject => {
+    const extra_metrics = extractExtraMetrics(formData);
+    const xAxisCols = isXAxisSet(formData)
+      ? ensureIsArray(getXAxisColumn(formData))
+      : [];
+    const extraFields = ensureIsArray(extra_tooltip_field);
+
+    const cleanedExtraFields = extraFields.filter(
+      f => f && !groupby?.includes(f),
+    );
+
+    const cleanedMetrics = (baseQueryObject.metrics || []).filter(metric =>
+      !cleanedExtraFields.includes(
+        typeof metric === 'string' ? metric : getMetricLabel(metric),
+      ),
+    );
+
+    const unitMetricKey = custom_unit_metric
+      ? getMetricLabel(custom_unit_metric)
+      : null;
+
+    if (unitMetricKey) {
+      if (!baseQueryObject.metrics) {
+        baseQueryObject.metrics = [];
+      }
+      baseQueryObject.metrics.push(custom_unit_metric);
+      console.log('📤 custom_unit_metric added to metrics:', unitMetricKey);
+    }
+
+    const columns = [
+      ...xAxisCols,
+      ...ensureIsArray(groupby),
+      ...cleanedExtraFields,
+    ];
+
+    const time_offsets = isTimeComparison(formData, baseQueryObject)
+      ? formData.time_compare
+      : [];
+
+    const pivotOperatorInRuntime: PostProcessingPivot = isTimeComparison(
+      formData,
+      baseQueryObject,
+    )
+      ? timeComparePivotOperator(formData, baseQueryObject)
+      : {
+          operation: 'pivot',
+          options: {
+            index: xAxisCols
+              .map(col => (typeof col === 'string' ? col : col.label))
+              .filter((val): val is string => Boolean(val)),
+            columns: ensureIsArray(groupby)
+              .map(col => (typeof col === 'string' ? col : col.label))
+              .filter((val): val is string => Boolean(val)),
+            drop_missing_columns: false,
+            aggregates: (() => {
+              const allFields = [
+                ...cleanedMetrics,
+                ...extra_metrics,
+                ...cleanedExtraFields,
+              ];
+              return Object.fromEntries(
+                allFields.map(field => {
+                  const label = typeof field === 'string' ? field : getMetricLabel(field);
+                  const isTooltipField = cleanedExtraFields.includes(label);
+                  const operator: NumpyFunction = isTooltipField ? 'min' : 'mean';
+                  return [label, { operator }];
+                }),
+              );
+            })(),
           },
-        ],
-        ...showValueSection,
-        [
-          {
-            name: 'area',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Area Chart'),
-              renderTrigger: true,
-              default: area,
-              description: t(
-                'Draw area under curves. Only applicable for line types.',
-              ),
-            },
-          },
-        ],
-        [
-          {
-            name: 'custom_unit_metric',
-            config: {
-              ...sharedControls.metric,
-              label: t('Unit Metric'),
-              description: t(
-                'Pick a column and aggregate function or write SQL to show result top-right of chart.'
-              ),
-              multi: false,
-              default: null,
-            },
-          },
-        ],
-        [
-          {
-            name: 'opacity',
-            config: {
-              type: 'SliderControl',
-              label: t('Area chart opacity'),
-              renderTrigger: true,
-              min: 0,
-              max: 1,
-              step: 0.1,
-              default: opacity,
-              description: t(
-                'Opacity of Area Chart. Also applies to confidence band.',
-              ),
-              visibility: ({ controls }: ControlPanelsContainerProps) =>
-                Boolean(controls?.area?.value),
-            },
-          },
-        ],
-        [
-          {
-            name: 'markerEnabled',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Marker'),
-              renderTrigger: true,
-              default: markerEnabled,
-              description: t(
-                'Draw a marker on data points. Only applicable for line types.',
-              ),
-            },
-          },
-        ],
-        [
-          {
-            name: 'markerSize',
-            config: {
-              type: 'SliderControl',
-              label: t('Marker Size'),
-              renderTrigger: true,
-              min: 0,
-              max: 20,
-              default: markerSize,
-              description: t(
-                'Size of marker. Also applies to forecast observations.',
-              ),
-              visibility: ({ controls }: ControlPanelsContainerProps) =>
-                Boolean(controls?.markerEnabled?.value),
-            },
-          },
-        ],
-        [
-          {
-            name: 'zoomable',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Data Zoom'),
-              default: zoomable,
-              renderTrigger: true,
-              description: t('Enable data zooming controls'),
-            },
-          },
-        ],
-        [minorTicks],
-        ...legendSection,
-        [<ControlSubSectionHeader>{t('X Axis')}</ControlSubSectionHeader>],
-        [
-          {
-            name: 'x_axis_time_format',
-            config: {
-              ...sharedControls.x_axis_time_format,
-              default: 'smart_date',
-              description: `${D3_TIME_FORMAT_DOCS}. ${TIME_SERIES_DESCRIPTION_TEXT}`,
-            },
-          },
-        ],
-        [xAxisLabelRotation],
-        [xAxisLabelInterval],
-        ...richTooltipSection,
-        [<ControlSubSectionHeader>{t('Y Axis')}</ControlSubSectionHeader>],
-        ['y_axis_format'],
-        ['currency_format'],
-        [
-          {
-            name: 'logAxis',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Logarithmic y-axis'),
-              renderTrigger: true,
-              default: logAxis,
-              description: t('Logarithmic y-axis'),
-            },
-          },
-        ],
-        [
-          {
-            name: 'minorSplitLine',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Minor Split Line'),
-              renderTrigger: true,
-              default: minorSplitLine,
-              description: t('Draw split lines for minor y-axis ticks'),
-            },
-          },
-        ],
-        [truncateXAxis],
-        [xAxisBounds],
-        [
-          {
-            name: 'truncateYAxis',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Truncate Y Axis'),
-              default: truncateYAxis,
-              renderTrigger: true,
-              description: t(
-                'Truncate Y Axis. Can be overridden by specifying a min or max bound.',
-              ),
-            },
-          },
-        ],
-        [
-          {
-            name: 'y_axis_bounds',
-            config: {
-              type: 'BoundsControl',
-              label: t('Y Axis Bounds'),
-              renderTrigger: true,
-              default: yAxisBounds,
-              description: t(
-                'Bounds for the Y-axis. When left empty, the bounds are ' +
-                'dynamically defined based on the min/max of the data. Note that ' +
-                "this feature will only expand the axis range. It won't " +
-                "narrow the data's extent.",
-              ),
-              visibility: ({ controls }: ControlPanelsContainerProps) =>
-                Boolean(controls?.truncateYAxis?.value),
-            },
-          },
-        ],
+        };
+
+    // ✅ Attach extra fields for transformProps
+    formData.extra_tooltip_field_cleaned = cleanedExtraFields;
+    formData.custom_unit_sql = custom_unit_metric;
+const secondQuery = customMetric
+  ? {
+      ...baseQueryObject,
+      metrics: [customMetric],
+      columns: [],
+      groupby: [],
+      post_processing: [],
+      is_timeseries: false,
+    }
+  : null;
+
+  console.log("pari",secondQuery)
+    const mainQuery = {
+      ...baseQueryObject,
+      metrics: [...cleanedMetrics, ...extra_metrics],
+      columns,
+      custom_unit_metric,
+      series_columns: groupby,
+      ...(isXAxisSet(formData) ? {} : { is_timeseries: true }),
+      orderby: normalizeOrderBy(baseQueryObject).orderby,
+      time_offsets,
+      post_processing: [
+        pivotOperatorInRuntime,
+        rollingWindowOperator(formData, baseQueryObject),
+        timeCompareOperator(formData, baseQueryObject),
+        resampleOperator(formData, baseQueryObject),
+        renameOperator(formData, baseQueryObject),
+        contributionOperator(formData, baseQueryObject, time_offsets),
+        sortOperator(formData, baseQueryObject),
+        flattenOperator(formData, baseQueryObject),
+        prophetOperator(formData, baseQueryObject),
       ],
-    },
-  ],
-  controlOverrides: {
-    row_limit: {
-      default: rowLimit,
-    },
-  },
-  formDataOverrides: formData => ({
-    ...formData,
-    metrics: getStandardizedControls().popAllMetrics(),
-    groupby: getStandardizedControls().popAllColumns(),
-  }),
-};
-
-export default config;
+    };
+    return [mainQuery, ...(secondQuery ? [secondQuery] : [])];
+  });
+}
