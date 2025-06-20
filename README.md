@@ -1,3 +1,21 @@
+/**
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
 import { t } from '@superset-ui/core';
 import {
   ControlPanelConfig,
@@ -9,24 +27,25 @@ import {
   sharedControls,
 } from '@superset-ui/chart-controls';
 
-import { EchartsTimeseriesSeriesType } from '../types';
-import { DEFAULT_FORM_DATA, TIME_SERIES_DESCRIPTION_TEXT } from '../constants';
+import { EchartsTimeseriesSeriesType } from '../../types';
+import {
+  DEFAULT_FORM_DATA,
+  TIME_SERIES_DESCRIPTION_TEXT,
+} from '../../constants';
 import {
   legendSection,
-  onlyTotalControl,
-  showValueControl,
+  minorTicks,
   richTooltipSection,
   seriesOrderSection,
-  percentageThresholdControl,
-  xAxisLabelRotation,
-  xAxisLabelInterval,
+  showValueSection,
   truncateXAxis,
   xAxisBounds,
-  minorTicks,
-} from '../../controls';
-import { AreaChartStackControlOptions } from '../../constants';
+  xAxisLabelRotation,
+  xAxisLabelInterval,
+} from '../../../controls';
 
 const {
+  area,
   logAxis,
   markerEnabled,
   markerSize,
@@ -41,39 +60,7 @@ const {
 
 const config: ControlPanelConfig = {
   controlPanelSections: [
-    {
-      ...sections.echartsTimeSeriesQueryWithXAxisSort,
-      controlSetRows: [
-        ...sections.echartsTimeSeriesQueryWithXAxisSort.controlSetRows,
-        [
-          {
-            name: 'extra_tooltip_field',
-            config: {
-              type: 'SelectControl',
-              label: t('Extra Tooltip Field'),
-              default: null,
-              renderTrigger: true,
-              clearable: true,
-              description: t('Pick a column to show its value in the tooltip.'),
-              mapStateToProps: (state: any) => {
-                const columns = state.datasource?.columns || [];
-                return {
-                  choices: columns
-                    .filter((col: any) => typeof col?.column_name === 'string')
-                    .map((col: any) => {
-                      const label =
-                        'verbose_name' in col && col.verbose_name
-                          ? col.verbose_name
-                          : col.column_name;
-                      return [col.column_name, label];
-                    }),
-                };
-              },
-            },
-          },
-        ],
-      ],
-    },
+    sections.echartsTimeSeriesQueryWithXAxisSort,
     sections.advancedAnalyticsControls,
     sections.annotationsAndLayersControls,
     sections.forecastIntervalControls,
@@ -95,12 +82,43 @@ const config: ControlPanelConfig = {
               default: seriesType,
               choices: [
                 [EchartsTimeseriesSeriesType.Line, t('Line')],
+                [EchartsTimeseriesSeriesType.Scatter, t('Scatter')],
                 [EchartsTimeseriesSeriesType.Smooth, t('Smooth Line')],
+                [EchartsTimeseriesSeriesType.Bar, t('Bar')],
                 [EchartsTimeseriesSeriesType.Start, t('Step - start')],
                 [EchartsTimeseriesSeriesType.Middle, t('Step - middle')],
                 [EchartsTimeseriesSeriesType.End, t('Step - end')],
               ],
               description: t('Series chart type (line, bar etc)'),
+            },
+          },
+        ],
+        ...showValueSection,
+        [
+          {
+            name: 'area',
+            config: {
+              type: 'CheckboxControl',
+              label: t('Area Chart'),
+              renderTrigger: true,
+              default: area,
+              description: t(
+                'Draw area under curves. Only applicable for line types.',
+              ),
+            },
+          },
+        ],
+        [
+          {
+            name: 'custom_unit_metric',
+            config: {
+              ...sharedControls.metric,
+              label: t('Unit Metric'),
+              description: t(
+                'Pick a column and aggregate function or write SQL to show result top-right of chart.'
+              ),
+              multi: false,
+              default: null,
             },
           },
         ],
@@ -118,38 +136,8 @@ const config: ControlPanelConfig = {
               description: t(
                 'Opacity of Area Chart. Also applies to confidence band.',
               ),
-            },
-          },
-        ],
-        [showValueControl],
-        [
-          {
-            name: 'stack',
-            config: {
-              type: 'SelectControl',
-              label: t('Stacked Style'),
-              renderTrigger: true,
-              choices: AreaChartStackControlOptions,
-              default: null,
-              description: t('Stack series on top of each other'),
-            },
-          },
-        ],
-        [onlyTotalControl],
-        [percentageThresholdControl],
-        [
-          {
-            name: 'show_extra_controls',
-            config: {
-              type: 'CheckboxControl',
-              label: t('Extra Controls'),
-              renderTrigger: true,
-              default: false,
-              description: t(
-                'Whether to show extra controls or not. Extra controls ' +
-                  'include things like making multiBar charts stacked ' +
-                  'or side by side.',
-              ),
+              visibility: ({ controls }: ControlPanelsContainerProps) =>
+                Boolean(controls?.area?.value),
             },
           },
         ],
@@ -185,7 +173,6 @@ const config: ControlPanelConfig = {
             },
           },
         ],
-        [minorTicks],
         [
           {
             name: 'zoomable',
@@ -198,6 +185,7 @@ const config: ControlPanelConfig = {
             },
           },
         ],
+        [minorTicks],
         ...legendSection,
         [<ControlSubSectionHeader>{t('X Axis')}</ControlSubSectionHeader>],
         [
@@ -266,9 +254,9 @@ const config: ControlPanelConfig = {
               default: yAxisBounds,
               description: t(
                 'Bounds for the Y-axis. When left empty, the bounds are ' +
-                  'dynamically defined based on the min/max of the data. Note that ' +
-                  "this feature will only expand the axis range. It won't " +
-                  "narrow the data's extent.",
+                'dynamically defined based on the min/max of the data. Note that ' +
+                "this feature will only expand the axis range. It won't " +
+                "narrow the data's extent.",
               ),
               visibility: ({ controls }: ControlPanelsContainerProps) =>
                 Boolean(controls?.truncateYAxis?.value),
